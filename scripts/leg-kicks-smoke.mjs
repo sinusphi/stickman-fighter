@@ -24,7 +24,7 @@ try {
     }
   }
   for(const theme of ['light','dark']) {
-    if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
     await page.locator('.controls').screenshot({path:`${output}/${theme}-controls.png`});
     await page.evaluate(async()=>{
       const {samplePose,sampleTurn}=await import('/src/render/skeleton.ts');

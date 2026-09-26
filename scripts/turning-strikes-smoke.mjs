@@ -20,7 +20,7 @@ try {
  await page.locator('#step').evaluate(b=>{for(let i=0;i<18;i++)b.click();});
  await page.locator('#game').screenshot({path:`${output}/middlepunch-slide.png`});
  for(const theme of ['light','dark']) {
-  if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
   await page.evaluate(async()=>{
    const {samplePose,sampleTurn,animations}=await import('/src/render/skeleton.ts');
    const {sampleDepths}=await import('/src/render/depth.ts');

@@ -19,7 +19,7 @@ try {
   await page.locator('#pause').click();
   const frame=await page.locator('#game').getAttribute('data-frame');
   for(const theme of ['light','dark']) {
-    if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     for(const stage of stages) {
       await page.locator(`[data-stage="${stage}"]`).click();

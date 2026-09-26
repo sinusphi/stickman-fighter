@@ -46,7 +46,7 @@ try {
   await page.keyboard.press('F7');await expect(page.locator('#cpu')).toBeDisabled();
   await page.keyboard.press('p');
   await page.locator('#step').evaluate((b,n)=>{for(let i=0;i<n;i++)b.click();},replay.frames.length);
-  await expect(page.locator('#notice')).toContainText('Replay beendet');
+  await expect(page.locator('#notice')).toContainText('Replay ended');
   expect(await Promise.all([0,1].map(i=>page.locator(`#hp-${i}`).textContent()))).toEqual(hp);
   const headless=await page.evaluate(async replay=>{
     const {playReplay}=await import('/src/debug/replay.ts');return playReplay(replay).fighters.map(f=>`${f.hp} / 1000`);

@@ -11,7 +11,7 @@ try {
   await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');
   await page.locator('#game[data-ready="true"]').waitFor();await page.locator('#pause').click();
   for(const theme of ['light','dark']) {
-    if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     const result=await page.evaluate(async()=>{
       const {samplePose,animations,sampleTurn}=await import('/src/render/skeleton.ts');
@@ -234,7 +234,7 @@ try {
     expect(fixture.phase).toBe(match?'matchOver':'roundOver');
     expect(fixture.koFrame).toBe(count===55?36:11);
     await page.locator('#replay-file').setInputFiles({name:'ko.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fixture.replay))});
-    await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay beendet');
+    await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay ended');
     await expect.poll(()=>page.locator('#game').evaluate(c=>c.toDataURL())).toBe(fixture.image);
     await page.locator('#game').screenshot({path:`${output}/${name}-ko-${match?'match':'round'}-${count}.png`});
     await page.locator('#play').click();

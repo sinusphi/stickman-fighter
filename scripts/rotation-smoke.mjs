@@ -10,14 +10,14 @@ try {
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
   await page.locator('#animation-preview summary').click();
-  await expect(page.locator('#pause')).toHaveText('Weiter · P');
+  await expect(page.locator('#pause')).toHaveText('Resume · P');
   const frame=await page.locator('#game').getAttribute('data-frame');
   const scrub=async value=>{
     await page.locator('#preview-time').fill(String(value));
     await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame',value.toFixed(2));
   };
   for(const theme of ['light','dark']) {
-    if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
     for(const mode of ['Body','Legs'])for(const direction of ['CW','CCW']) {
       const id=`Demo${mode}${direction}`;await page.locator('#preview-animation').selectOption(id);
       await scrub(42);
@@ -44,7 +44,7 @@ try {
   const stopped=await page.locator('#preview-canvas').getAttribute('data-frame');await page.waitForTimeout(100);
   expect(await page.locator('#preview-canvas').getAttribute('data-frame')).toBe(stopped);
   await scrub(104.75);await page.locator('#preview-play').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame','105.00');
-  await expect(page.locator('#preview-play')).toHaveText('Abspielen');
+  await expect(page.locator('#preview-play')).toHaveText('Play');
   await page.locator('#preview-reset').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame','0.00');
   expect(await page.locator('#game').getAttribute('data-frame')).toBe(frame);
   for(const width of [600,375]) {
@@ -72,7 +72,7 @@ try {
     },{moveId,level});
     expect(fixture.hp).toBeLessThan(1000);
     await page.locator('#replay-file').setInputFiles({name:'hit.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fixture.replay))});
-    await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay beendet');
+    await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay ended');
     await expect.poll(()=>page.locator('#game').evaluate(c=>c.toDataURL())).toBe(fixture.image);
     await page.locator('#game').screenshot({path:`${output}/${name}-contact-${level}.png`});
     await page.locator('#play').click();

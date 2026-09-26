@@ -13,7 +13,7 @@ try {
   await page.locator('#pause').click();
   await expect(page.getByRole('progressbar')).toHaveCount(6);
   for(const theme of ['light','dark']) {
-    if(theme==='dark')await page.locator('#theme').click();
+    if(theme==='light')await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     const frame=await page.locator('#game').getAttribute('data-frame');
     await expect.poll(async()=>page.evaluate(()=>{
@@ -33,7 +33,7 @@ try {
         replay.frames.push({inputs:[n,n],events:[]});return replay;
       },fill);
       await page.locator('#replay-file').setInputFiles({name:'resources.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(replay))});
-      await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay beendet');
+      await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay ended');
       for(const owner of [0,1])for(const resource of ['revenge','special']) {
         const track=page.locator(`#resource-${owner}-${resource}`);
         await expect(track).toHaveAttribute('aria-valuenow',String(fill));

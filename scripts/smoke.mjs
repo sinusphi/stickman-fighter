@@ -14,6 +14,16 @@ try {
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(url);
   await page.locator('canvas[data-ready="true"]').waitFor();
+  await expect(page.locator('html')).toHaveAttribute('lang','en');
+  await expect(page.locator('#reset')).toHaveText('Restart');
+  await expect(page.locator('#language')).toHaveText('DE');
+  await page.locator('#language').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','de');
+  await expect(page.locator('#reset')).toHaveText('Neustart');
+  expect(await page.evaluate(()=>localStorage.getItem('stickman.language'))).toBe('de');
+  await page.locator('#language').click();
+  await expect(page.locator('html')).toHaveAttribute('lang','en');
+  expect(await page.evaluate(()=>localStorage.getItem('stickman.language'))).toBe('en');
   await expect(page.getByRole('progressbar')).toHaveCount(6);
   await page.keyboard.press('F3');
   await page.keyboard.down('d');
@@ -33,8 +43,8 @@ try {
   await expect(page.locator('#game')).toHaveAttribute('data-frame',String(paused+1));
   await expect(page.locator('#input-0')).toContainText('LP');
   await page.keyboard.press('F4');await expect(page.locator('#timer')).toHaveText('∞');
-  await page.keyboard.press('F5');await expect(page.locator('#dummy')).toContainText('Hocken');
-  await page.keyboard.press('F5');await expect(page.locator('#dummy')).toContainText('Immer blocken');
+  await page.keyboard.press('F5');await expect(page.locator('#dummy')).toContainText('Crouching');
+  await page.keyboard.press('F5');await expect(page.locator('#dummy')).toContainText('Always block');
   await page.keyboard.press('F5');await expect(page.locator('#dummy')).toContainText('CPU');
   await expect(page.locator('#cpu-level')).toBeEnabled();
   await expect(page.locator('#arena-mode')).toContainText('TRAINING / CPU');
@@ -46,11 +56,11 @@ try {
   expect(replay.frames.length).toBe(10);
   expect(replay.initial.training.dummy).toBe('cpu');
   await page.keyboard.press('F7');
-  await expect(page.locator('#notice')).toContainText('Replay beendet');
+  await expect(page.locator('#notice')).toContainText('Replay ended');
   await page.keyboard.press('F7');
-  await expect(page.locator('#notice')).toContainText('Zurück im lokalen Spiel');
+  await expect(page.locator('#notice')).toContainText('Back in the local game');
   await page.locator('#replay-file').setInputFiles({name:'replay.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(replay))});
-  await expect(page.locator('#notice')).toContainText('Replay geladen');
+  await expect(page.locator('#notice')).toContainText('Replay loaded');
   await page.locator('#settings-details summary').click();
   await page.locator('[data-player="0"][data-action="LP"]').click();await page.keyboard.press('u');
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('stickman.controls')).players[0].keys.LP)).toBe('KeyU');
@@ -61,7 +71,7 @@ try {
   await page.keyboard.press('u');await expect(page.locator('#state-0')).toContainText('standing_lp');
   await page.keyboard.press('p');
   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
-  await expect(page.locator('#pause')).toHaveText('Weiter · P');
+  await expect(page.locator('#pause')).toHaveText('Resume · P');
   await page.screenshot({path:`/tmp/stickman-${engine===firefox?'firefox':'chrome'}-final.png`,fullPage:true});
   await page.evaluate(()=>{
     window.testPad={id:'Simulated arcade stick',index:0,connected:true,mapping:'standard',timestamp:0,axes:[0,0],buttons:Array.from({length:20},()=>({value:0,pressed:false,touched:false}))};
@@ -84,10 +94,10 @@ try {
   await page.evaluate(()=>{window.testPad.buttons[10].pressed=true;window.testPad.buttons[10].value=1;});
   await expect(page.locator('#state-0')).toContainText('standing_lp');
   await page.evaluate(()=>window.dispatchEvent(new Event('gamepaddisconnected')));
-  await expect(page.locator('#notice')).toContainText('Controller getrennt');
-  await expect(page.locator('#pause')).toHaveText('Weiter · P');
+  await expect(page.locator('#notice')).toContainText('Controller disconnected');
+  await expect(page.locator('#pause')).toHaveText('Resume · P');
   await page.setViewportSize({width:600,height:900});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   if(errors.length)throw Error(errors.join('\n'));
-  console.log(`${engine===firefox?'Firefox':'Chrome'} smoke passed: combat, HUD, pause, frame step, training, replay export/import, remapping, simulated gamepad, focus and narrow layout.`);
+  console.log(`${engine===firefox?'Firefox':'Chrome'} smoke passed: language switching, combat, HUD, pause, frame step, training, replay export/import, remapping, simulated gamepad, focus and narrow layout.`);
 } finally { await browser.close(); }

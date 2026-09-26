@@ -16,7 +16,7 @@ try {
   await page.locator('#step').evaluate(b=>{for(let i=0;i<140;i++)b.click();});
   await expect(page.locator(`#hp-${1-player}`)).toHaveText(`${1000-damage} / 1000`);
   await page.locator('#record').click();await page.locator('#play').click();
-  await expect(page.locator('#notice')).toContainText('Replay beendet');
+  await expect(page.locator('#notice')).toContainText('Replay ended');
   await expect(page.locator(`#hp-${1-player}`)).toHaveText(`${1000-damage} / 1000`);await page.locator('#play').click();
  }
  // Reproduce hardware keydowns arriving on different simulation frames.

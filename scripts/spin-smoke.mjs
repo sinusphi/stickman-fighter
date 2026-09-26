@@ -20,7 +20,7 @@ try {
    await page.locator('#step').evaluate((b,n)=>{for(let i=0;i<n;i++)b.click();},start);
    await expect(page.locator(`#hp-${1-player}`)).toHaveText(`${1000-damage} / 1000`);
    await page.locator('#boxes').click();await page.locator('#game').screenshot({path:`${output}/${name}-p${player+1}-${id}-contact.png`});await page.locator('#boxes').click();
-   await page.locator('#record').click();await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay beendet');
+   await page.locator('#record').click();await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay ended');
    await expect(page.locator(`#hp-${1-player}`)).toHaveText(`${1000-damage} / 1000`);await page.locator('#play').click();
  }
  // Releasing back before the kick has no lingering qualification.
@@ -34,7 +34,7 @@ try {
  // Each productive move is also inspectable at quarter-frames in the preview.
  await page.locator('#animation-preview summary').click();
  for(const theme of ['light','dark']) {
-   if(theme==='dark')await page.locator('#theme').click();
+   if(theme==='light')await page.locator('#theme').click();
    for(const id of ['spin_mk','spin_hk']) {
      await page.locator('#preview-animation').selectOption(id);
      const start=await page.evaluate(async id=>(await import('/src/data/schema.ts')).MOVES[id].startup,id);
