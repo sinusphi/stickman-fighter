@@ -1,5 +1,7 @@
 # Stickman Fighter
 
+![Gameplay-Demo](https://github.com/sinusphi/stickman-fighter/blob/main/pics/demo.gif)
+
 [![Version](https://img.shields.io/badge/version-1.4.0-2563eb)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
