@@ -1,0 +1,782 @@
+{
+  "animations": {
+    "Idle": {
+      "duration": 120,
+      "keys": [
+        0,
+        30,
+        60,
+        90,
+        119
+      ]
+    },
+    "Walk": {
+      "duration": 24,
+      "keys": [
+        0,
+        6,
+        12,
+        18,
+        23
+      ]
+    },
+    "Crouch": {
+      "duration": 60,
+      "keys": [
+        0,
+        30,
+        59
+      ]
+    },
+    "CrouchWalk": {
+      "duration": 32,
+      "keys": [
+        0,
+        8,
+        16,
+        24,
+        31
+      ]
+    },
+    "JumpSquat": {
+      "duration": 4,
+      "keys": [
+        0,
+        2,
+        3
+      ]
+    },
+    "Airborne": {
+      "duration": 40,
+      "keys": [
+        0,
+        8,
+        20,
+        39
+      ]
+    },
+    "Landing": {
+      "duration": 3,
+      "keys": [
+        0,
+        1,
+        2
+      ]
+    },
+    "Blockstun": {
+      "duration": 1,
+      "keys": [
+        0
+      ]
+    },
+    "CrouchBlock": {
+      "duration": 1,
+      "keys": [
+        0
+      ]
+    },
+    "Hitstun": {
+      "duration": 1,
+      "keys": [
+        0
+      ]
+    },
+    "KO": {
+      "duration": 37,
+      "keys": [
+        0,
+        6,
+        14,
+        23,
+        32,
+        36
+      ]
+    },
+    "Knockdown": {
+      "duration": 1,
+      "keys": [
+        0
+      ]
+    },
+    "standing_lp": {
+      "duration": 14,
+      "keys": [
+        0,
+        2,
+        4,
+        5,
+        7,
+        11,
+        13
+      ]
+    },
+    "standing_mp": {
+      "duration": 22,
+      "keys": [
+        0,
+        4,
+        6,
+        8,
+        12,
+        19,
+        21
+      ]
+    },
+    "standing_hp": {
+      "duration": 33,
+      "keys": [
+        0,
+        7,
+        9,
+        12,
+        18,
+        30,
+        32
+      ]
+    },
+    "standing_lk": {
+      "duration": 19,
+      "keys": [
+        0,
+        3,
+        5,
+        7,
+        10,
+        16,
+        18
+      ]
+    },
+    "standing_mk": {
+      "duration": 28,
+      "keys": [
+        0,
+        6,
+        8,
+        10,
+        15,
+        25,
+        27
+      ]
+    },
+    "standing_hk": {
+      "duration": 38,
+      "keys": [
+        0,
+        9,
+        11,
+        14,
+        21,
+        35,
+        37
+      ]
+    },
+    "crouching_lp": {
+      "duration": 14,
+      "keys": [
+        0,
+        2,
+        4,
+        5,
+        7,
+        11,
+        13
+      ]
+    },
+    "crouching_mp": {
+      "duration": 21,
+      "keys": [
+        0,
+        4,
+        6,
+        8,
+        12,
+        18,
+        20
+      ]
+    },
+    "crouching_hp": {
+      "duration": 32,
+      "keys": [
+        0,
+        6,
+        8,
+        11,
+        17,
+        29,
+        31
+      ]
+    },
+    "crouching_lk": {
+      "duration": 17,
+      "keys": [
+        0,
+        3,
+        5,
+        6,
+        9,
+        14,
+        16
+      ]
+    },
+    "crouching_mk": {
+      "duration": 26,
+      "keys": [
+        0,
+        5,
+        7,
+        9,
+        14,
+        23,
+        25
+      ]
+    },
+    "crouching_hk": {
+      "duration": 36,
+      "keys": [
+        0,
+        8,
+        10,
+        13,
+        20,
+        33,
+        35
+      ]
+    },
+    "airborne_lp": {
+      "duration": 16,
+      "keys": [
+        0,
+        2,
+        4,
+        6,
+        9,
+        13,
+        15
+      ]
+    },
+    "airborne_mp": {
+      "duration": 22,
+      "keys": [
+        0,
+        4,
+        6,
+        9,
+        13,
+        19,
+        21
+      ]
+    },
+    "airborne_hp": {
+      "duration": 29,
+      "keys": [
+        0,
+        6,
+        8,
+        11,
+        16,
+        26,
+        28
+      ]
+    },
+    "airborne_lk": {
+      "duration": 19,
+      "keys": [
+        0,
+        3,
+        5,
+        8,
+        11,
+        16,
+        18
+      ]
+    },
+    "airborne_mk": {
+      "duration": 27,
+      "keys": [
+        0,
+        5,
+        7,
+        11,
+        16,
+        24,
+        26
+      ]
+    },
+    "airborne_hk": {
+      "duration": 35,
+      "keys": [
+        0,
+        8,
+        10,
+        14,
+        20,
+        32,
+        34
+      ]
+    },
+    "HitLOW": {
+      "duration": 11,
+      "keys": [
+        0,
+        3,
+        10
+      ]
+    },
+    "HitMID": {
+      "duration": 11,
+      "keys": [
+        0,
+        3,
+        10
+      ]
+    },
+    "HitHIGH": {
+      "duration": 11,
+      "keys": [
+        0,
+        3,
+        10
+      ]
+    },
+    "DemoBodyCW": {
+      "duration": 106,
+      "keys": [
+        0,
+        12,
+        72,
+        87,
+        105
+      ]
+    },
+    "DemoBodyCCW": {
+      "duration": 106,
+      "keys": [
+        0,
+        12,
+        72,
+        87,
+        105
+      ]
+    },
+    "DemoLegsCW": {
+      "duration": 106,
+      "keys": [
+        0,
+        12,
+        72,
+        87,
+        105
+      ]
+    },
+    "DemoLegsCCW": {
+      "duration": 106,
+      "keys": [
+        0,
+        12,
+        72,
+        87,
+        105
+      ]
+    },
+    "spin_mk": {
+      "duration": 42,
+      "keys": [
+        0,
+        3,
+        6,
+        9,
+        13,
+        14,
+        18,
+        22,
+        37,
+        41
+      ]
+    },
+    "spin_hk": {
+      "duration": 52,
+      "keys": [
+        0,
+        4,
+        8,
+        12,
+        17,
+        18,
+        22,
+        26,
+        47,
+        51
+      ]
+    },
+    "standing_rlk": {
+      "duration": 19,
+      "keys": [
+        0,
+        3,
+        5,
+        7,
+        10,
+        16,
+        18
+      ]
+    },
+    "standing_lmk": {
+      "duration": 28,
+      "keys": [
+        0,
+        6,
+        8,
+        10,
+        15,
+        25,
+        27
+      ]
+    },
+    "standing_rhk": {
+      "duration": 38,
+      "keys": [
+        0,
+        9,
+        11,
+        14,
+        21,
+        35,
+        37
+      ]
+    },
+    "crouching_rlk": {
+      "duration": 17,
+      "keys": [
+        0,
+        3,
+        5,
+        6,
+        9,
+        14,
+        16
+      ]
+    },
+    "crouching_lmk": {
+      "duration": 26,
+      "keys": [
+        0,
+        5,
+        7,
+        9,
+        14,
+        23,
+        25
+      ]
+    },
+    "crouching_rhk": {
+      "duration": 36,
+      "keys": [
+        0,
+        8,
+        10,
+        13,
+        20,
+        33,
+        35
+      ]
+    },
+    "airborne_rlk": {
+      "duration": 19,
+      "keys": [
+        0,
+        3,
+        5,
+        8,
+        11,
+        16,
+        18
+      ]
+    },
+    "airborne_lmk": {
+      "duration": 27,
+      "keys": [
+        0,
+        5,
+        7,
+        11,
+        16,
+        24,
+        26
+      ]
+    },
+    "airborne_rhk": {
+      "duration": 35,
+      "keys": [
+        0,
+        8,
+        10,
+        14,
+        20,
+        32,
+        34
+      ]
+    },
+    "HitMiddlePunch": {
+      "duration": 17,
+      "keys": [
+        0,
+        6,
+        16
+      ]
+    }
+  },
+  "moves": {
+    "standing_lp": {
+      "startup": 4,
+      "active": 2,
+      "recovery": 8,
+      "hitstun": 12,
+      "blockstun": 9,
+      "hitstop": 6
+    },
+    "standing_mp": {
+      "startup": 6,
+      "active": 3,
+      "recovery": 13,
+      "hitstun": 18,
+      "blockstun": 13,
+      "hitstop": 8
+    },
+    "standing_hp": {
+      "startup": 9,
+      "active": 4,
+      "recovery": 20,
+      "hitstun": 24,
+      "blockstun": 17,
+      "hitstop": 11
+    },
+    "standing_lk": {
+      "startup": 5,
+      "active": 3,
+      "recovery": 11,
+      "hitstun": 14,
+      "blockstun": 10,
+      "hitstop": 7
+    },
+    "standing_mk": {
+      "startup": 8,
+      "active": 3,
+      "recovery": 17,
+      "hitstun": 20,
+      "blockstun": 14,
+      "hitstop": 9
+    },
+    "standing_hk": {
+      "startup": 11,
+      "active": 4,
+      "recovery": 23,
+      "hitstun": 26,
+      "blockstun": 18,
+      "hitstop": 12
+    },
+    "crouching_lp": {
+      "startup": 4,
+      "active": 2,
+      "recovery": 8,
+      "hitstun": 12,
+      "blockstun": 9,
+      "hitstop": 6
+    },
+    "crouching_mp": {
+      "startup": 6,
+      "active": 3,
+      "recovery": 12,
+      "hitstun": 17,
+      "blockstun": 12,
+      "hitstop": 8
+    },
+    "crouching_hp": {
+      "startup": 8,
+      "active": 4,
+      "recovery": 20,
+      "hitstun": 23,
+      "blockstun": 16,
+      "hitstop": 11
+    },
+    "crouching_lk": {
+      "startup": 5,
+      "active": 2,
+      "recovery": 10,
+      "hitstun": 13,
+      "blockstun": 9,
+      "hitstop": 6
+    },
+    "crouching_mk": {
+      "startup": 7,
+      "active": 3,
+      "recovery": 16,
+      "hitstun": 19,
+      "blockstun": 13,
+      "hitstop": 9
+    },
+    "crouching_hk": {
+      "startup": 10,
+      "active": 4,
+      "recovery": 22,
+      "hitstun": 25,
+      "blockstun": 17,
+      "hitstop": 11
+    },
+    "airborne_lp": {
+      "startup": 4,
+      "active": 3,
+      "recovery": 9,
+      "hitstun": 12,
+      "blockstun": 9,
+      "hitstop": 6
+    },
+    "airborne_mp": {
+      "startup": 6,
+      "active": 4,
+      "recovery": 12,
+      "hitstun": 17,
+      "blockstun": 12,
+      "hitstop": 8
+    },
+    "airborne_hp": {
+      "startup": 8,
+      "active": 4,
+      "recovery": 17,
+      "hitstun": 22,
+      "blockstun": 15,
+      "hitstop": 10
+    },
+    "airborne_lk": {
+      "startup": 5,
+      "active": 4,
+      "recovery": 10,
+      "hitstun": 14,
+      "blockstun": 10,
+      "hitstop": 7
+    },
+    "airborne_mk": {
+      "startup": 7,
+      "active": 5,
+      "recovery": 15,
+      "hitstun": 20,
+      "blockstun": 14,
+      "hitstop": 9
+    },
+    "airborne_hk": {
+      "startup": 10,
+      "active": 5,
+      "recovery": 20,
+      "hitstun": 25,
+      "blockstun": 17,
+      "hitstop": 12
+    },
+    "spin_mk": {
+      "startup": 14,
+      "active": 5,
+      "recovery": 23,
+      "hitstun": 22,
+      "blockstun": 16,
+      "hitstop": 9
+    },
+    "spin_hk": {
+      "startup": 18,
+      "active": 5,
+      "recovery": 29,
+      "hitstun": 27,
+      "blockstun": 19,
+      "hitstop": 11
+    },
+    "standing_rlk": {
+      "startup": 5,
+      "active": 3,
+      "recovery": 11,
+      "hitstun": 14,
+      "blockstun": 10,
+      "hitstop": 7
+    },
+    "standing_lmk": {
+      "startup": 8,
+      "active": 3,
+      "recovery": 17,
+      "hitstun": 20,
+      "blockstun": 14,
+      "hitstop": 9
+    },
+    "standing_rhk": {
+      "startup": 11,
+      "active": 4,
+      "recovery": 23,
+      "hitstun": 26,
+      "blockstun": 18,
+      "hitstop": 12
+    },
+    "crouching_rlk": {
+      "startup": 5,
+      "active": 2,
+      "recovery": 10,
+      "hitstun": 13,
+      "blockstun": 9,
+      "hitstop": 6
+    },
+    "crouching_lmk": {
+      "startup": 7,
+      "active": 3,
+      "recovery": 16,
+      "hitstun": 19,
+      "blockstun": 13,
+      "hitstop": 9
+    },
+    "crouching_rhk": {
+      "startup": 10,
+      "active": 4,
+      "recovery": 22,
+      "hitstun": 25,
+      "blockstun": 17,
+      "hitstop": 11
+    },
+    "airborne_rlk": {
+      "startup": 5,
+      "active": 4,
+      "recovery": 10,
+      "hitstun": 14,
+      "blockstun": 10,
+      "hitstop": 7
+    },
+    "airborne_lmk": {
+      "startup": 7,
+      "active": 5,
+      "recovery": 15,
+      "hitstun": 20,
+      "blockstun": 14,
+      "hitstop": 9
+    },
+    "airborne_rhk": {
+      "startup": 10,
+      "active": 5,
+      "recovery": 20,
+      "hitstun": 25,
+      "blockstun": 17,
+      "hitstop": 12
+    }
+  },
+  "preparationExtension": {
+    "standing_lk": 16,
+    "standing_mk": 14,
+    "standing_hk": 6,
+    "crouching_lk": 17,
+    "crouching_mk": 16,
+    "crouching_hk": 5,
+    "airborne_lk": 19,
+    "airborne_mk": 17,
+    "airborne_hk": 5,
+    "standing_rlk": 16,
+    "standing_lmk": 14,
+    "standing_rhk": 6,
+    "crouching_rlk": 17,
+    "crouching_lmk": 16,
+    "crouching_rhk": 5,
+    "airborne_rlk": 19,
+    "airborne_lmk": 17,
+    "airborne_rhk": 5
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "standing":{"hurtboxes":[{"x":-3072,"y":-23040,"width":6144,"height":6144},{"x":-4608,"y":-16896,"width":9216,"height":16896}],"pushbox":{"x":-4096,"y":-21504,"width":8192,"height":21504}},
+  "crouching":{"hurtboxes":[{"x":-3072,"y":-13824,"width":6144,"height":5632},{"x":-5120,"y":-8192,"width":10240,"height":8192}],"pushbox":{"x":-4096,"y":-12800,"width":8192,"height":12800}},
+  "airborne":{"hurtboxes":[{"x":-3072,"y":-23040,"width":6144,"height":6144},{"x":-4608,"y":-16896,"width":9216,"height":13312}],"pushbox":{"x":-4096,"y":-21504,"width":8192,"height":17920}}
+}

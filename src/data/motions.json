@@ -1,0 +1,7 @@
+[
+  { "id":"236+P", "sequence":[2,3,6], "buttons":["LP","MP","HP"], "maxTotalFrames":20, "maxGapFrames":8, "buttonWindowFrames":3, "priority":100 },
+  { "id":"214+K", "sequence":[2,1,4], "buttons":["LK","MK","HK"], "maxTotalFrames":20, "maxGapFrames":8, "buttonWindowFrames":3, "priority":100 },
+  { "id":"623+P", "sequence":[6,2,3], "buttons":["LP","MP","HP"], "maxTotalFrames":20, "maxGapFrames":8, "buttonWindowFrames":3, "priority":200 },
+  { "id":"41236+P", "sequence":[4,1,2,3,6], "buttons":["LP","MP","HP"], "maxTotalFrames":30, "maxGapFrames":8, "buttonWindowFrames":3, "priority":300 },
+  { "id":"[4]6+P", "sequence":[], "buttons":["LP","MP","HP"], "maxTotalFrames":60, "maxGapFrames":8, "buttonWindowFrames":3, "priority":250, "charge":{"directions":[1,4,7],"finishDirections":[3,6,9],"minFrames":45,"releaseWindowFrames":8} }
+]

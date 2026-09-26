@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "hz": 60,
+  "unit": 256,
+  "stageWidth": 245760,
+  "spawns": [
+    76800,
+    168960
+  ],
+  "maxHealth": 1000,
+  "roundSeconds": 99,
+  "roundTransition": 120,
+  "winsRequired": 2,
+  "forwardSpeed": 768,
+  "backwardSpeed": 512,
+  "crouchForwardSpeed": 256,
+  "jumpSquat": 5,
+  "jumpVelocity": -2560,
+  "jumpSpeed": 768,
+  "gravity": 128,
+  "landingFrames": 4,
+  "knockdownFrames": 30,
+  "airHitVelocity": -1024,
+  "historySize": 120,
+  "displayHistorySize": 20,
+  "normalPriority": [
+    "HP",
+    "HK",
+    "RHK",
+    "MP",
+    "MK",
+    "LMK",
+    "LP",
+    "LK",
+    "RLK"
+  ],
+  "damageScaleUnit": 1000,
+  "maxReplayFrames": 108000,
+  "bufferFrames": 5,
+  "maxCatchupFrames": 8,
+  "suspendAfterMs": 250,
+  "resources": {
+    "revenge": {
+      "current": 0,
+      "max": 100,
+      "gainPerHit": 10
+    },
+    "special": {
+      "current": 0,
+      "max": 100,
+      "gainPerHit": 10
+    }
+  },
+  "hitSlideFriction": 128
+}

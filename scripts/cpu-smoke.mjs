@@ -1,0 +1,80 @@
+import { chromium, firefox, expect } from '@playwright/test';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
+const name=engine===firefox?'firefox':'chrome',output=`test-results/cpu/${name}`;
+await mkdir(output,{recursive:true});
+const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
+try {
+  const page=await browser.newPage({viewport:{width:1440,height:1100},acceptDownloads:true}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',msg=>{if(msg.type()==='error'&&!msg.location().url.endsWith('/favicon.ico'))errors.push(msg.text());});
+  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5181');await page.locator('#game[data-ready="true"]').waitFor();
+  await page.keyboard.press('p');await page.keyboard.press('F3');await page.keyboard.press('F8');
+  await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','true');
+  await page.locator('#cpu-level').selectOption('hard');await page.locator('#cpu-level').blur();
+  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / VS CPU · SCHWER');
+  await expect(page.locator('#p2-label')).toHaveText('CPU');
+  const initialFrame=await page.locator('#game').getAttribute('data-frame');await page.waitForTimeout(100);
+  await expect(page.locator('#game')).toHaveAttribute('data-frame',initialFrame);
+  // Physical P2 is held during recorded single steps; CPU is still observing and emits neutral.
+  await page.keyboard.press('F6');await page.keyboard.down('Numpad9');await page.keyboard.down('ArrowLeft');
+  await page.locator('#step').evaluate(b=>{for(let i=0;i<5;i++)b.click();});
+  await page.keyboard.up('Numpad9');await page.keyboard.up('ArrowLeft');await page.keyboard.press('F6');
+  let downloadPromise=page.waitForEvent('download');await page.locator('#export-replay').click();
+  let download=await downloadPromise;let replay=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(replay.frames).toHaveLength(5);
+  expect(replay.frames.every(f=>!f.inputs[1].buttons&&!f.inputs[1].left&&!f.inputs[1].right)).toBe(true);
+  // Training and playback suppress the controller, including direct F8 hotkeys.
+  await page.keyboard.press('F4');await expect(page.locator('#cpu')).toBeDisabled();
+  await page.keyboard.press('F8');await expect(page.locator('#arena-mode')).toContainText('TRAINING');
+  await page.keyboard.press('F4');await page.keyboard.press('Backspace');
+  await page.keyboard.press('F6');await page.keyboard.press('p');
+  const samples=[];
+  for(let phase=1;phase<=4;phase++) {
+    await page.waitForTimeout(5000);
+    samples.push({phase,hp:await page.locator('#hp-0').textContent(),cpu:await page.locator('#cpu-debug').textContent()});
+    await page.locator('.arena').screenshot({path:`${output}/phase-${phase}.png`});
+  }
+  await page.keyboard.press('p');await page.keyboard.press('F6');
+  const hp=await Promise.all([0,1].map(i=>page.locator(`#hp-${i}`).textContent()));
+  expect(samples.some(s=>parseInt(s.hp)<1000)).toBe(true);
+  downloadPromise=page.waitForEvent('download');await page.locator('#export-replay').click();download=await downloadPromise;
+  replay=JSON.parse(await readFile(await download.path(),'utf8'));
+  await download.saveAs(`${output}/match.json`);
+  expect(replay.frames.length).toBeGreaterThan(1000);
+  await page.keyboard.press('F7');await expect(page.locator('#cpu')).toBeDisabled();
+  await page.keyboard.press('p');
+  await page.locator('#step').evaluate((b,n)=>{for(let i=0;i<n;i++)b.click();},replay.frames.length);
+  await expect(page.locator('#notice')).toContainText('Replay beendet');
+  expect(await Promise.all([0,1].map(i=>page.locator(`#hp-${i}`).textContent()))).toEqual(hp);
+  const headless=await page.evaluate(async replay=>{
+    const {playReplay}=await import('/src/debug/replay.ts');return playReplay(replay).fighters.map(f=>`${f.hp} / 1000`);
+  },replay);
+  expect(headless).toEqual(hp);
+  await page.keyboard.press('F7');
+  await page.screenshot({path:`${output}/ui.png`,fullPage:true});
+  await page.reload();await page.locator('#game[data-ready="true"]').waitFor();
+  await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','true');await expect(page.locator('#cpu-level')).toHaveValue('hard');
+  await page.locator('#cpu-level-0').selectOption('easy');await page.locator('#cpu-level-0').blur();
+  await page.keyboard.press('F9');
+  await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('#demo')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / CPU-DEMO · LEICHT VS SCHWER');
+  await expect(page.locator('#p1-label')).toHaveText('CPU 01');await expect(page.locator('#p2-label')).toHaveText('CPU 02');
+  await page.keyboard.press('p');await page.keyboard.press('F6');
+  await page.locator('#step').evaluate(b=>{for(let i=0;i<300;i++)b.click();});
+  await page.keyboard.press('F6');
+  downloadPromise=page.waitForEvent('download');await page.locator('#export-replay').click();download=await downloadPromise;
+  const demoReplay=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(demoReplay.frames.some(f=>f.inputs[0].buttons||f.inputs[0].left||f.inputs[0].right)).toBe(true);
+  expect(demoReplay.frames.some(f=>f.inputs[1].buttons||f.inputs[1].left||f.inputs[1].right)).toBe(true);
+  await page.reload();await page.locator('#game[data-ready="true"]').waitFor();
+  await expect(page.locator('#demo')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#cpu-level-0')).toHaveValue('easy');await expect(page.locator('#cpu-level')).toHaveValue('hard');
+  await page.keyboard.press('F9');await expect(page.locator('#demo')).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('#p1-label')).toHaveText('PLAYER 01');await expect(page.locator('#p2-label')).toHaveText('PLAYER 02');
+  expect(errors).toEqual([]);
+  await writeFile(`${output}/result.json`,JSON.stringify({browser:name,frames:replay.frames.length,hp,samples,errors},null,2)+'\n');
+  console.log(`${name}: VS CPU and two-CPU demo hotkeys, separate levels, persistence, physical-input suppression, training, pause/step, live fight and replay passed.`,hp);
+}finally{await browser.close();}

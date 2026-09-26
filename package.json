@@ -1,0 +1,43 @@
+{
+  "name": "stickman-fighter",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "check": "npm run typecheck && vitest run && npm run generate:spin-poses -- --check && npm run generate:spin-boxes -- --check && npm run generate:strike-boxes -- --check && npm run generate:walk -- --check && npm run generate:tornado -- --check && npm run generate:uppercut -- --check && npm run build",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:update": "node scripts/update-smoke.mjs",
+    "smoke:rotation": "node scripts/rotation-smoke.mjs",
+    "generate:spin-boxes": "node scripts/generate-spin-boxes.mjs",
+    "smoke:spin": "node scripts/spin-smoke.mjs",
+    "smoke:style": "node scripts/style-smoke.mjs",
+    "smoke:kicks": "node scripts/leg-kicks-smoke.mjs",
+    "generate:strike-boxes": "node scripts/generate-strike-boxes.mjs",
+    "smoke:strikes": "node scripts/turning-strikes-smoke.mjs",
+    "generate:walk": "python scripts/generate-walk-poses.py",
+    "smoke:footwork": "node scripts/footwork-smoke.mjs",
+    "smoke:crouch": "node scripts/crouching-kicks-smoke.mjs",
+    "generate:tornado": "node scripts/generate-tornado-combo.mjs",
+    "smoke:tornado": "node scripts/tornado-combo-smoke.mjs",
+    "generate:spin-poses": "python scripts/generate-spin-poses.py",
+    "cpu:tournament": "node scripts/cpu-tournament.mjs",
+    "smoke:cpu": "node scripts/cpu-smoke.mjs",
+    "smoke:stages": "node scripts/stage-smoke.mjs",
+    "generate:uppercut": "node scripts/generate-jumping-uppercut.mjs",
+    "smoke:uppercut": "node scripts/jumping-uppercut-smoke.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "vitest": "5.0.0"
+  },
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  }
+}

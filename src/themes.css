@@ -1,0 +1,42 @@
+/* Single palette source for both DOM and Canvas. */
+:root {
+  color-scheme: light;
+  --page:#f6f4ee; --arena:#efeee5; --text:#252824; --muted:#626759;
+  --line:#70776b; --subtle-line:#d6d6ca; --track:#d8d9cc;
+  --p1:#134fbe; --p2:#bc1720; --revenge:#7836a5; --special:#14868b;
+  --hover:#e3e3d7; --inverse:#f6f4ee; --primary:#252824;
+  --key:#faf9f4; --disabled-text:#727769; --disabled-bg:#e9e8df;
+  --focus:#23695e; --ground:#70776b;
+  --hurt:#226b37; --push:#2556b4; --hit:#b32d2d;
+  --rigLight:#ffffff;
+  --rigOutline:#39433e; --eye:#f4ffff; --eyeGlow:#8cefff;
+  --box-alpha:0.09;
+  /* Arena stages (Canvas only). Colours behind fighters keep 3:1 against P1/P2. */
+  --stageShadow:#5d584c; --stageLight:#fffdf6;
+  --dojoCeiling:#e8e2d4; --dojoPaper:#f4f0e4; --dojoWood:#d3bd98; --dojoTrim:#c8b08a;
+  --dojoFloor:#e0cfae; --dojoFloorAlt:#d9c6a2; --dojoAccent:#b9b1a3; --dojoLamp:#fff6de; --dojoHaze:#ece8dc;
+  --roofSky:#e6ebee; --roofHaze:#e8eae6; --roofCity:#b9c0c8; --roofWindow:#a9b3bf;
+  --roofFloor:#d6d4cb; --roofLine:#c0beb4; --roofWall:#dedbd1; --roofMetal:#c9cdcf;
+  --shrineSky:#edf0ea; --shrineHaze:#e9ece5; --shrineMountain:#bac6be; --shrineMoon:#fbfaf0;
+  --shrineGround:#ddd7c7; --shrineStone:#c9c3b5; --shrineGate:#e3ad9a; --shrineFoliage:#bdc8b2;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --page:#171c1b; --arena:#202724; --text:#f1f2e8; --muted:#b9c1b3;
+  --line:#849184; --subtle-line:#47534b; --track:#353d39;
+  --p1:#0085ff; --p2:#ff3040; --revenge:#c996ff; --special:#85eee5;
+  --hover:#354139; --inverse:#171c1b; --primary:#f1f2e8;
+  --key:#2b352f; --disabled-text:#a9b2a3; --disabled-bg:#2a332e;
+  --focus:#70d5b9; --ground:#849184;
+  --hurt:#83e69a; --push:#9ebfff; --hit:#ff9790;
+  --rigLight:#ffffff;
+  --rigOutline:#718378; --eye:#f4ffff; --eyeGlow:#8cefff;
+  --box-alpha:0.09;
+  --stageShadow:#000000; --stageLight:#4c4840;
+  --dojoCeiling:#1c1a16; --dojoPaper:#36312a; --dojoWood:#2b2219; --dojoTrim:#1f1914;
+  --dojoFloor:#302820; --dojoFloorAlt:#2b241c; --dojoAccent:#171310; --dojoLamp:#f2c47a; --dojoHaze:#24221d;
+  --roofSky:#0e1421; --roofHaze:#243047; --roofCity:#0b0f17; --roofWindow:#463b20;
+  --roofFloor:#25282c; --roofLine:#31353b; --roofWall:#2c3035; --roofMetal:#343a40;
+  --shrineSky:#0c121c; --shrineHaze:#212a3a; --shrineMountain:#0d131a; --shrineMoon:#dfe2d4;
+  --shrineGround:#27282b; --shrineStone:#35363b; --shrineGate:#4f201d; --shrineFoliage:#18231e;
+}

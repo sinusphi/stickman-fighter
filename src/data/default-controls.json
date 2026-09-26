@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 2,
+  "socd": {
+    "horizontal": "neutral",
+    "vertical": "positive"
+  },
+  "bufferFrames": 5,
+  "deadzone": 0.35,
+  "releaseThreshold": 0.25,
+  "triggerThreshold": 0.5,
+  "players": [
+    {
+      "keys": {
+        "up": "KeyW",
+        "left": "KeyA",
+        "down": "KeyS",
+        "right": "KeyD",
+        "LP": "KeyR",
+        "MP": "KeyT",
+        "HP": "KeyY",
+        "LK": "KeyF",
+        "MK": "KeyB",
+        "HK": "KeyH",
+        "RLK": "KeyV",
+        "RHK": "KeyN",
+        "LMK": "KeyG"
+      },
+      "gamepadIndex": null,
+      "padButtons": {
+        "LP": 2,
+        "MP": 3,
+        "HP": 5,
+        "LK": 0,
+        "MK": 1,
+        "HK": 7,
+        "RLK": -1,
+        "LMK": -1,
+        "RHK": -1
+      },
+      "padDirections": {
+        "up": 12,
+        "down": 13,
+        "left": 14,
+        "right": 15
+      },
+      "axes": {
+        "horizontal": 0,
+        "vertical": 1
+      }
+    },
+    {
+      "keys": {
+        "up": "ArrowUp",
+        "left": "ArrowLeft",
+        "down": "ArrowDown",
+        "right": "ArrowRight",
+        "LP": "Numpad7",
+        "MP": "Numpad8",
+        "HP": "Numpad9",
+        "LK": "Numpad4",
+        "MK": "Numpad2",
+        "HK": "Numpad6",
+        "RLK": "Numpad1",
+        "RHK": "Numpad3",
+        "LMK": "Numpad5"
+      },
+      "gamepadIndex": null,
+      "padButtons": {
+        "LP": 2,
+        "MP": 3,
+        "HP": 5,
+        "LK": 0,
+        "MK": 1,
+        "HK": 7,
+        "RLK": -1,
+        "LMK": -1,
+        "RHK": -1
+      },
+      "padDirections": {
+        "up": 12,
+        "down": 13,
+        "left": 14,
+        "right": 15
+      },
+      "axes": {
+        "horizontal": 0,
+        "vertical": 1
+      }
+    }
+  ]
+}

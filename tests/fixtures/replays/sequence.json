@@ -1,0 +1,13 @@
+[
+  {"frames":100,"p1":{"right":true},"p2":{}},
+  {"frames":1,"p1":{"buttons":8},"p2":{"down":true,"right":true}},
+  {"frames":49,"p1":{},"p2":{"down":true,"right":true}},
+  {"frames":1,"p1":{"up":true,"right":true},"p2":{"left":true}},
+  {"frames":48,"p1":{},"p2":{"left":true}},
+  {"frames":30,"p1":{"left":true},"p2":{}},
+  {"frames":1,"p1":{"buttons":4},"p2":{"up":true}},
+  {"frames":100,"p1":{},"p2":{}},
+  {"frames":300,"p1":{"left":true},"p2":{"left":true}},
+  {"frames":1,"p1":{"buttons":1},"p2":{"left":true}},
+  {"frames":40,"p1":{},"p2":{"left":true}}
+]
