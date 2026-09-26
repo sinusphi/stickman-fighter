@@ -7,8 +7,8 @@ export type StageId = typeof STAGE_IDS[number];
 export const DEFAULT_STAGE: StageId = 'dojo';
 export const STAGES: Record<StageId, { label: string; caption: string }> = {
   dojo: { label: 'Dojo', caption: 'THE DOJO' },
-  rooftop: { label: 'Dach', caption: 'THE ROOFTOP' },
-  shrine: { label: 'Schrein', caption: 'THE SHRINE' },
+  rooftop: { label: 'Rooftop', caption: 'THE ROOFTOP' },
+  shrine: { label: 'Shrine', caption: 'THE SHRINE' },
 };
 export const isStageId = (value: unknown): value is StageId => STAGE_IDS.includes(value as StageId);
 

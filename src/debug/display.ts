@@ -1,6 +1,7 @@
 import { BUTTONS, buttonBit } from '../input/types';
 import type { Fighter } from '../simulation/types';
 import { MOVES } from '../data/schema';
+import { t } from '../platform/i18n';
 
 export function inputLines(f: Fighter): string {
   return [...f.input.display].reverse().map(entry=>{
@@ -12,5 +13,5 @@ export function stateLine(f: Fighter): string {
   const move=f.moveId?MOVES[f.moveId]:null;
   const phase=move?(f.moveFrame<move.startup?'STARTUP':f.moveFrame<move.startup+move.active?'ACTIVE':'RECOVERY'):'—';
   const advantage=typeof f.advantage==='number'?`${f.advantage>=0?'+':''}${f.advantage}f`:f.advantage;
-  return `P${f.id+1}  ${f.state} / ${phase}\nState ${f.stateFrame}f · Move ${move?`${f.moveFrame}/${move.duration-1}f`:'—'} · Stun ${f.remaining}f\n${f.moveId??'—'} · Vorteil ${advantage}\nRichtung ${f.input.current.direction} · HP ${f.hp} · ${f.input.motions.join(' ')}`;
+  return `P${f.id+1}  ${f.state} / ${phase}\nState ${f.stateFrame}f · Move ${move?`${f.moveFrame}/${move.duration-1}f`:'—'} · Stun ${f.remaining}f\n${f.moveId??'—'} · ${t('state.advantage')} ${advantage}\n${t('state.direction')} ${f.input.current.direction} · HP ${f.hp} · ${f.input.motions.join(' ')}`;
 }

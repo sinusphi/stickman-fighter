@@ -4,31 +4,33 @@ import { drawFigure, drawTrail } from '../render/figure';
 import { sampleDepths } from '../render/depth';
 import { facePoint } from '../render/facing';
 import type { Palette } from '../platform/theme';
+import { t } from '../platform/i18n';
 
+const tx=(key: Parameters<typeof t>[0])=>`data-i18n="${key}">${t(key)}`;
 export const previewMarkup = `
 <details id="animation-preview">
-  <summary>Animationsvorschau · 2D-Rotation</summary>
-  <p class="hint">Isolierte Testanimation ohne Kampf-Funktion. Weiche Spuren zeigen Schwungbahnen; violett-türkise Bögen und Pfeile zeigen die Drehrichtung.</p>
+  <summary ${tx('preview.summary')}</summary>
+  <p class="hint" ${tx('preview.help')}</p>
   <div class="preview-controls">
-    <label>Animation <select id="preview-animation">
-      <option value="DemoBodyCW">Ganzkörper ↻</option><option value="DemoBodyCCW">Ganzkörper ↺</option>
-      <option value="DemoLegsCW">Beine ab Hüfte ↻</option><option value="DemoLegsCCW">Beine ab Hüfte ↺</option>
+    <label><span ${tx('preview.animation')}</span> <select id="preview-animation">
+      <option value="DemoBodyCW" ${tx('preview.wholeCw')}</option><option value="DemoBodyCCW" ${tx('preview.wholeCcw')}</option>
+      <option value="DemoLegsCW" ${tx('preview.legsCw')}</option><option value="DemoLegsCCW" ${tx('preview.legsCcw')}</option>
       <option value="spin_mk">Spin Middle Kick · 4+MK</option><option value="spin_hk">Spin High Kick · 6+HK</option>
-      <option value="jumping_uppercut">Jumping Uppercut · 6+HP (rechts)</option><option value="tornado_mk">Tornado · 6+MK (rechts)</option><option value="forward_spin_hk">Spin · 4+HK (links)</option><option value="tornado_spin_combo">Tornado → Spin · 6+MK+HK</option>
-      ${['standing','crouching','airborne'].map(stance=>['lk','lmk','hk','rlk','mk','rhk'].map((kick,i)=>`<option value="${stance}_${kick}">${stance==='standing'?'Stand':stance==='crouching'?'Hocke':'Luft'} · ${i<3?'links':'rechts'} · ${['Low','Middle','High'][i%3]}</option>`).join('')).join('')}
-      ${['standing','crouching','airborne'].map(stance=>`<option value="${stance}_mp">${stance==='standing'?'Stand':stance==='crouching'?'Hocke':'Luft'} · Middlepunch links</option>`).join('')}
-      <option value="HitMiddlePunch">Treffer: Middlepunch · Einknicken</option>
-      <option value="Walk">Vorwärtslaufen</option><option value="WalkBackward">Rückwärtslaufen</option><option value="CrouchWalk">Hocke vorwärts</option>
-      <option value="HitLOW">Treffer: Low</option><option value="HitMID">Treffer: Mid</option><option value="HitHIGH">Treffer: High</option>
-      <option value="Landing">Landung</option><option value="KO">K.-o. · Fallen und Liegen</option>
+      <option value="jumping_uppercut" data-preview-label="Jumping Uppercut · 6+HP" data-side="right">Jumping Uppercut · 6+HP (${t('preview.right')})</option><option value="tornado_mk" data-preview-label="Tornado · 6+MK" data-side="right">Tornado · 6+MK (${t('preview.right')})</option><option value="forward_spin_hk" data-preview-label="Spin · 4+HK" data-side="left">Spin · 4+HK (${t('preview.left')})</option><option value="tornado_spin_combo">Tornado → Spin · 6+MK+HK</option>
+      ${['standing','crouching','airborne'].map(stance=>['lk','lmk','hk','rlk','mk','rhk'].map((kick,i)=>`<option value="${stance}_${kick}" data-stance="${stance}" data-side="${i<3?'left':'right'}" data-level="${['Low','Middle','High'][i%3]}">${t(`preview.${stance}` as Parameters<typeof t>[0])} · ${t(`preview.${i<3?'left':'right'}`)} · ${['Low','Middle','High'][i%3]}</option>`).join('')).join('')}
+      ${['standing','crouching','airborne'].map(stance=>`<option value="${stance}_mp" data-stance="${stance}" data-side="left" data-punch="true">${t(`preview.${stance}` as Parameters<typeof t>[0])} · Middle punch ${t('preview.left')}</option>`).join('')}
+      <option value="HitMiddlePunch" ${tx('preview.hitPunch')}</option>
+      <option value="Walk" ${tx('preview.walk')}</option><option value="WalkBackward" ${tx('preview.walkBack')}</option><option value="CrouchWalk" ${tx('preview.crouchWalk')}</option>
+      <option value="HitLOW" ${tx('preview.hitLow')}</option><option value="HitMID" ${tx('preview.hitMid')}</option><option value="HitHIGH" ${tx('preview.hitHigh')}</option>
+      <option value="Landing" ${tx('preview.landing')}</option><option value="KO" ${tx('preview.ko')}</option>
     </select></label>
-    <label>Tempo <select id="preview-speed"><option value="0.25">¼×</option><option value="0.5" selected>½×</option><option value="1">1×</option></select></label>
-    <button id="preview-play" type="button">Abspielen</button><button id="preview-step" type="button">Frame +</button>
-    <button id="preview-reset" type="button">Anfang</button><button id="preview-mirror" type="button" aria-pressed="false">Spiegeln</button>
+    <label><span ${tx('preview.speed')}</span> <select id="preview-speed"><option value="0.25">¼×</option><option value="0.5" selected>½×</option><option value="1">1×</option></select></label>
+    <button id="preview-play" type="button">${t('preview.play')}</button><button id="preview-step" type="button" ${tx('preview.step')}</button>
+    <button id="preview-reset" type="button" ${tx('preview.reset')}</button><button id="preview-mirror" type="button" aria-pressed="false" ${tx('preview.mirror')}</button>
   </div>
-  <label class="preview-timeline">Zeitpunkt <input id="preview-time" type="range" min="0" max="105" step="0.25" value="0"></label>
+  <label class="preview-timeline"><span ${tx('preview.time')}</span> <input id="preview-time" type="range" min="0" max="105" step="0.25" value="0"></label>
   <output id="preview-status" for="preview-time preview-animation preview-mirror"></output>
-  <canvas id="preview-canvas" width="960" height="360" aria-label="Vorschau der gewählten 2D-Animation"></canvas>
+  <canvas id="preview-canvas" width="960" height="360" data-i18n-aria-label="preview.canvas" aria-label="${t('preview.canvas')}"></canvas>
 </details>`;
 
 export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palette: Palette)=>void {
@@ -38,7 +40,9 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
   const play=el<HTMLButtonElement>('preview-play'),mirror=el<HTMLButtonElement>('preview-mirror');
   const canvas=el<HTMLCanvasElement>('preview-canvas'),status=el<HTMLOutputElement>('preview-status');
   let time=0,playing=false,facing=1,lastTime:number|null=null;
-  const sync=()=>{range.value=String(time);play.textContent=playing?'Anhalten':'Abspielen';};
+  const sync=()=>{range.value=String(time);play.textContent=t(playing?'preview.stop':'preview.play');
+    select.querySelectorAll<HTMLOptionElement>('[data-stance]').forEach(option=>{option.textContent=`${t(`preview.${option.dataset.stance}` as Parameters<typeof t>[0])} · ${option.dataset.punch?'Middle punch ':''}${t(`preview.${option.dataset.side}` as Parameters<typeof t>[0])}${option.dataset.level?` · ${option.dataset.level}`:''}`;});
+    select.querySelectorAll<HTMLOptionElement>('[data-preview-label]').forEach(option=>{option.textContent=`${option.dataset.previewLabel} (${t(`preview.${option.dataset.side}` as Parameters<typeof t>[0])})`;});};
   panel.addEventListener('toggle',()=>{playing=false;lastTime=null;if(panel.open)pauseGame();sync();});
   select.onchange=()=>{time=0;playing=false;range.max=String(animations[select.value].durationFrames-1);sync();};
   range.oninput=()=>{time=Number(range.value);playing=false;sync();};
@@ -59,7 +63,7 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
     }
     lastTime=now;sync();
     const id=select.value,pose=samplePose(id,time),angle=(sampleAngles(id,time).rotations?.[0]?.angle??0)*facing;
-    const direction=angle===0?'Startpose':angle>0?'↻ im Uhrzeigersinn':'↺ gegen den Uhrzeigersinn';
+    const direction=t(angle===0?'preview.startPose':angle>0?'preview.clockwise':'preview.counterclockwise');
     status.textContent=`Frame ${time.toFixed(2)} / ${range.max}${id.startsWith('Demo')?` · ${angle.toFixed(1)}° · ${direction}`:''}`;
     canvas.dataset.frame=time.toFixed(2);canvas.dataset.animation=id;
     const ctx=canvas.getContext('2d')!;
@@ -80,6 +84,6 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
       ctx.strokeStyle=palette.muted;ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-5,0);ctx.lineTo(5,0);ctx.moveTo(0,-5);ctx.lineTo(0,5);ctx.stroke();
     }
     ctx.restore();
-    ctx.fillStyle=palette.muted;ctx.font='14px monospace';ctx.fillText(id.startsWith('Demo')?'Kreuz: Hüftpivot · Akzent: linker Fuß':'Längenkonstante Gelenkbewegung',20,28);
+    ctx.fillStyle=palette.muted;ctx.font='14px monospace';ctx.fillText(t(id.startsWith('Demo')?'preview.demoLegend':'preview.motionLegend'),20,28);
   };
 }

@@ -18,14 +18,17 @@ import { createReplay, parseReplay, MAX_REPLAY_FRAMES, type Replay } from './deb
 import type { DummyMode } from './debug/training';
 import rules from './data/rules.json';
 import { CpuPlayer } from './ai';
-import { PROFILES, loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles';
+import { loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles';
 import { neutralInput } from './input/types';
+import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
 
 async function main(): Promise<void> {
   document.querySelector<HTMLDivElement>('#app')!.innerHTML = markup;
   const element = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
   const button = (id: string): HTMLButtonElement => element<HTMLButtonElement>(id);
   const canvas = element<HTMLCanvasElement>('game');
+  setupLanguageSwitch(button('language'));
+  translateDocument();
   let palette: Palette;
   setupTheme(button('theme'),colors=>{palette=colors;});
   let stage: StageId;
@@ -55,7 +58,8 @@ async function main(): Promise<void> {
   let lastReplay: Replay | null = null;
   let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
   const message = (text: string) => { element('notice').textContent = text; };
-  const dummyNames: Record<DummyMode,string> = { stand:'Stehen', crouch:'Hocken', block:'Immer blocken', cpu:'CPU' };
+  const dummyName = (mode: DummyMode) => t(`dummy.${mode}`);
+  const difficultyName = (difficulty: Difficulty) => t(`difficulty.${difficulty}`);
   let layout = new Map<string,string>();
   function refreshBindings(): void {
     const names:Record<string,string>={ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Space:'␣',ShiftLeft:'⇧',ShiftRight:'⇧',ControlLeft:'Ctrl',ControlRight:'Ctrl'};
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
   function stopPlayback(): void {
     if (!playback) return;
     game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; previous = snapshot(game); playback = null;
-    devices.clear(); setPaused(true); message('Zurück im lokalen Spiel. Mit P fortsetzen.');
+    devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
     previous = snapshot(game);
@@ -82,7 +86,7 @@ async function main(): Promise<void> {
       step(game,entry.inputs,entry.events);
       if(entry.events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
       feedback.update(game,previous);playback.index++;
-      if (playback.index === playback.replay.frames.length) { setPaused(true); message('Replay beendet. F7 kehrt zum lokalen Spiel zurück; P spielt es erneut ab.'); }
+      if (playback.index === playback.replay.frames.length) { setPaused(true); message(t('message.replayEnded')); }
     } else {
       const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
       const restarting = events.some(e=>e.type==='reset'||e.type==='training');
@@ -95,7 +99,7 @@ async function main(): Promise<void> {
       else if ((cpuSettings.enabled || cpuSettings.demo) && game.training.enabled) inputs[1] = neutralInput();
       if (recording) {
         recording.frames.push(structuredClone({ inputs,events }));
-        if (recording.frames.length >= MAX_REPLAY_FRAMES) { lastReplay=recording; recording=null; message('Aufnahme nach 30 Minuten beendet. Replay kann gespeichert werden.'); }
+        if (recording.frames.length >= MAX_REPLAY_FRAMES) { lastReplay=recording; recording=null; message(t('message.recordingLimit')); }
       }
       step(game,inputs,events);
       if(events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
@@ -137,16 +141,16 @@ async function main(): Promise<void> {
   }
   function toggleRecord(): void {
     if (playback) stopPlayback();
-    if (recording) { lastReplay=recording; recording=null; message(`Aufnahme gespeichert: ${lastReplay.frames.length} Frames. Mit F7 abspielen oder als Datei speichern.`); }
-    else { recording=createReplay(game); message('Aufnahme läuft. F6 beendet sie.'); }
+    if (recording) { lastReplay=recording; recording=null; message(t('message.recordingSaved',{frames:lastReplay.frames.length})); }
+    else { recording=createReplay(game); message(t('message.recordingStarted')); }
   }
   function toggleReplay(): void {
     if (playback) { stopPlayback(); return; }
     if (recording) { lastReplay=recording; recording=null; }
-    if (!lastReplay?.frames.length) { message('Zuerst eine Aufnahme erstellen oder eine Replay-Datei laden.'); return; }
+    if (!lastReplay?.frames.length) { message(t('message.replayMissing')); return; }
     playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnLevels:[...feedback.levels]};
     game=snapshot(playback.replay.initial); feedback.reset(game);previous=snapshot(game); pendingEvents=[]; devices.clear(); setPaused(false);
-    message('Replay läuft. F7 kehrt zum lokalen Spiel zurück.');
+    message(t('message.replayRunning'));
   }
   function singleStep(): void { if(loop.paused) { runFrame(); previous=snapshot(game); } }
   const actions: Record<string,()=>void> = {
@@ -162,11 +166,11 @@ async function main(): Promise<void> {
     const input=event.target as HTMLInputElement;
     try {
       const file=input.files?.[0]; if(!file)return;
-      if(file.size>64*1024*1024)throw Error('Replay-Datei darf höchstens 64 MB groß sein.');
+      if(file.size>64*1024*1024)throw Error(t('message.replayTooLarge'));
       const imported=parseReplay(JSON.parse(await file.text()));
       if(playback)stopPlayback();
       if(recording){recording=null;}
-      lastReplay=imported;message(`Replay geladen: ${imported.frames.length} Frames. F7 startet die Wiedergabe.`);
+      lastReplay=imported;message(t('message.replayLoaded',{frames:imported.frames.length}));
     } catch(error) { message(String(error)); }
     finally { input.value='';updateUI(); }
   };
@@ -180,9 +184,9 @@ async function main(): Promise<void> {
     if(devices.config.players.some(p=>Object.values(p.keys).includes(event.code)))return;
     const action=hotkeys[event.code];if(action){event.preventDefault();actions[action]();updateUI();}
   });
-  window.addEventListener('blur',()=>{devices.clear();setPaused(true);message('Spiel pausiert, weil das Fenster den Fokus verloren hat. Mit P fortsetzen.');});
+  window.addEventListener('blur',()=>{devices.clear();setPaused(true);message(t('message.focusLost'));});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){devices.clear();setPaused(true);}});
-  window.addEventListener('gamepaddisconnected',()=>{devices.clear();setPaused(true);message('Controller getrennt. Verbindung prüfen und mit P fortsetzen.');});
+  window.addEventListener('gamepaddisconnected',()=>{devices.clear();setPaused(true);message(t('message.controllerLost'));});
 
   function updateUI(): void {
     const trainingCpu=game.training.enabled && game.training.dummy==='cpu';
@@ -195,28 +199,28 @@ async function main(): Promise<void> {
     cpuLevel.disabled=!!playback || (game.training.enabled && !trainingCpu);
     button('cpu').setAttribute('aria-pressed',String(cpuActive || trainingCpu));
     button('demo').setAttribute('aria-pressed',String(demoActive));
-    button('cpu').textContent=trainingCpu?'CPU: Trainingsdummy':game.training.enabled?'CPU: Training hat Vorrang':playback?'CPU: Replay hat Vorrang':`CPU: ${cpuActive?'An':'Aus'} · F8`;
-    button('demo').textContent=game.training.enabled?'Demo: Training hat Vorrang':playback?'Demo: Replay hat Vorrang':`Demo: ${demoActive?'An':'Aus'} · F9`;
+    button('cpu').textContent=trainingCpu?t('cpu.trainingDummy'):game.training.enabled?t('cpu.trainingPriority'):playback?t('cpu.replayPriority'):`CPU: ${t(cpuActive?'common.on':'common.off')} · F8`;
+    button('demo').textContent=game.training.enabled?t('demo.trainingPriority'):playback?t('demo.replayPriority'):`Demo: ${t(demoActive?'common.on':'common.off')} · F9`;
     element('p1-label').textContent=demoActive?'CPU 01':'PLAYER 01';
     element('p2-label').textContent=demoActive?'CPU 02':cpuPresent?'CPU':'PLAYER 02';
-    const demoLevels=`${PROFILES[cpuSettings.playerOneDifficulty].label.toUpperCase()} VS ${PROFILES[cpuSettings.difficulty].label.toUpperCase()}`;
-    element('match-status').textContent=`${playback?'REPLAY':trainingCpu?'TRAINING · CPU · '+PROFILES[cpuSettings.difficulty].label.toUpperCase():game.training.enabled?'TRAINING':demoActive?'DEMO · '+demoLevels:cpuActive?'VS CPU · '+PROFILES[cpuSettings.difficulty].label.toUpperCase():'LOCAL VERSUS'} · ${rules.hz} HZ`;
+    const demoLevels=`${difficultyName(cpuSettings.playerOneDifficulty).toUpperCase()} VS ${difficultyName(cpuSettings.difficulty).toUpperCase()}`;
+    element('match-status').textContent=`${playback?'REPLAY':trainingCpu?'TRAINING · CPU · '+difficultyName(cpuSettings.difficulty).toUpperCase():game.training.enabled?'TRAINING':demoActive?'DEMO · '+demoLevels:cpuActive?'VS CPU · '+difficultyName(cpuSettings.difficulty).toUpperCase():'LOCAL VERSUS'} · ${rules.hz} HZ`;
     element('cpu-debug').hidden=!cpuPresent;
     element('cpu-debug').textContent=demoActive
       ? cpus.map((cpu,i)=>`CPU ${i+1}: ${cpu.debug.reason}${cpu.debug.kind==='attack'?' '+cpu.debug.moveId:''} (${cpu.debug.score.toFixed(2)})`).join('\n')
       : cpuPresent?`CPU 2: ${cpus[1].debug.reason}${cpus[1].debug.kind==='attack'?' '+cpus[1].debug.moveId:''} (${cpus[1].debug.score.toFixed(2)})`:'';
-    button('pause').textContent=loop.paused?'Weiter · P':'Pause · P';
+    button('pause').textContent=t(loop.paused?'button.continue':'button.pause');
     button('step').disabled=!loop.paused;
     button('boxes').setAttribute('aria-pressed',String(showBoxes));
     button('inputs').setAttribute('aria-pressed',String(showInputs));
     button('states').setAttribute('aria-pressed',String(showStates));
     button('training').setAttribute('aria-pressed',String(game.training.enabled));
     button('dummy').disabled=!game.training.enabled;
-    button('dummy').textContent=`Dummy: ${dummyNames[game.training.dummy]} · F5`;
-    button('record').textContent=recording?'■ Aufnahme stoppen · F6':'● Aufnahme · F6';
+    button('dummy').textContent=`Dummy: ${dummyName(game.training.dummy)} · F5`;
+    button('record').textContent=t(recording?'button.stopRecord':'button.record');
     button('record').setAttribute('aria-pressed',String(!!recording));
     button('play').disabled=!playback&&!lastReplay?.frames.length&&!recording?.frames.length;
-    button('play').textContent=playback?'Replay verlassen · F7':'Replay · F7';
+    button('play').textContent=t(playback?'button.leaveReplay':'button.replay');
     button('export-replay').disabled=!(recording??lastReplay)?.frames.length;
     element('debug').hidden=!showStates; element('input-history').hidden=!showInputs;
     for(const f of game.fighters) {
@@ -229,14 +233,15 @@ async function main(): Promise<void> {
       element(`hp-${f.id}`).textContent=`${f.hp} / ${rules.maxHealth}`;
       const bar=element(`health-${f.id}`);bar.style.width=`${f.hp/rules.maxHealth*100}%`;bar.parentElement!.setAttribute('aria-valuenow',String(f.hp));
       element(`wins-${f.id}`).innerHTML=Array.from({length:rules.winsRequired},(_,i)=>`<span class="${game.round.wins[f.id]>i?'won':''}"></span>`).join('');
-      element(`state-${f.id}`).textContent=`${stateLine(f)}\nInputframe ${game.frame} · Kampfframe ${game.combatFrame} · Hitstop ${game.hitstop}f`;
+      element(`state-${f.id}`).textContent=`${stateLine(f)}\n${t('state.inputFrame')} ${game.frame} · ${t('state.combatFrame')} ${game.combatFrame} · Hitstop ${game.hitstop}f`;
       if(showInputs)element(`input-${f.id}`).textContent=inputLines(f);
     }
     element('timer').textContent=game.training.enabled?'∞':String(Math.ceil(game.round.timer/rules.hz)).padStart(2,'0');
     element('round-label').textContent=game.training.enabled?'TRAINING':`ROUND ${String(game.round.number).padStart(2,'0')}`;
-    element('arena-mode').textContent=playback?`REPLAY / ${playback.index} : ${playback.replay.frames.length}`:recording?`REC / ${recording.frames.length} FRAMES`:trainingCpu?`TRAINING / CPU · ${PROFILES[cpuSettings.difficulty].label.toUpperCase()}`:game.training.enabled?`TRAINING / ${dummyNames[game.training.dummy].toUpperCase()}`:demoActive?`${STAGES[stage].caption} / CPU-DEMO · ${demoLevels}`:cpuActive?`${STAGES[stage].caption} / VS CPU · ${PROFILES[cpuSettings.difficulty].label.toUpperCase()}`:`${STAGES[stage].caption} / LOCAL 1V1`;
+    element('arena-mode').textContent=playback?`REPLAY / ${playback.index} : ${playback.replay.frames.length}`:recording?`REC / ${recording.frames.length} FRAMES`:trainingCpu?`TRAINING / CPU · ${difficultyName(cpuSettings.difficulty).toUpperCase()}`:game.training.enabled?`TRAINING / ${dummyName(game.training.dummy).toUpperCase()}`:demoActive?`${STAGES[stage].caption} / CPU-DEMO · ${demoLevels}`:cpuActive?`${STAGES[stage].caption} / VS CPU · ${difficultyName(cpuSettings.difficulty).toUpperCase()}`:`${STAGES[stage].caption} / LOCAL 1V1`;
     canvas.dataset.frame=String(game.frame);canvas.dataset.ready='true';
   }
+  onLanguageChange(()=>{translateDocument();updateUI();});
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
     render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage);
@@ -246,4 +251,4 @@ async function main(): Promise<void> {
   updateUI();requestAnimationFrame(frame);
 }
 
-void main().catch(error=>{document.querySelector('#app')!.textContent=`Spiel konnte nicht starten: ${String(error)}`;});
+void main().catch(error=>{document.querySelector('#app')!.textContent=t('message.startFailed',{error:String(error)});});

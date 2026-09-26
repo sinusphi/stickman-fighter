@@ -1,9 +1,10 @@
-import { DEFAULT_STAGE, STAGE_IDS, STAGES, isStageId, type StageId } from '../render/stages';
+import { DEFAULT_STAGE, STAGE_IDS, isStageId, type StageId } from '../render/stages';
+import { t } from './i18n';
 
 export const STAGE_STORAGE_KEY = 'stickman.stage';
 
 /** Segmented stage switch in the arena header; presentation state like the theme. */
-export const stageSwitchMarkup = `<div class="stage-switch" role="group" aria-label="Arena-Hintergrund"><span class="eyebrow">Arena</span>${STAGE_IDS.map(id=>`<button type="button" data-stage="${id}" aria-pressed="false">${STAGES[id].label}</button>`).join('')}</div>`;
+export const stageSwitchMarkup = `<div class="stage-switch" role="group" data-i18n-aria-label="stage.group" aria-label="${t('stage.group')}"><span class="eyebrow" data-i18n="stage.label">${t('stage.label')}</span>${STAGE_IDS.map(id=>`<button type="button" data-stage="${id}" data-i18n="stage.${id}" aria-pressed="false">${t(`stage.${id}`)}</button>`).join('')}</div>`;
 
 export function loadStage(): StageId {
   try { const stored=localStorage.getItem(STAGE_STORAGE_KEY);if(isStageId(stored))return stored; } catch { /* Storage denied: session default. */ }

@@ -72,7 +72,9 @@ summary { cursor:pointer;font-weight:600; }
 @media(max-width:700px) { .hud{top:12px;left:12px;right:12px;gap:8px;grid-template-columns:1fr 48px 1fr}.health-label{font-size:7px;margin-bottom:5px}.health-label span{display:none}.health-track{height:7px}#timer{font-size:27px}#round-label{font-size:6px}.round-wins{margin-top:5px} }
 
 .header-actions { display:flex;align-items:center;gap:20px; }
-#theme { width:40px;height:40px;display:grid;place-items:center;padding:0;font-size:24px;flex-shrink:0; }
+#theme,#language { width:40px;height:40px;display:grid;place-items:center;padding:0;flex-shrink:0; }
+#theme { font-size:24px; }
+#language { font:700 11px 'Courier New',monospace;letter-spacing:.8px; }
 select { background:var(--key); }
 .resource-hud { display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,8vw,110px);padding:0 28px 20px;margin-top:-52px;position:relative; }
 .resource-player { display:grid;gap:10px;min-width:0; }

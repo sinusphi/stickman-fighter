@@ -1,4 +1,5 @@
 export type Theme = 'light' | 'dark';
+import { onLanguageChange, t } from './i18n';
 export const PALETTE_KEYS = ['arena','text','muted','ground','p1','p2','revenge','special','hurt','push','hit','rigLight','rigOutline','eye','eyeGlow',
   'stageShadow','stageLight',
   'dojoCeiling','dojoPaper','dojoWood','dojoTrim','dojoFloor','dojoFloorAlt','dojoAccent','dojoLamp','dojoHaze',
@@ -29,14 +30,14 @@ export function readPalette(): Palette {
   return {...Object.fromEntries(PALETTE_KEYS.map(key=>[key,style.getPropertyValue(`--${key}`).trim()])),boxAlpha:Number(style.getPropertyValue('--box-alpha'))} as Palette;
 }
 export function setupTheme(button: HTMLButtonElement, onChange: (palette: Palette)=>void): void {
-  let theme:Theme='light';
-  try { if(localStorage.getItem('stickman.theme')==='dark')theme='dark'; } catch { /* Session-only theme when storage is denied. */ }
+  let theme:Theme='dark';
+  try { if(localStorage.getItem('stickman.theme')==='light')theme='light'; } catch { /* Session-only theme when storage is denied. */ }
   function apply(): void {
     document.documentElement.dataset.theme=theme;
     button.textContent=theme==='dark'?'☀':'☾';
     button.setAttribute('aria-pressed',String(theme==='dark'));
-    button.setAttribute('aria-label',theme==='dark'?'Helles Theme aktivieren':'Dunkles Theme aktivieren');
-    button.title=theme==='dark'?'Helles Theme':'Dunkles Theme';
+    button.setAttribute('aria-label',t(theme==='dark'?'theme.light':'theme.dark'));
+    button.title=t(theme==='dark'?'theme.lightTitle':'theme.darkTitle');
     const page=getComputedStyle(document.documentElement).getPropertyValue('--page').trim();
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content',page);
     onChange(readPalette());
@@ -45,5 +46,6 @@ export function setupTheme(button: HTMLButtonElement, onChange: (palette: Palett
     theme=theme==='light'?'dark':'light';apply();
     try { localStorage.setItem('stickman.theme',theme); } catch { /* Keep the applied session preference. */ }
   });
+  onLanguageChange(apply);
   apply();
 }

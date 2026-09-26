@@ -1,7 +1,7 @@
 npm notice run stickman-fighter@1.0.0 npx
 npm notice run 'vitest' run tests/unit/skeleton.test.ts tests/unit/capture-legacy.test.ts
 
- RUN  v5.0.0 /cachy_data/coding/projects/CODEX/stickman-fighter
+ RUN  v5.0.0 /cachy_data/coding/projects/CODEX/stickman_fighter
 
  ❯ tests/unit/skeleton.test.ts (3 tests | 3 failed) 5ms
    × standing_hp keeps every segment within 0.5% undefined 3ms
