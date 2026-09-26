@@ -9,7 +9,9 @@
 
 **English** · [Deutsch](README.de.md)
 
-A local two-player stick-figure fighting game built with TypeScript and Canvas 2D. It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU opponents, training tools, replays, and multiple arenas.
+A local two-player stick-figure fighting game built with TypeScript and Canvas 2D. 
+It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU opponents, training tools, replays, and multiple arenas.
+
 
 ## Features
 
@@ -21,10 +23,12 @@ A local two-player stick-figure fighting game built with TypeScript and Canvas 2
 - Configurable keyboard and gamepad controls
 - English and German interface, light and dark themes, and three arenas
 
+
 ## Requirements
 
 - Node.js 22.12+ (22.x), 24.x, or 26+
 - npm
+
 
 ## Getting started
 
@@ -34,6 +38,7 @@ npm run dev
 ```
 
 Open the address shown in the terminal, usually <http://127.0.0.1:5173>.
+
 
 ## Default controls
 
@@ -45,7 +50,9 @@ Open the address shown in the terminal, usually <http://127.0.0.1:5173>.
 | Right low / middle / high kick | V / B / N | Numpad 1 / 2 / 3 | unassigned / B / unassigned |
 | Pause | P | P | — |
 
-Directions are relative to the opponent: **6** forward, **4** back, **2** crouch, and **7/8/9** jump. Use **Backspace** to restart a match. Controls can be reassigned in the game.
+Directions are relative to the opponent: **6** forward, **4** back, **2** crouch, and **7/8/9** jump. 
+Use **Backspace** to restart a match. Controls can be reassigned in the game.
+
 
 ## Scripts
 
@@ -57,6 +64,7 @@ Directions are relative to the opponent: **6** forward, **4** back, **2** crouch
 | `npm test` | Run tests in watch mode |
 | `npm run check` | Run the complete validation suite |
 
+
 ## Project structure
 
 - `src/simulation/` — deterministic combat and match logic
@@ -64,3 +72,20 @@ Directions are relative to the opponent: **6** forward, **4** back, **2** crouch
 - `src/data/` — moves, poses, rules, and configuration
 - `tests/` — unit and integration tests
 - `scripts/` — data generators and browser smoke tests
+
+
+## License
+
+This project is licensed under the **MIT License**. 
+See [LICENSE](https://github.com/sinusphi/stickman-fighter/blob/main/LICENSE) for details.
+
+
+## Contributions
+
+Contributions are welcome.
+
+* [Pull requests](https://github.com/sinusphi/stickman-fighter/pulls)
+
+* [Bug reports](https://github.com/sinusphi/stickman-fighter/issues)
+
+* [Feature requests](https://github.com/sinusphi/stickman-fighter/issues)

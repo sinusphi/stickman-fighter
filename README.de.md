@@ -11,6 +11,7 @@
 
 Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit TypeScript und Canvas 2D. Es verbindet deterministische Kämpfe mit 60 Hz mit Tastatur- und Gamepad-Steuerung, CPU-Gegnern, Trainingswerkzeugen, Replays und mehreren Arenen.
 
+
 ## Funktionen
 
 - Lokaler Versus-, CPU- und CPU-gegen-CPU-Modus
@@ -21,10 +22,12 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - Konfigurierbare Tastatur- und Gamepad-Steuerung
 - Deutsche und englische Oberfläche, helles und dunkles Theme sowie drei Arenen
 
+
 ## Voraussetzungen
 
 - Node.js 22.12+ (22.x), 24.x oder 26+
 - npm
+
 
 ## Schnellstart
 
@@ -34,6 +37,7 @@ npm run dev
 ```
 
 Anschließend die im Terminal angezeigte Adresse öffnen, normalerweise <http://127.0.0.1:5173>.
+
 
 ## Standardsteuerung
 
@@ -47,6 +51,7 @@ Anschließend die im Terminal angezeigte Adresse öffnen, normalerweise <http://
 
 Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hocken und **7/8/9** springen. Mit **Backspace** wird ein Match neu gestartet. Die Belegung kann im Spiel geändert werden.
 
+
 ## Befehle
 
 | Befehl | Zweck |
@@ -57,6 +62,7 @@ Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hock
 | `npm test` | Tests im Beobachtungsmodus ausführen |
 | `npm run check` | Vollständige Prüfung ausführen |
 
+
 ## Projektstruktur
 
 - `src/simulation/` — deterministische Kampf- und Matchlogik
@@ -64,3 +70,20 @@ Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hock
 - `src/data/` — Moves, Posen, Regeln und Konfiguration
 - `tests/` — Unit- und Integrationstests
 - `scripts/` — Datengeneratoren und Browser-Smoke-Tests
+
+
+## Lizenz
+
+Dieses Projekt ist lizensiert unter der **MIT License**. 
+Siehe [LICENSE](https://github.com/sinusphi/stickman-fighter/blob/main/LICENSE) für weitere Details.
+
+
+## Contributions
+
+Beiträge zum Projekt sind stets willkommen, ebenso Bug Reports und Pull Requests. 
+
+* [Pull requests](https://github.com/sinusphi/stickman-fighter/pulls)
+
+* [Bug reports](https://github.com/sinusphi/stickman-fighter/issues)
+
+* [Feature requests](https://github.com/sinusphi/stickman-fighter/issues)
