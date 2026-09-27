@@ -11,6 +11,8 @@
 
 **English** · [Deutsch](README.de.md)
 
+[▶ Play now](https://stickman-fighter.sinusphi.com/)
+
 A local two-player stick-figure fighting game built with TypeScript and Canvas 2D. 
 It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU opponents, training tools, replays, and multiple arenas.
 

@@ -11,6 +11,8 @@
 
 [English](README.md) · **Deutsch**
 
+[▶ Spiel starten](https://stickman-fighter.sinusphi.com/)
+
 Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit TypeScript und Canvas 2D. Es verbindet deterministische Kämpfe mit 60 Hz mit Tastatur- und Gamepad-Steuerung, CPU-Gegnern, Trainingswerkzeugen, Replays und mehreren Arenen.
 
 
