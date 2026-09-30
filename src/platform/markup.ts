@@ -17,5 +17,5 @@ export const markup = `
   <details id="settings-details"><summary ${text('settings.summary')}</summary><div id="settings"></div></details>
   <div class="debug" id="debug" hidden><pre id="state-0"></pre><pre id="state-1"></pre><pre id="cpu-debug" hidden></pre></div><div class="debug input-history" id="input-history" hidden><div><span class="eyebrow">P1 / <span ${text('input.latest')}</span></span><pre id="input-0"></pre></div><div><span class="eyebrow">P2 / <span ${text('input.latest')}</span></span><pre id="input-1"></pre></div></div>
   <div class="notice" id="notice" role="status"></div>
-  <footer class="mono"><span ${text('footer.tagline')}</span><span>60 HZ SIMULATION / V1.4 · UPDATE 13</span></footer>
+  <footer class="mono"><span ${text('footer.tagline')}</span><span>60 HZ SIMULATION / V1.6 · UPDATE 15</span></footer>
 </main>`;

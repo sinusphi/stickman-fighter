@@ -1,12 +1,13 @@
 import bodies from '../data/bodies.json';
 import rules from '../data/rules.json';
-import { MOVES, type CompiledMove, type FrameBoxes, type HitLevel, type HitGroup } from '../data/schema';
+import { MOVES, groupValue, type CompiledMove, type FrameBoxes, type HitLevel, type HitGroup } from '../data/schema';
 import { buttonBit } from '../input/types';
 import { consumeCommand } from '../input/commands';
 import { readHistory } from '../input/history';
 import { isActionable, isGroundActionable, recoverGround, transition } from './movement';
 import { clampToStage, overlaps, resolvePushboxes, stance, worldBox } from './collision';
 import type { Fighter, GameState } from './types';
+import { hasPoseContact, usesPoseContact } from './pose-contact';
 
 export function localBoxes(f: Fighter): FrameBoxes {
   if (f.state === 'Attack' && f.moveId) return MOVES[f.moveId].frames[f.moveFrame];
@@ -82,6 +83,9 @@ export function collectContacts(game: GameState): Contact[] {
       const max = move.multiHit ? hitGroup.maxHitsPerTarget : 1;
       if (count >= max || contacts.some(c=>c.attacker===attacker && c.group===group)) continue;
       if (!localBoxes(defender).hurtboxes.some(hurtbox => overlaps(worldBox(hitbox,attacker,attacker.attackFacing), worldBox(hurtbox,defender,defender.state==='Attack'?defender.attackFacing:defender.facing)))) continue;
+      if (usesPoseContact(move.id)) {
+        if (!hasPoseContact(attacker,defender,hitbox.hitGroup,game.lastContact?.defender===defender.id?game.lastContact.hitLevel:undefined)) continue;
+      }
       contacts.push({ attacker, defender, move, hitGroup, group, blocked: canBlock(defender,hitGroup.hitLevel??move.hitLevel), side: defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1 });
     }
   }
@@ -90,11 +94,15 @@ export function collectContacts(game: GameState): Contact[] {
 
 export function resolveCombat(game: GameState): void {
   const contacts = collectContacts(game);
+  // Capture the actual contact before pushback/reactions separate the figures.
+  // A replay carries this small pose snapshot through hitstop as well.
+  const poses=contacts.some(c=>usesPoseContact(c.move.id))?game.fighters.map(({id,x,y,vx,facing,attackFacing,state,stateFrame,moveId,moveFrame,crouching,hitReaction})=>({x,y,vx,facing,attackFacing,state,stateFrame,moveId,moveFrame,crouching,hitReaction,hitLevel:game.lastContact?.defender===id?game.lastContact.hitLevel:undefined})):undefined;
   const displacement = [0, 0];
   for (const c of contacts) {
     const { attacker, defender, move, hitGroup, blocked, side } = c;
     attacker.hitTargets.push(c.group);
-    const push = blocked ? move.pushbackBlock : move.pushbackHit;
+    // A secondary group (the knee before a kick) may carry its own reactions.
+    const push = groupValue(move, hitGroup, blocked ? 'pushbackBlock' : 'pushbackHit');
     const projected = { ...defender, x: defender.x + side * push };
     clampToStage(projected);
     const moved = Math.abs(projected.x - defender.x);
@@ -105,7 +113,7 @@ export function resolveCombat(game: GameState): void {
     defender.vx = 0;
     if (blocked) {
       defender.crouching = defender.input.current.direction === 1;
-      transition(defender,'Blockstun',move.blockstun);
+      transition(defender,'Blockstun',groupValue(move,hitGroup,'blockstun'));
     } else {
       attacker.comboCount = wasStunned ? attacker.comboCount + 1 : 1;
       const baseDamage = hitGroup.damage ?? move.damage;
@@ -116,15 +124,15 @@ export function resolveCombat(game: GameState): void {
       if (!game.training.enabled && defender.hp === 0) { transition(defender,'KO'); defender.input.pending = null; }
       else if (defender.y < 0) { transition(defender,'Knockdown',rules.knockdownFrames); defender.vy = rules.airHitVelocity; defender.airAttackUsed = true; }
       else {
-        transition(defender,'Hitstun',move.hitstun);
+        transition(defender,'Hitstun',groupValue(move,hitGroup,'hitstun'));
         if(move.groundHitReaction==='middlePunch') {
           defender.hitReaction='middlePunch';
           defender.vx=side*(move.slideSpeed??0);
         }
       }
     }
-    game.hitstop = Math.max(game.hitstop, move.hitstop);
-    game.lastContact = { attacker: attacker.id, defender: defender.id, blocked, frame: game.combatFrame, ...(hitGroup.hitLevel?{hitLevel:hitGroup.hitLevel}:{}) };
+    game.hitstop = Math.max(game.hitstop, groupValue(move,hitGroup,'hitstop'));
+    game.lastContact = { attacker: attacker.id, defender: defender.id, blocked, frame: game.combatFrame, hitLevel:hitGroup.hitLevel??move.hitLevel, ...(poses?{poses}:{}) };
     for (const measurement of game.measurements) if (!measurement.complete) {
       game.fighters[measurement.attacker].advantage = 'n/a'; game.fighters[measurement.defender].advantage = 'n/a'; measurement.complete = true;
     }

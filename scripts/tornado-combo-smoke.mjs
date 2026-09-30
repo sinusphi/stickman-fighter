@@ -41,7 +41,11 @@ try {
  }
  await page.locator('#animation-preview summary').click();
  for(const id of ['tornado_mk','forward_spin_hk','tornado_spin_combo']) {
-  await page.locator('#preview-animation').selectOption(id);await page.locator('#preview-time').fill(id==='tornado_mk'?'28':id==='forward_spin_hk'?'24':'56');
+  const contact=await page.evaluate(async id=>{
+   const {MOVES}=await import('/src/data/schema.ts');
+   return id==='tornado_spin_combo'?MOVES[id].frames.findIndex(f=>f.hitboxes.some(b=>b.hitGroup==='spin')):MOVES[id].startup;
+  },id);
+  await page.locator('#preview-animation').selectOption(id);await page.locator('#preview-time').fill(String(contact));
   await expect(page.locator('#preview-canvas')).toHaveAttribute('data-animation',id);
   await page.locator('#animation-preview').screenshot({path:`${output}/${id}.png`});
  }
@@ -51,7 +55,8 @@ try {
   const {MOVES}=await import('/src/data/schema.ts');
   const palette=readPalette(),c=document.createElement('canvas');c.id='combo-sheet';c.width=1920;c.height=780;c.style.cssText='width:1920px;height:780px;max-width:none;aspect-ratio:auto';document.body.append(c);
   const ctx=c.getContext('2d');ctx.fillStyle=palette.arena;ctx.fillRect(0,0,c.width,c.height);
-  [['tornado_mk',[0,6,12,18,24,28,32,38,46,54]],['forward_spin_hk',[0,6,12,18,24,29,36,40,43,46]],['tornado_spin_combo',[0,12,18,24,28,38,44,50,56,61,68,78]]].forEach(([id,frames],row)=>{
+  ['tornado_mk','forward_spin_hk','tornado_spin_combo'].forEach((id,row)=>{
+   const move=MOVES[id],frames=Array.from(new Set([0,...Array.from({length:8},(_,i)=>Math.round((i+1)*(move.duration-1)/9)),move.startup,move.startup+move.active-1,move.duration-1])).sort((a,b)=>a-b);
    frames.forEach((frame,col)=>{
     ctx.save();ctx.translate(col*160+75,row*260+225);ctx.scale(1.5,1.5);
     ctx.strokeStyle=palette.ground;ctx.beginPath();ctx.moveTo(-48,0);ctx.lineTo(50,0);ctx.stroke();

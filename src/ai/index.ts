@@ -40,7 +40,7 @@ export class CpuPlayer {
       this.wasAttacking=false;
       this.pauseUntil=v.frame+this.profile.attackPauseFrames;
       this.controller.clear();
-      this.event='';
+      this.event='';this.lastDecision=-Infinity;
     }
     if((game.training.enabled && game.training.dummy !== 'cpu') || v.round.phase!=='fighting' || v.hitstop>0 || ['Hitstun','Blockstun','Knockdown','KO','Landing'].includes(s.state)) {
       this.controller.clear();this.lastDecision=-Infinity;
@@ -55,8 +55,16 @@ export class CpuPlayer {
       return neutralInput();
     }
     if(v.frame<this.pauseUntil) {
-      this.debug={kind:'wait',score:0,reason:'Denkpause'};
-      return neutralInput();
+      // Thinking break after an own attack: never attack, but footwork (backing off,
+      // guarding) is allowed so the CPU does not stand frozen in front of the opponent.
+      if(!o || !this.brain.recover) {
+        this.debug={kind:'wait',score:0,reason:'Denkpause'};
+        return neutralInput();
+      }
+      if(v.frame-this.lastDecision>=this.profile.decisionFrames) {
+        this.debug=this.brain.recover(v);this.controller.set(this.debug,s);this.lastDecision=v.frame;
+      }
+      return this.controller.next(s);
     }
     const move=o?.moveId ? MOVE_INFO[o.moveId] : undefined;
     const event=o ? `${o.state}/${o.moveId}/${move && o.moveFrame>move.lastActive}/${v.lastContact?.frame}` : '';

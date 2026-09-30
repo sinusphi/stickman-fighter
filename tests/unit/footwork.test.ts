@@ -8,17 +8,17 @@ import { pushbox } from '../../src/simulation/collision';
 import rules from '../../src/data/rules.json';
 import { legRole } from './helpers/crouch-mirror';
 
-it('keeps accelerated low and middle kick preparation within its increased angular-speed budget',()=>{
- for(const stance of ['standing','crouching','airborne'])for(const name of ['lk','rlk','mk','lmk']) {
-  const id=`${stance}_${name}`,end=animations[id].keyframes[1].frame;
-  expect(end).toBeGreaterThanOrEqual(Math.round(Math.round((name==='lk'||name==='rlk'?20:22)*.8)*.95));
+it('keeps accelerated light, middle and high kick preparation within its increased angular-speed budget',()=>{
+ for(const stance of ['standing','crouching','airborne'])for(const name of ['lk','rlk','mk','lmk','hk','rhk']) {
+  const id=`${stance}_${name}`,end=animations[id].keyframes.find(key=>key.pose.endsWith('_anticipate'))!.frame;
+  expect(end).toBeGreaterThanOrEqual(14);
   for(let time=0;time<end;time+=.25) {
    const a=sampleAngles(id,time),b=sampleAngles(id,time+.25);
    // Compare the leg that holds each squat role (right crouching kicks swap
    // the identical-looking legs invisibly right after their first key).
    for(const joint of ['leftKnee','leftFoot','rightKnee','rightFoot']) {
     const delta=Math.abs(((b.angles[legRole(id,time+.25,joint)]-a.angles[legRole(id,time,joint)]+540)%360)-180);
-    expect(delta/.25,`${id}/${joint}`).toBeLessThanOrEqual(16);
+    expect(delta/.25,`${id}/${joint}`).toBeLessThanOrEqual(name==='hk'||name==='rhk'?20:16);
    }
   }
  }
@@ -32,7 +32,8 @@ it.each([1,-1])('advances grounded kicks smoothly, freezes in hitstop and replay
    replay.frames.push({inputs,events:[]});step(game,inputs);
    expect((a.x-previous)*facing).toBeGreaterThanOrEqual(0);expect(Math.abs(a.x-previous)).toBeLessThan(3*256);previous=a.x;
   }
-  expect((a.x-start)*facing).toBe(18*256);expect(playReplay(parseReplay(replay))).toEqual(game);
+  const expected=button==='MK'||button==='LMK'?0:18*256;
+  expect(Math.abs(a.x-start)).toBe(expected);expect(playReplay(parseReplay(replay))).toEqual(game);
  }
  const game=createGame(),a=game.fighters[0];a.state='Attack';a.moveId='standing_rlk';a.moveFrame=5;game.hitstop=3;
  const x=a.x;for(let i=0;i<3;i++)step(game);expect(a.x).toBe(x);

@@ -38,6 +38,7 @@ export interface Fighter {
   advantage: number | 'pending' | 'n/a';
 }
 
+export type ContactPose = Pick<Fighter,'x'|'y'|'vx'|'facing'|'attackFacing'|'state'|'stateFrame'|'moveId'|'moveFrame'|'crouching'|'hitReaction'> & { hitLevel?: HitLevel };
 export interface GameState {
   schemaVersion: number;
   frame: number;
@@ -45,7 +46,7 @@ export interface GameState {
   fighters: [Fighter, Fighter];
   inputConfig: { socd: SocdConfig; bufferFrames: number };
   hitstop: number;
-  lastContact: { attacker: number; defender: number; blocked: boolean; frame: number; hitLevel?: HitLevel } | null;
+  lastContact: { attacker: number; defender: number; blocked: boolean; frame: number; hitLevel?: HitLevel; poses?: ContactPose[] } | null;
   measurements: { attacker: number; defender: number; attackerReady: number | null; defenderReady: number | null; complete: boolean }[];
   round: RoundState;
   training: TrainingState;

@@ -23,10 +23,13 @@ describe('move data', () => {
     expect(Object.values(MOVES).filter(m=>m.command.type==='normal')).toHaveLength(27);
     expect(Object.values(MOVES).filter(m=>m.command.type==='hold')).toHaveLength(6);
     for (const move of Object.values(MOVES)) {
+      // startup/active describe the main strike; an early knee group has its own window.
+      const early=new Set(move.hitGroups.filter(g=>g.activeFrames).map(g=>g.id));
+      const frames=move.frames.map(f=>({...f,hitboxes:f.hitboxes.filter(b=>!early.has(b.hitGroup))}));
       expect(move.frames).toHaveLength(move.startup+move.active+move.recovery);
-      if(!move.multiHit)expect(move.frames.filter(f=>f.hitboxes.length)).toHaveLength(move.active);
-      expect(move.frames.findIndex(f=>f.hitboxes.length)).toBe(move.startup);
-      expect(move.frames.length-1-[...move.frames].reverse().findIndex(f=>f.hitboxes.length)).toBe(move.startup+move.active-1);
+      if(!move.multiHit || early.size===move.hitGroups.length-1)expect(frames.filter(f=>f.hitboxes.length)).toHaveLength(move.active);
+      expect(frames.findIndex(f=>f.hitboxes.length)).toBe(move.startup);
+      expect(frames.length-1-[...frames].reverse().findIndex(f=>f.hitboxes.length)).toBe(move.startup+move.active-1);
       expect(move.cancelWindows).toEqual([]);
     }
   });
@@ -86,8 +89,13 @@ describe('frame combat', () => {
     expect(crouching.fighters[1].hp).toBe(1000);expect(crouching.fighters[1].state).toBe('Blockstun');
   });
   it('lets a high kick whiff a crouching body by geometry',()=>{
-    const game=playAttack('HK',{...neutralInput(),down:true});
-    expect(game.lastContact).toBe(null);expect(game.fighters[1].hp).toBe(1000);
+    // Up close the rising knee reaches the ducking head; the kick itself still passes over.
+    for(const distance of [48,80]) {
+      const game=closeGame(distance),crouch={...neutralInput(),down:true};
+      for(let i=0;i<MOVES.standing_hk.duration+2;i++)step(game,[{...neutralInput(),buttons:i===0?buttonBit('HK'):0},crouch]);
+      expect(game.fighters[1].hp,`${distance}`).toBe(distance===48?1000-MOVES.standing_hk.hitGroups.find(g=>g.id==='knee')!.damage!:1000);
+      if(distance===80)expect(game.lastContact).toBe(null);
+    }
   });
   it('resolves simultaneous attacks as a trade',()=>{
     const game=closeGame();step(game,[{...neutralInput(),buttons:1},{...neutralInput(),buttons:1}]);

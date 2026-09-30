@@ -3,13 +3,14 @@ import rules from '../data/rules.json';
 import moves from '../data/moves.json';
 import bodies from '../data/bodies.json';
 import motions from '../data/motions.json';
+import contactGeometry from '../data/contact-geometry.json';
 import { MOVES, validateResources } from '../data/schema';
 import { snapshot, step } from '../simulation/state';
 import type { GameState } from '../simulation/types';
 import type { ControlEvent } from '../simulation/events';
 import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/types';
 
-export const ENGINE_VERSION = '1.3.0';
+export const ENGINE_VERSION = '1.6.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }
@@ -24,7 +25,7 @@ export function hash(value: unknown): string {
   for (let i=0;i<text.length;i++) result = Math.imul(result ^ text.charCodeAt(i),16777619);
   return (result>>>0).toString(16).padStart(8,'0');
 }
-export const DATA_HASH = hash({ rules,moves,bodies,motions,figureScale });
+export const DATA_HASH = hash({ rules,moves,bodies,motions,figureScale,contactGeometry });
 
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw Error(`Ungültiges Replay: ${message}`); }
 const int = (n: number, min = 0, max = Number.MAX_SAFE_INTEGER) => Number.isSafeInteger(n) && n >= min && n <= max;
@@ -60,6 +61,16 @@ export function validateSnapshot(value: unknown): GameState {
   }
   assert(state.lastContact===null || ([0,1].includes(state.lastContact.attacker) && [0,1].includes(state.lastContact.defender) && typeof state.lastContact.blocked==='boolean' && int(state.lastContact.frame)),'Letzter Kontakt.');
   assert(state.lastContact?.hitLevel===undefined || ['LOW','MID','HIGH'].includes(state.lastContact.hitLevel),'Kontakt-Level.');
+  if(state.lastContact?.poses!==undefined) {
+    assert(Array.isArray(state.lastContact.poses)&&state.lastContact.poses.length===2,'Kontaktposen.');
+    for(const p of state.lastContact.poses) {
+      assert(p&&[p.x,p.y,p.vx].every(n=>int(n,-rules.stageWidth,rules.stageWidth))&&[-1,1].includes(p.facing)&&[-1,1].includes(p.attackFacing),'Kontaktposition.');
+      assert(states.includes(p.state)&&int(p.stateFrame)&&int(p.moveFrame)&&typeof p.crouching==='boolean','Kontaktpose.');
+      assert((p.moveId===null||Object.hasOwn(MOVES,p.moveId))&&(p.state!=='Attack'||p.moveId!==null&&p.moveFrame<MOVES[p.moveId].duration),'Kontaktanimation.');
+      assert(p.hitReaction===undefined||p.hitReaction==='middlePunch','Kontaktreaktion.');
+      assert(p.hitLevel===undefined||['LOW','MID','HIGH'].includes(p.hitLevel),'Kontaktposen-Level.');
+    }
+  }
   assert(Array.isArray(state.measurements) && state.measurements.length<=2 && state.measurements.every(m=>[0,1].includes(m.attacker)&&[0,1].includes(m.defender)&&(m.attackerReady===null||int(m.attackerReady))&&(m.defenderReady===null||int(m.defenderReady))&&typeof m.complete==='boolean'),'Frame-Vorteil-Messung.');
   return snapshot(state);
 }
@@ -71,7 +82,7 @@ function validEvent(event: ControlEvent): boolean {
 }
 export function parseReplay(value: unknown): Replay {
   const replay=structuredClone(value) as Replay;
-  assert(replay && replay.schemaVersion===2 && replay.engineVersion===ENGINE_VERSION && replay.dataHash===DATA_HASH,'Version oder Spieldaten passen nicht zu diesem Build (Engine 1.3.0). Replays aus früheren Updates verwenden andere Kampfregeln oder Figurengrößen.');
+  assert(replay && replay.schemaVersion===2 && replay.engineVersion===ENGINE_VERSION && replay.dataHash===DATA_HASH,'Version oder Spieldaten passen nicht zu diesem Build (Engine 1.6.0). Replays aus früheren Updates verwenden andere Kampfregeln oder Figurengrößen.');
   validateSnapshot(replay.initial);
   assert(Array.isArray(replay.frames) && replay.frames.length<=MAX_REPLAY_FRAMES,'Replay ist zu lang oder enthält keine Frame-Liste.');
   for (const frame of replay.frames) assert(frame?.inputs?.length===2 && frame.inputs.every(validRaw) && Array.isArray(frame.events) && frame.events.length<=10 && frame.events.every(validEvent),'Ungültige Frame-Eingaben oder Steuerereignisse.');

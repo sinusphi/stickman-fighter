@@ -1,0 +1,515 @@
+{
+  "damage": {
+    "standing_lp": {
+      "damage": 30,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 15,
+      "blockstun": 11,
+      "pushbackHit": 4608,
+      "pushbackBlock": 3072
+    },
+    "standing_mp": {
+      "damage": 55,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 23,
+      "blockstun": 16,
+      "pushbackHit": 2048,
+      "pushbackBlock": 4608
+    },
+    "standing_hp": {
+      "damage": 85,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 30,
+      "blockstun": 21,
+      "pushbackHit": 8704,
+      "pushbackBlock": 6144
+    },
+    "standing_lk": {
+      "damage": 35,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 18,
+      "blockstun": 13,
+      "pushbackHit": 5632,
+      "pushbackBlock": 4096
+    },
+    "standing_mk": {
+      "damage": 65,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        },
+        {
+          "id": "knee",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 30,
+          "activeFrames": [
+            13,
+            15
+          ],
+          "hitstun": 15,
+          "blockstun": 11,
+          "pushbackHit": 2048,
+          "pushbackBlock": 3072,
+          "hitstop": 8
+        }
+      ],
+      "hitstun": 25,
+      "blockstun": 18,
+      "pushbackHit": 8192,
+      "pushbackBlock": 5632
+    },
+    "standing_hk": {
+      "damage": 95,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        },
+        {
+          "id": "knee",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 30,
+          "activeFrames": [
+            12,
+            14
+          ],
+          "hitstun": 15,
+          "blockstun": 11,
+          "pushbackHit": 2048,
+          "pushbackBlock": 3072,
+          "hitstop": 8
+        }
+      ],
+      "hitstun": 33,
+      "blockstun": 23,
+      "pushbackHit": 10752,
+      "pushbackBlock": 7680
+    },
+    "crouching_lp": {
+      "damage": 25,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 15,
+      "blockstun": 11,
+      "pushbackHit": 4096,
+      "pushbackBlock": 3072
+    },
+    "crouching_mp": {
+      "damage": 50,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 21,
+      "blockstun": 15,
+      "pushbackHit": 2048,
+      "pushbackBlock": 4096
+    },
+    "crouching_hp": {
+      "damage": 80,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 29,
+      "blockstun": 20,
+      "pushbackHit": 8192,
+      "pushbackBlock": 5632
+    },
+    "crouching_lk": {
+      "damage": 30,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 16,
+      "blockstun": 11,
+      "pushbackHit": 5120,
+      "pushbackBlock": 3584
+    },
+    "crouching_mk": {
+      "damage": 55,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 24,
+      "blockstun": 16,
+      "pushbackHit": 7168,
+      "pushbackBlock": 5120
+    },
+    "crouching_hk": {
+      "damage": 85,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 31,
+      "blockstun": 21,
+      "pushbackHit": 9728,
+      "pushbackBlock": 6656
+    },
+    "airborne_lp": {
+      "damage": 30,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 15,
+      "blockstun": 11,
+      "pushbackHit": 4608,
+      "pushbackBlock": 3072
+    },
+    "airborne_mp": {
+      "damage": 50,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 21,
+      "blockstun": 15,
+      "pushbackHit": 2048,
+      "pushbackBlock": 4096
+    },
+    "airborne_hp": {
+      "damage": 75,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 28,
+      "blockstun": 19,
+      "pushbackHit": 7680,
+      "pushbackBlock": 5632
+    },
+    "airborne_lk": {
+      "damage": 35,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 18,
+      "blockstun": 13,
+      "pushbackHit": 5120,
+      "pushbackBlock": 3584
+    },
+    "airborne_mk": {
+      "damage": 60,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 25,
+      "blockstun": 18,
+      "pushbackHit": 7680,
+      "pushbackBlock": 5120
+    },
+    "airborne_hk": {
+      "damage": 90,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 31,
+      "blockstun": 21,
+      "pushbackHit": 10240,
+      "pushbackBlock": 7168
+    },
+    "spin_mk": {
+      "damage": 80,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 28,
+      "blockstun": 20,
+      "pushbackHit": 7680,
+      "pushbackBlock": 4608
+    },
+    "spin_hk": {
+      "damage": 110,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 34,
+      "blockstun": 24,
+      "pushbackHit": 9216,
+      "pushbackBlock": 5632
+    },
+    "standing_rlk": {
+      "damage": 35,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 18,
+      "blockstun": 13,
+      "pushbackHit": 5632,
+      "pushbackBlock": 4096
+    },
+    "standing_lmk": {
+      "damage": 65,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        },
+        {
+          "id": "knee",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 30,
+          "activeFrames": [
+            13,
+            15
+          ],
+          "hitstun": 15,
+          "blockstun": 11,
+          "pushbackHit": 2048,
+          "pushbackBlock": 3072,
+          "hitstop": 8
+        }
+      ],
+      "hitstun": 25,
+      "blockstun": 18,
+      "pushbackHit": 8192,
+      "pushbackBlock": 5632
+    },
+    "standing_rhk": {
+      "damage": 95,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        },
+        {
+          "id": "knee",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 30,
+          "activeFrames": [
+            12,
+            14
+          ],
+          "hitstun": 15,
+          "blockstun": 11,
+          "pushbackHit": 2048,
+          "pushbackBlock": 3072,
+          "hitstop": 8
+        }
+      ],
+      "hitstun": 33,
+      "blockstun": 23,
+      "pushbackHit": 10752,
+      "pushbackBlock": 7680
+    },
+    "crouching_rlk": {
+      "damage": 30,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 16,
+      "blockstun": 11,
+      "pushbackHit": 5120,
+      "pushbackBlock": 3584
+    },
+    "crouching_lmk": {
+      "damage": 55,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 24,
+      "blockstun": 16,
+      "pushbackHit": 7168,
+      "pushbackBlock": 5120
+    },
+    "crouching_rhk": {
+      "damage": 85,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 31,
+      "blockstun": 21,
+      "pushbackHit": 9728,
+      "pushbackBlock": 6656
+    },
+    "airborne_rlk": {
+      "damage": 35,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 18,
+      "blockstun": 13,
+      "pushbackHit": 5120,
+      "pushbackBlock": 3584
+    },
+    "airborne_lmk": {
+      "damage": 60,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 25,
+      "blockstun": 18,
+      "pushbackHit": 7680,
+      "pushbackBlock": 5120
+    },
+    "airborne_rhk": {
+      "damage": 90,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 31,
+      "blockstun": 21,
+      "pushbackHit": 10240,
+      "pushbackBlock": 7168
+    },
+    "tornado_mk": {
+      "damage": 80,
+      "hitGroups": [
+        {
+          "id": "tornado",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 80
+        }
+      ],
+      "hitstun": 28,
+      "blockstun": 20,
+      "pushbackHit": 5120,
+      "pushbackBlock": 1536
+    },
+    "forward_spin_hk": {
+      "damage": 100,
+      "hitGroups": [
+        {
+          "id": "spin",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "HIGH",
+          "damage": 100
+        }
+      ],
+      "hitstun": 28,
+      "blockstun": 20,
+      "pushbackHit": 5120,
+      "pushbackBlock": 1536
+    },
+    "tornado_spin_combo": {
+      "damage": 80,
+      "hitGroups": [
+        {
+          "id": "tornado",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "MID",
+          "damage": 80
+        },
+        {
+          "id": "spin",
+          "maxHitsPerTarget": 1,
+          "hitLevel": "HIGH",
+          "damage": 100
+        }
+      ],
+      "hitstun": 42,
+      "blockstun": 32,
+      "pushbackHit": 1536,
+      "pushbackBlock": 1536
+    },
+    "jumping_uppercut": {
+      "damage": 85,
+      "hitGroups": [
+        {
+          "id": "main",
+          "maxHitsPerTarget": 1
+        }
+      ],
+      "hitstun": 30,
+      "blockstun": 21,
+      "pushbackHit": 8704,
+      "pushbackBlock": 6144
+    }
+  },
+  "preserved": {
+    "standing_lp": "73a267f6892d52d541aebc07b6d451c50102379d113f0f98a764a243a1708847",
+    "standing_mp": "245bb320781d1988e0ab6115a41e1f2b752d1cde979b533ea52e6d456e033ee3",
+    "crouching_lp": "d87ab9d6269e739e1e5196613a15185376043c4566e7839efcee50ccecb2bf88",
+    "crouching_mp": "4df9e3b8582b4b9a78d3fb580e06cdecda7725d98ebe9f750f7a5d1f043b7d69",
+    "airborne_lp": "b3e8b87bc0dae1740f0442bbd012c80e48400331bf8b5c5555fe2f0bd3959b91",
+    "airborne_mp": "15146a462a4391ca31ba8c7537686bb2e289805c846d81406849fa3849a31eeb",
+    "jumping_uppercut": "b2a8e4bad833919de8cd1404ecfa580595be6f9d90fe144cc54ff4fb6e489eb8"
+  },
+  "uppercut": "634da02014fa0a0ef4b13ede89bdf140a4716066f6cae20acf5ccb01b1766da9"
+}

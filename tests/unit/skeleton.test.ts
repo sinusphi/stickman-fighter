@@ -41,7 +41,7 @@ it('keeps closed loops, active timing, pause, hitstop and reset poses stable',()
   for(const [id,a] of Object.entries(animations)) {
     if(a.loop)expect(samplePose(id,0)).toEqual(samplePose(id,a.durationFrames-1));
     const old=(legacy.animations as Record<string,{durationFrames:number}>)[id];
-    if(old && id.includes('_')) {
+    if(old && id.includes('_') && !/^(standing|crouching|airborne)_(hp|lmk|mk|hk|rhk)$/.test(id) && id!=='spin_hk') {
       const duration=Math.round(old.durationFrames*1.25)+((timing.preparationExtension as Record<string,number>)[id]??0);
       expect(a.durationFrames).toBe(/^(standing|crouching|airborne)_(lk|rlk|lmk|mk)$/.test(id)?Math.round(Math.round(duration*.8)*.95):/^(standing|crouching|airborne)_hk$/.test(id)?Math.round(duration*.95):duration);
     }

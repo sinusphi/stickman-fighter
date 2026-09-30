@@ -23,11 +23,11 @@ it('keeps the left hook on neutral HP and does not repeat a held uppercut',()=>{
  expect(game.fighters[0].attackId).toBe(1);
  expect(animations.standing_hp.trail?.joint).toBe('leftHand');
 });
-it('follows the reference with the right fist above the head, airborne feet and a bent knee, then lands smoothly',()=>{
+it('follows the reference with the right fist above the head, a 1.5x jump height and a bent knee, then lands smoothly',()=>{
  const id='jumping_uppercut',p=samplePose(id,20);
  expect(p.rightHand[1]).toBeLessThan(p.head[1]-9);
  expect(p.leftHand[1]).toBeGreaterThan(p.head[1]);
- expect(Math.max(p.leftFoot[1],p.rightFoot[1])).toBeLessThan(-20);
+ expect(Math.max(p.leftFoot[1],p.rightFoot[1])).toBeLessThan(-30);
  expect(p.leftKnee[0]-p.hip[0]).toBeLessThan(-10);
  expect(samplePose(id,55)).toEqual(samplePose('Idle',0));
  for(let t=0;t<55;t+=.25) {
@@ -43,7 +43,10 @@ it('turns only to the full back view, holds it, then unwinds to the starting vie
  expect(sampleYaw(id,25)).toBe(90);
  expect(sampleTurn(id,25)).toBeCloseTo(.5);
  expect(eyeViews(sampleTurn(id,25),sampleYaw(id,25))).toEqual([]);
- expect(back.rightHand[0]).toBeLessThan(back.head[0]);
+ // Punching arm is fully extended at the apex instead of folding over the head.
+ const bend=(p:typeof back)=>{const u=Math.atan2(p.rightElbow[1]-p.rightShoulder[1],p.rightElbow[0]-p.rightShoulder[0]),f=Math.atan2(p.rightHand[1]-p.rightElbow[1],p.rightHand[0]-p.rightElbow[0]);return Math.abs(Math.atan2(Math.sin(f-u),Math.cos(f-u)))*180/Math.PI;};
+ expect(bend(back)).toBeLessThan(10);
+ expect(bend(strike)).toBeLessThan(15);
  expect(back.rightHand[1]).toBeLessThan(back.head[1]);
  expect(back.leftHand[0]).toBeLessThan(back.head[0]);
  expect(back.leftHand[1]).toBeGreaterThan(back.head[1]);
@@ -68,7 +71,8 @@ it('matches the rear reference silhouette on both sides and keeps the free arm c
   const back=samplePose(id,25,facing);
   expect(back.rightHand[1]).toBeLessThan(back.head[1]-18);
   expect((back.rightElbow[0]-back.head[0])*facing).toBeGreaterThan(5);
-  expect((back.rightHand[0]-back.head[0])*facing).toBeLessThan(0);
+  expect(back.rightHand[1]).toBeLessThan(back.rightElbow[1]-10);
+  expect(Math.abs(back.rightHand[0]-back.rightElbow[0])).toBeLessThan(4);
   expect((back.leftKnee[0]-back.hip[0])*facing).toBeLessThan(-10);
   expect(Math.abs(back.rightFoot[0]-back.rightKnee[0])).toBeLessThan(1);
   for(let time=0;time<=55;time+=.25) {

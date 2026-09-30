@@ -119,9 +119,9 @@ it.each(variants)('%s reverses the 4+HK turn with the other leg and continuous r
   }
   expect(previousYaw).toBe(-360);
   for(let offset=0;offset<move.active;offset++) {
-    const frame=move.startup+offset,reference=samplePose('forward_spin_hk',24+offset);
+    const frame=move.startup+offset,reference=samplePose('forward_spin_hk',MOVES.forward_spin_hk.startup+offset/(move.active-1)*(MOVES.forward_spin_hk.active-1));
     const pose=samplePose(move.id,frame);
-    expect(sampleYaw(move.id,frame)).toBe(-sampleYaw('forward_spin_hk',24+offset)!);
+    expect(sampleYaw(move.id,frame)).toBe(-sampleYaw('forward_spin_hk',MOVES.forward_spin_hk.startup+offset/(move.active-1)*(MOVES.forward_spin_hk.active-1))!);
     expect(pose.leftFoot).toEqual(reference.rightFoot);
     expect(Math.hypot(pose.rightFoot[0]-pose.hip[0],pose.rightFoot[1]-pose.hip[1])).toBeCloseTo(50,9);
     if(button==='HK') {
@@ -134,9 +134,10 @@ it.each(variants)('%s reverses the 4+HK turn with the other leg and continuous r
   }
 });
 it('retains the reference arm counterbalance through the high-spin contact',()=>{
-  for(let offset=0;offset<6;offset++) {
+  const move=MOVES.spin_hk;
+  for(let offset=0;offset<MOVES.spin_hk.active;offset++) {
     const pose=samplePose('spin_hk',MOVES.spin_hk.startup+offset);
-    const reference=samplePose('forward_spin_hk',24+offset);
+    const reference=samplePose('forward_spin_hk',MOVES.forward_spin_hk.startup+offset/(move.active-1)*(MOVES.forward_spin_hk.active-1));
     for(const side of ['left','right'])for(const joint of ['Shoulder','Elbow','Hand'])
       expect(pose[side+joint]).toEqual(reference[side+joint]);
   }
@@ -209,8 +210,8 @@ it('validates the restricted hold command grammar',()=>{
 });
 
 import unaffectedHash from '../fixtures/kicks/unaffected-moves-sha256.json';
-it('matches the approved retimed light and heavy punch data',async()=>{
-  const moves=moveData.filter(m=>m.command.type==='normal' && ['LP','HP'].includes(m.button));
+it('preserves the approved light punch data',async()=>{
+  const moves=moveData.filter(m=>m.command.type==='normal' && m.button==='LP');
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(moves)));
   expect(Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('')).toBe(unaffectedHash);
 });

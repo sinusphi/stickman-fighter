@@ -1,6 +1,6 @@
 {
   "name": "stickman-fighter",
-  "version": "1.4.0",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,10 @@
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "check": "npm run typecheck && vitest run && npm run generate:spin-poses -- --check && npm run generate:spin-boxes -- --check && npm run generate:strike-boxes -- --check && npm run generate:walk -- --check && npm run generate:tornado -- --check && npm run generate:uppercut -- --check && npm run build",
+    "check": "npm run typecheck && vitest run && npm run generate:spin-poses -- --check && npm run generate:spin-boxes -- --check && npm run generate:strike-boxes -- --check && npm run generate:walk -- --check && npm run generate:tornado -- --check && npm run generate:uppercut -- --check && npm run generate:contacts -- --check && npm run build",
     "smoke": "node scripts/smoke.mjs",
     "smoke:update": "node scripts/update-smoke.mjs",
+    "smoke:preview": "node scripts/animation-preview-smoke.mjs",
     "smoke:rotation": "node scripts/rotation-smoke.mjs",
     "generate:spin-boxes": "node scripts/generate-spin-boxes.mjs",
     "smoke:spin": "node scripts/spin-smoke.mjs",
@@ -29,7 +30,10 @@
     "smoke:cpu": "node scripts/cpu-smoke.mjs",
     "smoke:stages": "node scripts/stage-smoke.mjs",
     "generate:uppercut": "node scripts/generate-jumping-uppercut.mjs",
-    "smoke:uppercut": "node scripts/jumping-uppercut-smoke.mjs"
+    "smoke:uppercut": "node scripts/jumping-uppercut-smoke.mjs",
+    "generate:contacts": "node scripts/generate-contact-geometry.mjs",
+    "smoke:contacts": "node scripts/contact-timing-smoke.mjs",
+    "smoke:knee": "node scripts/knee-strike-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

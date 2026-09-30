@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CpuPlayer } from '../../src/ai';
-import { UtilityBrain, type Intent } from '../../src/ai/brain';
+import { SWEET_SPOT, UtilityBrain, type Intent } from '../../src/ai/brain';
 import { Controller, directionInput } from '../../src/ai/controller';
 import { KNOWLEDGE, MOVE_INFO, buildKnowledge, nextHitLevel, scaledBox } from '../../src/ai/knowledge';
 import { observe, Perception } from '../../src/ai/observation';
@@ -45,9 +45,9 @@ it('loads only valid preferences and tolerates blocked storage',()=>{
 it('derives every move, group, scaled edge and advance without an ID allowlist',()=>{
   expect(KNOWLEDGE.map(m=>m.id)).toEqual(Object.keys(MOVES));
   const f=createGame().fighters[0];f.x=f.y=0;f.facing=1;
-  for(const m of Object.values(MOVES))for(const [frame,boxes] of m.frames.entries())for(const b of boxes.hitboxes) {
+  for(const m of Object.values(MOVES))for(const [frame,boxes] of m.frames.entries())for(const [index,b] of boxes.hitboxes.entries()) {
     expect(scaledBox(b)).toEqual(worldBox({x:b.x,y:b.y,width:b.width,height:b.height},f));
-    const known=MOVE_INFO[m.id].boxes.find(k=>k.frame===frame&&k.group===b.hitGroup)!;
+    const known=MOVE_INFO[m.id].boxes.filter(k=>k.frame===frame)[index];
     const t=m.advance?Math.min(1,frame/m.advance.frames):0;
     expect(known.x).toBe(scaledBox(b).x+Math.round((m.advance?.distance??0)*t*t*(3-2*t)));
     expect(known.level).toBe(m.hitGroups.find(g=>g.id===b.hitGroup)?.hitLevel??m.hitLevel);
@@ -177,10 +177,11 @@ it.each(levels)('%s executes a jumping uppercut against a nearby passive player'
 });
 it.each(levels)('%s keeps moving/attacking against a blocker and does not camp in a corner',level=>{
   const g=createGame(),cpu=new CpuPlayer(level);cpu.reset(73);g.fighters[1].x=rules.stageWidth-40*rules.unit;
-  let stalled=0,maxStall=0,corner=0,total=0;
+  let stalled=0,maxStall=0,corner=0,total=0,contacts=0;
   for(let i=0;i<1800&&g.round.phase==='fighting';i++) {
-    const before=g.fighters[1].x,attackId=g.fighters[1].attackId;
+    const before=g.fighters[1].x,attackId=g.fighters[1].attackId,lastContact=g.lastContact?.frame;
     step(g,[directionInput(4,g.fighters[0].facing),cpu.next(g)]);
+    if(g.lastContact?.frame!==lastContact)contacts++;
     const s=g.fighters[1];stalled=(s.x===before&&s.attackId===attackId)?stalled+1:0;maxStall=Math.max(maxStall,stalled);
     // Attacking an opponent pinned against the wall is pressure, not camping.
     const opponent=g.fighters[0];
@@ -190,7 +191,9 @@ it.each(levels)('%s keeps moving/attacking against a blocker and does not camp i
   expect(maxStall).toBeLessThan(3*rules.hz);
   // Easy is intentionally vulnerable to sustained corner pressure; it must still act instead of freezing.
   expect(corner/total).toBeLessThan(level==='easy'?.9:.25);
-  expect(g.fighters[0].hp).toBeLessThan(rules.maxHealth);
+  // A permanently blocking target may block every chosen move; require actual
+  // pressure contacts instead of assuming the random repertoire includes a low.
+  expect(contacts).toBeGreaterThan(3);
 });
 it('clears queues in hitstop, stun, KO, training, round/match over and resets',()=>{
   for(const mode of ['hitstop','Hitstun','Blockstun','Knockdown','KO','roundOver','matchOver','training','reset']) {
@@ -271,8 +274,52 @@ describe.each(['passive','active'] as const)('directional repertoire against %s 
 it('closes the range for uppercut instead of endlessly choosing longer kicks',()=>{
   const g=createGame();g.fighters[1].x=500*rules.unit;g.fighters[0].x=400*rules.unit;
   const view={frame:100,self:observe(g).fighters[1],opponent:observe(g).fighters[0],round:g.round,hitstop:0,lastContact:null};
-  const brain=new UtilityBrain(PROFILES.hard,new Rng(4));
+  const brain=new UtilityBrain(PROFILES.hard,new Rng(4));brain.setTactic('pressure',100,600);
   expect(brain.decide(view)).toMatchObject({kind:'approach',reason:'range for jumping_uppercut'});
   g.fighters[1].x=460*rules.unit;view.self=observe(g).fighters[1];
   expect(brain.decide(view)).toMatchObject({kind:'attack',moveId:'jumping_uppercut'});
+});
+
+// Spacing / footsies: the CPU must not just run into the opponent all round long.
+it.each(levels)('%s walks backwards regularly and keeps spacing against an active CPU',level=>{
+  let back=0,total=0,runs=0,inRun=false;
+  for(let seed=1;seed<=4;seed++) {
+    const g=createGame(),cpu=new CpuPlayer(level,1),opp=new CpuPlayer('medium',0);cpu.reset(seed);opp.reset(seed+7);
+    while(g.round.phase==='fighting'&&g.frame<6000) {
+      step(g,[opp.next(g),cpu.next(g)]);
+      const s=g.fighters[1],o=g.fighters[0];
+      const retreating=s.state==='Walk'&&s.vx*Math.sign(o.x-s.x)<0;
+      if(retreating){back++;if(!inRun)runs++;}inRun=retreating;total++;
+    }
+  }
+  expect(back/total).toBeGreaterThan(.08);
+  expect(runs).toBeGreaterThan(20);
+});
+it('backs off after its own attack instead of standing frozen or pressing on',()=>{
+  const g=createGame();g.fighters[0].x=400*rules.unit;g.fighters[1].x=440*rules.unit;
+  const view={frame:100,self:observe(g).fighters[1],opponent:observe(g).fighters[0],round:g.round,hitstop:0,lastContact:null};
+  const brain=new UtilityBrain({...PROFILES.medium,blockChance:0.01},new Rng(5));
+  brain.setTactic('backoff',100,60);
+  expect(brain.recover(view)).toMatchObject({kind:'retreat'});
+  const intent=brain.decide(view);
+  expect(intent.kind).toBe('retreat');
+});
+it('never tries to back off into the wall',()=>{
+  const g=createGame();g.fighters[1].x=30*rules.unit;g.fighters[0].x=70*rules.unit;
+  const view={frame:100,self:observe(g).fighters[1],opponent:observe(g).fighters[0],round:g.round,hitstop:0,lastContact:null};
+  for(let seed=1;seed<=20;seed++) {
+    const brain=new UtilityBrain(PROFILES.easy,new Rng(seed));brain.setTactic('backoff',100,60);
+    expect(brain.decide(view).kind).not.toBe('retreat');
+    expect(brain.recover(view).kind).not.toBe('retreat');
+  }
+});
+it('footsies hovers around the sweet spot instead of walking into range',()=>{
+  const g=createGame();g.fighters[0].x=300*rules.unit;g.fighters[1].x=g.fighters[0].x+SWEET_SPOT-30*rules.unit;
+  const view={frame:100,self:observe(g).fighters[1],opponent:observe(g).fighters[0],round:g.round,hitstop:0,lastContact:null};
+  let retreats=0;
+  for(let seed=1;seed<=20;seed++) {
+    const brain=new UtilityBrain({...PROFILES.medium,executionError:0.01},new Rng(seed));brain.setTactic('footsies',100,600);
+    if(brain.decide(view).kind==='retreat')retreats++;
+  }
+  expect(retreats).toBeGreaterThanOrEqual(10);
 });

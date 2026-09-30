@@ -4,6 +4,7 @@ import { createGame, snapshot, step } from './simulation/state';
 import type { GameState } from './simulation/types';
 import type { ControlEvent } from './simulation/events';
 import { FixedLoop } from './platform/loop';
+import { KoSlowMotion } from './platform/slow-motion';
 import { render } from './render/canvas';
 import { HitFeedback } from './render/feedback';
 import { setupAnimationPreview } from './debug/animation-preview';
@@ -52,11 +53,15 @@ async function main(): Promise<void> {
   const feedback = new HitFeedback();
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
+  const slowMotion = new KoSlowMotion();
   let showBoxes = false, showInputs = false, showStates = false;
   let pendingEvents: ControlEvent[] = [];
+  // Demo mode plays match after match: matchOver auto-restarts instead of waiting for Backspace.
+  const DEMO_MATCH_HOLD = rules.hz * 3;
+  let demoMatchOverFrames = 0;
   let recording: Replay | null = null;
   let lastReplay: Replay | null = null;
-  let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
+  let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnRelaxFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
   const message = (text: string) => { element('notice').textContent = text; };
   const dummyName = (mode: DummyMode) => t(`dummy.${mode}`);
   const difficultyName = (difficulty: Difficulty) => t(`difficulty.${difficulty}`);
@@ -75,7 +80,7 @@ async function main(): Promise<void> {
   function setPaused(paused: boolean): void { loop.paused = paused; loop.reset(); previous = snapshot(game); }
   function stopPlayback(): void {
     if (!playback) return;
-    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; previous = snapshot(game); playback = null;
+    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); loop.timeScale=1;
     devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
@@ -105,8 +110,12 @@ async function main(): Promise<void> {
       if(events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
       feedback.update(game,previous);
       if (events.some(e=>e.type==='reset'||e.type==='training')) previous=snapshot(game);
+      if (demoActive && game.round.phase === 'matchOver') {
+        if (++demoMatchOverFrames >= DEMO_MATCH_HOLD) { demoMatchOverFrames = 0; pendingEvents.push({ type:'reset' }); }
+      } else demoMatchOverFrames = 0;
     }
     if (previous.round.phase !== 'fighting' && game.round.phase === 'fighting') { previous = snapshot(game);feedback.reset(game); }
+    loop.timeScale=slowMotion.update(game,feedback.koFrames);
   }
   function queue(event: ControlEvent): void {
     if (playback) stopPlayback();
@@ -148,8 +157,8 @@ async function main(): Promise<void> {
     if (playback) { stopPlayback(); return; }
     if (recording) { lastReplay=recording; recording=null; }
     if (!lastReplay?.frames.length) { message(t('message.replayMissing')); return; }
-    playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnLevels:[...feedback.levels]};
-    game=snapshot(playback.replay.initial); feedback.reset(game);previous=snapshot(game); pendingEvents=[]; devices.clear(); setPaused(false);
+    playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnRelaxFrames:[...feedback.relaxFrames],returnLevels:[...feedback.levels]};
+    game=snapshot(playback.replay.initial); feedback.reset(game);previous=snapshot(game); pendingEvents=[]; slowMotion.reset(); loop.timeScale=1; devices.clear(); setPaused(false);
     message(t('message.replayRunning'));
   }
   function singleStep(): void { if(loop.paused) { runFrame(); previous=snapshot(game); } }
@@ -244,7 +253,7 @@ async function main(): Promise<void> {
   onLanguageChange(()=>{translateDocument();updateUI();});
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
-    render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage);
+    render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames);
     preview(time,palette);
     pollSettings();updateUI();requestAnimationFrame(frame);
   }

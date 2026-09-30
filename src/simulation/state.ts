@@ -32,6 +32,7 @@ export function updateFacing(game: GameState): void {
 export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInput(), neutralInput()], events: ControlEvent[] = []): void {
   applyEvents(game,events);
   if (game.round.phase !== 'fighting') {
+    if (game.hitstop === 0) settleFighters(game);
     game.frame++;
     if (game.hitstop > 0) game.hitstop--; else advanceRound(game,inputs);
     return;
@@ -52,6 +53,26 @@ export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInp
   resolveCombat(game);
   if (!game.training.enabled) resolveRound(game);
   game.combatFrame++;
+}
+
+/**
+ * After the round is decided the surviving fighters play their current action
+ * (attack, landing, stun, knockdown) to its end with neutral input and settle
+ * into Idle. No new attack can start and no contact is resolved. KO fighters
+ * stay untouched; their fall is presentation-only (HitFeedback.koFrames).
+ */
+export function settleFighters(game: GameState): void {
+  const neutral = neutralInput();
+  for (const f of game.fighters) {
+    if (f.state === 'KO') continue;
+    captureInput(f.input, neutral, f.facing, game.frame, game.combatFrame, game.inputConfig.socd, game.inputConfig.bufferFrames);
+    f.input.pending = null;
+    advanceAttack(f);
+    moveFighter(f, true);
+    const other = game.fighters[1 - f.id];
+    if (f.state !== 'Attack' && f.x !== other.x) f.facing = f.x < other.x ? 1 : -1;
+  }
+  resolvePushboxes(game.fighters);
 }
 
 export function snapshot(game: GameState): GameState {

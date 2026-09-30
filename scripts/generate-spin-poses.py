@@ -14,6 +14,7 @@ path = Path(__file__).resolve().parents[1] / 'src/data/poses.json'
 data = json.loads(path.read_text())
 moves = json.loads(path.with_name('moves.json').read_text())
 reference = data['animations']['forward_spin_hk']
+reference_move = next(m for m in moves if m['id']=='forward_spin_hk')
 guard = data['poses']['guard']
 
 def smooth(value):
@@ -36,9 +37,14 @@ for move in (m for m in moves if m['id'] in ('spin_mk', 'spin_hk')):
         source = (frame/start*24 if frame <= start else
                   24+(frame-start)/(end-start)*5 if frame <= end else
                   29+(frame-end)/(duration-1-end)*17)
-        lo, hi = math.floor(source), math.ceil(source)
+        # Map the reference authoring clock to its retimed middle-kick clock.
+        rs, re = reference_move['startup'], reference_move['startup']+reference_move['active']-1
+        sampled = (source/24*rs if source<=24 else
+                   rs+(source-24)/5*(re-rs) if source<=29 else
+                   re+(source-29)/17*(reference['durationFrames']-1-re))
+        lo, hi = math.floor(sampled), min(len(reference['keyframes'])-1, math.ceil(sampled))
         a, b = (data['poses'][reference['keyframes'][i]['pose']] for i in (lo, hi))
-        t = source-lo
+        t = sampled-lo
         pose = {'root': [x+(y-x)*t for x,y in zip(a['root'],b['root'])],
                 'angles': {j: angle(v,b['angles'][j],t) for j,v in a['angles'].items()}}
         original = dict(pose['angles'])

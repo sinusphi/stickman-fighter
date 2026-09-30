@@ -1,4 +1,3 @@
-import timing from '../fixtures/animation-timing.json';
 import { expect, it } from 'vitest';
 import { MOVES } from '../../src/data/schema';
 import { animations, samplePose, buildPose } from '../../src/render/skeleton';
@@ -12,9 +11,10 @@ import { createReplay, parseReplay, playReplay, validRaw } from '../../src/debug
 import { byLegRole, mirroredCrouchKick, swapSide } from './helpers/crouch-mirror';
 
 const kicks: [Button,string][]=[['LK','left'],['LMK','left'],['HK','left'],['RLK','right'],['MK','right'],['RHK','right']];
-it('raises both middle kicks while running their retimed animation at 76% speed length',()=>{
+it('raises both middle kicks while matching their corresponding light-kick clock',()=>{
   for(const [id,animation] of Object.entries(originalMiddle.animations)) {
-    expect(animations[id].durationFrames).toBe(Math.round(Math.round((Math.round(animation.durationFrames*1.25)+((timing.preparationExtension as Record<string,number>)[id]??0))*.8)*.95));
+    const light=id.replace(/_lmk$/,'_lk').replace(/_mk$/,'_rlk');
+    expect(animations[id].durationFrames).toBe(animations[light].durationFrames);
     const oldPose=originalMiddle.poses[id as keyof typeof originalMiddle.poses];
     const oldFoot=buildPose(oldPose,animation.grounded).rightFoot;
     for(const name of ['mk','lmk']) {
@@ -102,25 +102,36 @@ it.each(['RLK','LMK','RHK'] as const)('%s selects all stances, deals damage and 
 
 it.each(['standing','crouching','airborne'])('%s right kicks preserve the left path with swapped limbs at corresponding phases',stance=>{
   const swap=(joint:string)=>joint.startsWith('left')?'right'+joint.slice(4):joint.startsWith('right')?'left'+joint.slice(5):joint;
+  // Standing rear-leg kicks add a passing key on the way in and out, where the
+  // bent rear leg swings past the front leg. From the knee chamber through the
+  // rechamber they are the exact counterpart of the left kick.
+  const authored=(key:{pose:string})=>!/_(pass|repass)$/.test(key.pose);
   for(const [left,right] of [['lk','rlk'],['lmk','mk'],['hk','rhk']]) {
     const source=`${stance}_${left}`,target=`${stance}_${right}`;
-    const a=animations[source],b=animations[target];
-    if(left==='lk'||left==='lmk') {
-      expect(a.durationFrames).toBe(b.durationFrames);
-      expect(a.keyframes.map(key=>key.frame)).toEqual(b.keyframes.map(key=>key.frame));
-    }else expect(a.durationFrames).toBe(Math.round(b.durationFrames*.95));
-    // Legs retain the same phase path. Arms retain matching authored keys;
-    // their continuous velocities depend on each clip's rounded frame spacing.
-    for(let frame=a.keyframes[1].frame;frame<=a.keyframes[4].frame;frame+=.5)for(const facing of [-1,1]) {
+    const a=animations[source],b=animations[target],bk=b.keyframes.filter(authored);
+    expect(a.durationFrames).toBe(b.durationFrames);
+    expect(a.keyframes.map(key=>key.frame)).toEqual(bk.map(key=>key.frame));
+    const shared=b.keyframes.length!==bk.length;
+    const from=shared?a.keyframes.find(k=>k.pose.endsWith('_anticipate'))!.frame:a.keyframes[1].frame;
+    const to=shared?a.keyframes.find(k=>k.pose.endsWith('_return'))!.frame:a.keyframes[4].frame;
+    for(let frame=from;frame<=to;frame+=.5)for(const facing of [-1,1]) {
       const index=a.keyframes.findIndex(k=>k.frame>frame),n=index<0?a.keyframes.length-2:index-1;
       const phase=(frame-a.keyframes[n].frame)/(a.keyframes[n+1].frame-a.keyframes[n].frame);
-      const rightTime=b.keyframes[n].frame+phase*(b.keyframes[n+1].frame-b.keyframes[n].frame);
+      const rightTime=bk[n].frame+phase*(bk[n+1].frame-bk[n].frame);
       const l=samplePose(source,frame,facing),r=samplePose(target,rightTime,facing);
       const ld=sampleDepths(source,frame),rd=sampleDepths(target,rightTime);
-      for(const joint of Object.keys(ld))expect(rd[swap(joint)]).toBe(ld[joint]);
+      // Rear-leg kicks keep the near leg in front: leg layers are deliberately not mirrored.
+      const standing=stance==='standing',planted=['plantedSupport','plantedStraight','plantedPivot'].includes(b.legInterpolation??''),support=/^right(Knee|Foot)$/;
+      for(const joint of Object.keys(ld))if(!(standing && /Knee|Foot/.test(joint)))expect(rd[swap(joint)]).toBe(ld[joint]);
+      // Right kicks keep their front foot planted (solved support leg); the
+      // rest of the body follows the left kick relative to the hip. The
+      // straightened support of middle/high kicks lifts the hip slightly.
+      if(planted)expect(Math.abs(r.hip[1]-l.hip[1]),`${target}/${frame}: hip height`).toBeLessThan(b.legInterpolation==='plantedSupport'?1.5:3.5);
       for(const joint of Object.keys(l)) {
+        // Arm tangents depend on the neighbouring keys; the keys themselves match.
         if(/Shoulder|Elbow|Hand/.test(joint) && phase!==0 && phase!==1)continue;
-        for(let axis=0;axis<2;axis++)expect(r[swap(joint)][axis],`${target}/${frame}/${joint}`).toBeCloseTo(l[joint][axis],9);
+        if(planted && support.test(joint))continue;
+        for(let axis=0;axis<2;axis++)expect(planted?r[swap(joint)][axis]-r.hip[axis]:r[swap(joint)][axis],`${target}/${frame}/${joint}`).toBeCloseTo(planted?l[joint][axis]-l.hip[axis]:l[joint][axis],9);
       }
     }
     expect(samplePose(target,0)).toEqual(samplePose(source,0));
@@ -149,5 +160,55 @@ it('keeps crouching knees on their anatomical branch, plants the support foot an
       previous=pose;
     }
     expect(samplePose(id,animation.durationFrames-1,facing)).toEqual(start);
+  }
+});
+
+it('standing right middle/high kicks stand on the straight front leg and swing the bent rear leg past it',()=>{
+  const bend=(pose:Record<string,number[]>,side:string)=>{
+    const hip=pose.hip,knee=pose[side+'Knee'],foot=pose[side+'Foot'];
+    const a=Math.atan2(knee[1]-hip[1],knee[0]-hip[0]),b=Math.atan2(foot[1]-knee[1],foot[0]-knee[0]);
+    return Math.abs(((b-a)*180/Math.PI+540)%360-180);
+  };
+  for(const id of ['standing_mk','standing_rhk'])for(const facing of [1,-1]) {
+    const animation=animations[id],key=(suffix:string)=>animation.keyframes.find(k=>k.pose===id+suffix)!.frame;
+    // Left counterpart whose rear support the pivoting support leg mirrors.
+    const mirror=id==='standing_mk'?'standing_lmk':'standing_hk';
+    const start=samplePose(id,0,facing);
+    for(let frame=0;frame<animation.durationFrames;frame+=.25) {
+      const pose=samplePose(id,frame,facing);
+      // The guard's front (left) foot stays where it stands: the rear leg kicks.
+      // The high kick pivots it in under the body instead (see below).
+      if(animation.legInterpolation!=='plantedPivot')expect(pose.leftFoot[0],`${id}/${frame}: support foot`).toBeCloseTo(start.leftFoot[0],6);
+      else {
+        const next=samplePose(id,frame+.25,facing).leftFoot;
+        // Never faster than the left kick's own rear support (slides with the hip at the follow-through).
+        const l=samplePose(mirror,frame,facing).rightFoot,ln=samplePose(mirror,frame+.25,facing).rightFoot;
+        expect(Math.abs(next[0]-pose.leftFoot[0])/.25,`${id}/${frame}: pivot speed`).toBeLessThan(Math.max(8,Math.abs(ln[0]-l[0])/.25+.5));
+      }
+      expect(Math.abs(pose.leftFoot[1]),`${id}/${frame}: support on floor`).toBeLessThan(1.5);
+      // The rear leg is the near leg when facing right: it never swaps behind the support leg.
+      const depths=sampleDepths(id,frame);
+      expect(depths.rightKnee,`${id}/${frame}: leg layer`).toBe(poses.segmentDepths.rightKnee);
+      expect(depths.leftKnee).toBe(poses.segmentDepths.leftKnee);
+    }
+    // Middle and high kick: from the chamber through the follow-through the
+    // support leg stands angled back exactly like the rear support of the left kick.
+    expect(animation.legInterpolation,`${id}: pivots over the support leg`).toBe('plantedPivot');
+    for(let frame=key('_anticipate');frame<=key('_follow');frame+=.25) {
+      const r=samplePose(id,frame,facing),l=samplePose(mirror,frame,facing);
+      for(let axis=0;axis<2;axis++)expect(r.leftFoot[axis]-r.hip[axis],`${id}/${frame}: support angled back`).toBeCloseTo(l.rightFoot[axis]-l.hip[axis],6);
+      expect((r.leftFoot[0]-r.hip[0])*facing,`${id}/${frame}: support behind hip`).toBeLessThan(0);
+    }
+    // From the knee chamber through the follow-through the support leg is (nearly) straight.
+    for(let frame=key('_anticipate');frame<=key('_follow');frame+=.25)
+      expect(bend(samplePose(id,frame,facing),'left'),`${id}/${frame}: straight support`).toBeLessThan(25);
+    // Passing the front leg the kicking leg is clearly bent and lifted.
+    const pass=samplePose(id,key('_pass'),facing);
+    expect(bend(pass,'right')).toBeGreaterThan(40);expect(-pass.rightFoot[1]).toBeGreaterThan(8);
+    // No snap back: the frames after the rechamber move the feet gradually.
+    for(let frame=key('_return');frame<animation.durationFrames-1;frame+=.25)for(const foot of ['leftFoot','rightFoot']) {
+      const a=samplePose(id,frame,facing)[foot],b=samplePose(id,frame+.25,facing)[foot];
+      expect(Math.hypot(b[0]-a[0],b[1]-a[1])/.25,`${id}/${frame}: ${foot} speed`).toBeLessThan(22);
+    }
   }
 });

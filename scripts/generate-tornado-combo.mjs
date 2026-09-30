@@ -48,12 +48,18 @@ try {
   const a=k.pose.angles,upper=a.neck+a[side+'Shoulder']+a[side+'Elbow'];
   return [upper,upper+a[side+'Hand']];
  });
+ // High kicks share the standing middle kick's startup/contact/recovery clock.
+ // Keep the reference motion and damage; compress each phase independently.
+ const middle=moves.find(m=>m.id==='standing_mk');
+ const spinEnd=middle.startup+middle.active-1;
+ const spinTime=f=>Math.round(f<=24?f/24*middle.startup:f<=29?middle.startup+(f-24)/5*(middle.active-1):spinEnd+(f-29)/17*middle.recovery);
+ for(const k of spin)k.frame=spinTime(k.frame);
  const definitions=[
   {id:'tornado_mk',button:'MK',buttons:['MK'],keys:[...tornado,rest(54,360)],trails:[{joint:'rightFoot',fromFrame:6,toFrame:32,historyFrames:5,directional:true}],hits:[{from:28,to:32,side:'right',id:'tornado',hitLevel:'MID',damage:80}]},
-  {id:'forward_spin_hk',button:'HK',buttons:['HK'],keys:spin,trails:[{joint:'leftFoot',fromFrame:6,toFrame:29,historyFrames:5,directional:true}],hits:[{from:24,to:29,side:'left',id:'spin',hitLevel:'HIGH',damage:100}]},
+  {id:'forward_spin_hk',button:'HK',buttons:['HK'],keys:spin,trails:[{joint:'leftFoot',fromFrame:spinTime(6),toFrame:spinEnd,historyFrames:5,directional:true}],hits:[{from:middle.startup,to:spinEnd,side:'left',id:'spin',hitLevel:'HIGH',damage:100}]},
   {id:'tornado_spin_combo',button:'HK',buttons:['MK','HK'],keys:[...tornado.slice(0,-1),...spin.slice(1).map(k=>({...k,frame:k.frame+32,yaw:k.yaw+360}))],
-   trails:[{joint:'rightFoot',fromFrame:6,toFrame:32,historyFrames:5,directional:true},{joint:'leftFoot',fromFrame:38,toFrame:61,historyFrames:5,directional:true}],
-   hits:[{from:28,to:32,side:'right',id:'tornado',hitLevel:'MID',damage:80},{from:56,to:61,side:'left',id:'spin',hitLevel:'HIGH',damage:100}]},
+   trails:[{joint:'rightFoot',fromFrame:6,toFrame:32,historyFrames:5,directional:true},{joint:'leftFoot',fromFrame:32+spinTime(6),toFrame:32+spinEnd,historyFrames:5,directional:true}],
+   hits:[{from:28,to:32,side:'right',id:'tornado',hitLevel:'MID',damage:80},{from:32+middle.startup,to:32+spinEnd,side:'left',id:'spin',hitLevel:'HIGH',damage:100}]},
  ];
  for(const def of definitions) {
   const duration=def.keys.at(-1).frame+1,keyframes=[],ranges=[];
@@ -61,7 +67,9 @@ try {
    const next=def.keys.findIndex(k=>k.frame>frame),a=def.keys[next<0?def.keys.length-1:Math.max(0,next-1)],b=def.keys[next<0?def.keys.length-1:next];
    const t=a===b?0:(frame-a.frame)/(b.frame-a.frame),smooth=t*t*(3-2*t);
    const pose=blendAngles(a.pose,b.pose,smooth),yaw=a.yaw+(b.yaw-a.yaw)*smooth,lift=a.lift+(b.lift-a.lift)*smooth;
-   const radians=yaw*Math.PI/180,turn=(1-Math.cos(radians))/2;
+   // Quantize the derived turn: Math.cos can differ in its last bit between
+   // Node/V8 versions, which must not invalidate otherwise identical assets.
+   const radians=yaw*Math.PI/180,turn=Number(((1-Math.cos(radians))/2).toFixed(12));
    // Shoulder placement follows yaw; elbows and hands follow independent tracks.
    // Blend out into the authored guard; never stretch a skeletal segment.
    const envelope=Math.min(1,frame/6,(duration-1-frame)/10);
@@ -92,8 +100,8 @@ try {
   const move={schemaVersion:1,id:def.id,stance:'standing',button:def.button,
    command:{type:'hold',directions:[def.id==='forward_spin_hk'?4:6],buttons:def.buttons,trigger:'pressed',priority:combo?30:20},animation:def.id,
    startup:first.from,active:last.to-first.from+1,recovery:duration-last.to-1,damage:first.damage,hitLevel:first.hitLevel,
-   hitstun:combo?42:28,blockstun:combo?32:20,pushbackHit:(combo?6:20)*256,pushbackBlock:6*256,hitstop:9,
-   advance:{frames:18,distance:18*256},airHitReaction:'knockdown',multiHit:combo,
+   hitstun:combo?42:28,blockstun:combo?32:20,pushbackHit:(combo?6:20)*256,pushbackBlock:6*256,hitstop:def.id==='forward_spin_hk'?middle.hitstop:9,
+   advance:{frames:Math.min(18,first.from),distance:18*256},airHitReaction:'knockdown',multiHit:combo,
    hitGroups:def.hits.map(h=>({id:h.id,maxHitsPerTarget:1,hitLevel:h.hitLevel,damage:h.damage})),
    cancelWindows:[],combo:{scalingPermille:1000,juggleCost:0,juggleLimit:0},frameRanges:ranges};
   const index=moves.findIndex(m=>m.id===def.id);if(index<0)moves.push(move);else moves[index]=move;

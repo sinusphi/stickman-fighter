@@ -13,7 +13,7 @@ try {
   await page.keyboard.press('p');await page.keyboard.press('F3');await page.keyboard.press('F8');
   await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','true');
   await page.locator('#cpu-level').selectOption('hard');await page.locator('#cpu-level').blur();
-  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / VS CPU · SCHWER');
+  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / VS CPU · HARD');
   await expect(page.locator('#p2-label')).toHaveText('CPU');
   const initialFrame=await page.locator('#game').getAttribute('data-frame');await page.waitForTimeout(100);
   await expect(page.locator('#game')).toHaveAttribute('data-frame',initialFrame);
@@ -60,7 +60,7 @@ try {
   await page.keyboard.press('F9');
   await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('#demo')).toHaveAttribute('aria-pressed','true');
-  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / CPU-DEMO · LEICHT VS SCHWER');
+  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / CPU-DEMO · EASY VS HARD');
   await expect(page.locator('#p1-label')).toHaveText('CPU 01');await expect(page.locator('#p2-label')).toHaveText('CPU 02');
   await page.keyboard.press('p');await page.keyboard.press('F6');
   await page.locator('#step').evaluate(b=>{for(let i=0;i<300;i++)b.click();});

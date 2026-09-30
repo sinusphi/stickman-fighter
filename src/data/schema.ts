@@ -7,7 +7,19 @@ import { BUTTONS, type Button } from '../input/types';
 import type { Box, Stance } from '../simulation/collision';
 
 export type HitLevel = 'LOW' | 'MID' | 'HIGH';
-export interface HitGroup { id: string; maxHitsPerTarget: number; hitLevel?: HitLevel; damage?: number }
+/** Optional per-group values override the move's frame data. `activeFrames`
+ * gives an early secondary strike (e.g. the knee before a kick) its own window
+ * outside the move's main active phase; startup/active keep describing the main hit. */
+export interface HitGroup {
+  id: string; maxHitsPerTarget: number; hitLevel?: HitLevel; damage?: number;
+  activeFrames?: [number, number];
+  hitstun?: number; blockstun?: number; pushbackHit?: number; pushbackBlock?: number; hitstop?: number;
+}
+export const GROUP_FRAME_DATA = ['hitstun','blockstun','pushbackHit','pushbackBlock','hitstop'] as const;
+/** Effective reaction value of one hit group: its own override or the move's value. */
+export function groupValue(move: Move, group: HitGroup, key: typeof GROUP_FRAME_DATA[number]): number {
+  return group[key] ?? move[key];
+}
 export interface Hitbox extends Box { hitGroup: string }
 export interface FrameBoxes { hitboxes: Hitbox[]; hurtboxes: Box[]; pushbox: Box }
 export interface CancelWindow { fromFrame: number; toFrame: number; on: ('hit' | 'block' | 'whiff')[]; type: 'chain' | 'target' | 'special' | 'super'; targetMoveIds: string[] }
@@ -52,7 +64,7 @@ export function validatePoses(value: unknown): void {
     assert(integer(animation.durationFrames,1) && animation.keyframes.length>0 && typeof animation.loop==='boolean' && animation.interpolation==='angles' && typeof animation.grounded==='boolean',`${id}: Animationsdauer oder Interpolation.`);
     assert(animation.clampFloor===undefined || typeof animation.clampFloor==='boolean',`${id}: Bodenbegrenzung.`);
     assert(animation.fixedLegDepth===undefined || typeof animation.fixedLegDepth==='boolean',`${id}: feste Beintiefe.`);
-    assert(animation.legInterpolation===undefined || animation.legInterpolation==='footIK' && animation.grounded && ['leftFoot','rightFoot'].includes(animation.trail?.joint??''),`${id}: Beininterpolation benötigt einen geerdeten Tritt mit Fußspur.`);
+    assert(animation.legInterpolation===undefined || ['footIK','plantedSupport','plantedStraight','plantedPivot'].includes(animation.legInterpolation) && animation.grounded && ['leftFoot','rightFoot'].includes(animation.trail?.joint??''),`${id}: Beininterpolation benötigt einen geerdeten Tritt mit Fußspur.`);
     const topology=(r:Rotation)=>JSON.stringify({pivot:typeof r.pivot==='string'?r.pivot:'xy',branches:r.branches});
     const tracks=animation.keyframes[0].rotations??[];
     assert(animation.trails===undefined || Array.isArray(animation.trails),`${id}: zusätzliche Bewegungsspuren.`);
@@ -103,6 +115,8 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
     }
     assert(Array.isArray(move.cancelWindows) && Array.isArray(move.hitGroups) && move.hitGroups.length > 0 && move.hitGroups.every(g => typeof g.id === 'string' && integer(g.maxHitsPerTarget,1)), `${move.id}: Hit-/Cancel-Gruppen.`);
     assert(move.hitGroups.every(g=>(g.hitLevel===undefined || ['LOW','MID','HIGH'].includes(g.hitLevel)) && (g.damage===undefined || integer(g.damage))),`${move.id}: Treffergruppen-Level oder Schaden.`);
+    assert(move.hitGroups.every(g=>GROUP_FRAME_DATA.every(key=>g[key]===undefined || integer(g[key]))),`${move.id}: Frame-Data der Treffergruppe.`);
+    assert(move.hitGroups.every(g=>g.activeFrames===undefined || Array.isArray(g.activeFrames) && g.activeFrames.length===2 && integer(g.activeFrames[0]) && integer(g.activeFrames[1]) && g.activeFrames[0]<=g.activeFrames[1] && g.activeFrames[1]<move.startup+move.active+move.recovery),`${move.id}: Trefferfenster der Treffergruppe.`);
     assert(move.combo && [move.combo.scalingPermille,move.combo.juggleCost,move.combo.juggleLimit].every(n=>integer(n)), `${move.id}: Combo-Felder.`);
     assert(typeof move.multiHit === 'boolean' && move.airHitReaction === 'knockdown', `${move.id}: Trefferverhalten.`);
     assert(new Set(move.hitGroups.map(group=>group.id)).size===move.hitGroups.length && (move.multiHit || (move.hitGroups.length===1 && move.hitGroups[0].maxHitsPerTarget===1)),`${move.id}: Single-/Multi-Hit-Gruppen.`);
@@ -113,8 +127,12 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
       assert(integer(range.from) && range.from === frames.length && integer(range.to) && range.to >= range.from && range.to < duration, `${move.id}: Frame-Lücke oder Überlappung.`);
       assert(Array.isArray(range.hitboxes) && Array.isArray(range.hurtboxes) && range.hurtboxes.length > 0, `${move.id}: Körperboxen fehlen.`);
       [...range.hitboxes, ...range.hurtboxes, range.pushbox].forEach(validateBox);
-      for (const hit of range.hitboxes) assert(move.hitGroups.some(g=>g.id===hit.hitGroup), `${move.id}: unbekannte Hit-Gruppe.`);
-      if (range.hitboxes.length) assert(range.from >= move.startup && range.to < move.startup + move.active, `${move.id}: Hitbox außerhalb Active.`);
+      for (const hit of range.hitboxes) {
+        const group = move.hitGroups.find(g=>g.id===hit.hitGroup);
+        assert(group, `${move.id}: unbekannte Hit-Gruppe.`);
+        const [from, to] = group.activeFrames ?? [move.startup, move.startup + move.active - 1];
+        assert(range.from >= from && range.to <= to, `${move.id}: Hitbox außerhalb ${group.activeFrames?`des Fensters von ${group.id}`:'Active'}.`);
+      }
       for (let frame = range.from; frame <= range.to; frame++) frames.push(range);
     }
     assert(frames.length === duration, `${move.id}: unvollständige Frame-Abdeckung.`);

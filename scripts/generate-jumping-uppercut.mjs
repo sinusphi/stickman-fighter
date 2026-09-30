@@ -19,7 +19,7 @@ try {
   pose.root=buildPose(pose,true).hip;pose.root[1]-=lift;
   // Keep both feet planted while loading and absorbing the jump.
   if([7,38,42].includes(frame)) {
-   const home=buildPose(guard,true);pose.root=[...home.hip];pose.root[1]+=(frame===38?2:6);
+   const home=buildPose(guard,true);pose.root=[...home.hip];pose.root[1]+=(frame===38?4:9); // deeper absorb for the higher jump
    for(const side of ['left','right']) {
     const foot=home[side+'Foot'],dx=foot[0]-pose.root[0],dy=foot[1]-pose.root[1];
     const bend=Math.acos(Math.min(1,Math.hypot(dx,dy)/50));
@@ -32,18 +32,20 @@ try {
  const rest=(frame,yaw)=>{const name=`jumping_uppercut_${frame}`;data.poses[name]=structuredClone(guard);keys.push({frame,pose:name,easing:'smoothstep',yaw,turn:(1-Math.cos(yaw*Math.PI/180))/2});};
  rest(0,0);
  key(7,0,0,-65,[48,65,117,-25],[85,-65,100,-25]); // dip, right fist gathered near waist
- key(11,0,0,-78,[65,30,101,0],[100,-110,30,-65]); // drive off both feet, free hand at chest
- key(15,30,13,-94,[83,10,87,5],[120,-145,0,-70]); // rising right hook, compact free arm
- key(20,70,25,-98,[115,-30,86,5],[130,-160,-35,-85]); // uppercut passes the head
- key(25,90,23,-98,[125,-42,87,4],[135,-165,-80,-145]); // full back view, fist above the head
- key(28,90,20,-98,[125,-42,87,4],[135,-165,-80,-145]); // briefly retain the reference silhouette
- key(32,65,11,-87,[110,-25,100,-8],[115,-140,-45,-100]); // unwind along the same path
+ // Jump height is 1.5x the original arc; the punching arm extends on the way up
+ // and reaches the apex fully straight instead of folding over the head.
+ key(11,0,0,-78,[65,30,101,0],[100,-110,70,-45]); // drive off both feet, fist leaves the waist
+ key(15,30,20,-94,[83,10,87,5],[120,-145,-38,-50]); // rising, arm opening towards straight
+ key(20,70,38,-98,[115,-30,86,5],[130,-160,-68,-72]); // uppercut passes the head, arm extended
+ key(25,90,35,-98,[125,-42,87,4],[135,-165,-86,-88]); // full back view, straight arm above the head
+ key(28,90,30,-98,[125,-42,87,4],[135,-165,-86,-88]); // briefly retain the apex silhouette
+ key(32,65,17,-87,[110,-25,100,-8],[115,-140,-55,-65]); // fall, arm lowering along the same line
  key(38,15,0,-73,[57,45,110,-10],[90,-85,45,-80]); // contact, arms returning close to the torso
  key(42,0,0,-68,[45,65,120,-28],[75,-55,75,-70]); // absorb landing in starting view
  rest(55,0);
  const id='jumping_uppercut';
  data.animations[id]={durationFrames:56,loop:false,grounded:false,clampFloor:true,fixedLegDepth:true,interpolation:'angles',keyframes:keys,trail:{joint:'rightHand',fromFrame:10,toFrame:25,historyFrames:3}};
- const move={...structuredClone(moves.find(m=>m.id==='standing_hp')),id,animation:id,command:{type:'hold',directions:[6],buttons:['HP'],trigger:'pressed',priority:10},startup:12,active:9,recovery:35,advance:{frames:12,distance:12*256},frameRanges:[]};
+ const move={...structuredClone(moves.find(m=>m.id==='standing_hp')),id,animation:id,command:{type:'hold',directions:[6],buttons:['HP'],trigger:'pressed',priority:10},startup:12,active:9,recovery:35,hitstop:14,advance:{frames:12,distance:12*256},frameRanges:[]};
  // Sample the same production interpolation without changing the live data in check mode.
  const runtime=await server.ssrLoadModule('/src/render/skeleton.ts');
  Object.assign(runtime.animations,{[id]:data.animations[id]});

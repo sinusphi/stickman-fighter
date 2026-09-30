@@ -49,7 +49,9 @@ function capsule(a: number[], b: number[], r: number, s: number, path: Path2D = 
  * Pose and light use the right-hand reference view's local coordinates.
  * This renderer owns reflection, including eye, lighting and occlusion. Callers
  * pass a canonical pose and only apply position/positive display scale. */
-export function drawFigure(ctx: CanvasRenderingContext2D, pose: Pose, color: string, palette: Palette, facing = 1, flash = 0, depths: Readonly<SegmentDepths> = DEFAULT_DEPTHS, turn = 0, yaw?: number, fixedLegDepth = false): void {
+export function drawFigure(ctx: CanvasRenderingContext2D, pose: Pose, color: string, palette: Palette, facing = 1, flash = 0, depths: Readonly<SegmentDepths> = DEFAULT_DEPTHS, turn = 0, yaw?: number, fixedLegDepth = false, mirrorYaw = false): void {
+  // Mirrored turns rotate toward the camera: back view becomes front view.
+  if(mirrorYaw&&facing===-1&&yaw!==undefined)yaw=-yaw;
   const style=FIGURE_STYLE,head=pose[data.skeleton.headJoint],radius=style.headRadius;
   const segments=data.skeleton.bones.map(bone=>{
     const [width,tipWidth]=segmentWidths(bone.joint);

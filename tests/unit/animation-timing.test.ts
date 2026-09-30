@@ -9,26 +9,40 @@ import { buttonBit, neutralInput } from '../../src/input/types';
 const fastBasicKick=(id:string)=>/^(standing|crouching|airborne)_(lk|rlk|lmk|mk)$/.test(id);
 const basicKickDuration=(frames:number)=>Math.round(Math.round(frames*.8)*.95);
 const retime=(id:string,n:number)=>fastBasicKick(id)?basicKickDuration(n):/^(standing|crouching|airborne)_hk$/.test(id)?Math.round(n*.95):n;
+const synchronizedPunch=(id:string)=>/^(standing|crouching|airborne)_hp$/.test(id);
+const synchronizedKick=(id:string)=>/^(standing|crouching|airborne)_(lmk|mk|hk|rhk)$/.test(id);
+const synchronizedHeavyKick=(id:string)=>/^(standing|crouching|airborne)_(hk|rhk)$/.test(id);
+const lightKickReference=(id:string)=>MOVES[id.replace(/_(lmk|hk)$/,'_lk').replace(/_(mk|rhk)$/,'_rlk')];
+const reference=(id:string)=>synchronizedPunch(id)?MOVES[id.replace(/_hp$/,'_mp')]:lightKickReference(id);
 const preparation=(id:string)=>(original.preparationExtension as Record<string,number>)[id]??0;
 
-it('preserves global timing while accelerating low and middle kicks on both sides',()=>{
+it('preserves global timing while matching every normal middle/high kick to its light-kick clock',()=>{
   for(const [id,old] of Object.entries(original.animations)) {
     const animation=animations[id];
-    expect(animation.durationFrames,id).toBe(retime(id,Math.round(old.duration*1.25)+preparation(id)));
+    expect(animation.durationFrames,id).toBe(id==='spin_hk'?MOVES.standing_mk.duration:synchronizedPunch(id)||synchronizedKick(id)?reference(id).duration:retime(id,Math.round(old.duration*1.25)+preparation(id)));
     expect(animation.keyframes.at(-1)?.frame,id).toBe(animation.durationFrames-1);
   }
 });
 it('retimes startup, contact, recovery and reactions together without scaling twice',()=>{
   for(const [id,old] of Object.entries(original.moves)) {
     const move=MOVES[id];
-    expect(move.startup,id).toBe(retime(id,Math.round(old.startup*1.25)+preparation(id)));
-    expect(move.startup+move.active,id).toBe(retime(id,Math.round((old.startup+old.active)*1.25)+preparation(id)));
-    expect(move.duration,id).toBe(retime(id,Math.round((old.startup+old.active+old.recovery)*1.25)+preparation(id)));
+    const synchronized=synchronizedPunch(id)||synchronizedKick(id),clock=id==='spin_hk'?MOVES.standing_mk:synchronized?reference(id):undefined;
+    expect(move.startup,id).toBe(clock?clock.startup:retime(id,Math.round(old.startup*1.25)+preparation(id)));
+    expect(move.startup+move.active,id).toBe(clock?clock.startup+clock.active:retime(id,Math.round((old.startup+old.active)*1.25)+preparation(id)));
+    expect(move.duration,id).toBe(clock?clock.duration:retime(id,Math.round((old.startup+old.active+old.recovery)*1.25)+preparation(id)));
     expect(move.duration).toBe(animations[id].durationFrames);
-    for(const key of ['hitstun','blockstun','hitstop'] as const)expect(move[key]).toBe(Math.round(old[key]*1.25));
-    move.frames.forEach((boxes,frame)=>expect(boxes.hitboxes.length>0,`${id}/${frame}`).toBe(frame>=move.startup&&frame<move.startup+move.active));
+    for(const key of ['hitstun','blockstun','hitstop'] as const) {
+      const synchronizedHitstop=(synchronizedPunch(id)||synchronizedHeavyKick(id)||id==='spin_hk')&&key==='hitstop';
+      const contactReference=id==='spin_hk'?MOVES.standing_mk:synchronizedHeavyKick(id)?MOVES[id.replace(/_(hk|rhk)$/,'_mk')]:reference(id);
+      expect(move[key]).toBe(synchronizedHitstop?contactReference.hitstop:Math.round(old[key]*1.25));
+    }
+    const early=move.hitGroups.filter(g=>g.activeFrames);
+    move.frames.forEach((boxes,frame)=>{
+      expect(boxes.hitboxes.some(b=>!early.some(g=>g.id===b.hitGroup)),`${id}/${frame}`).toBe(frame>=move.startup&&frame<move.startup+move.active);
+      for(const g of early)expect(boxes.hitboxes.some(b=>b.hitGroup===g.id),`${id}/${g.id}/${frame}`).toBe(frame>=g.activeFrames![0]&&frame<=g.activeFrames![1]);
+    });
   }
-  expect(['standing_lk','standing_rlk','standing_lmk','standing_mk','standing_hk'].map(id=>MOVES[id].duration)).toEqual([30,30,37,37,51]);
+  expect(['standing_lk','standing_rlk','standing_lmk','standing_mk','standing_hk','standing_rhk'].map(id=>MOVES[id].duration)).toEqual([30,30,30,30,30,30]);
 });
 it.each([30,60,144])('plays the faster low kick at %s display Hz while keeping the simulation at 60 Hz',hz=>{
   const loop=new FixedLoop(),game=createGame();let start=-1,end=-1;
@@ -44,6 +58,7 @@ it.each([30,60,144])('plays the faster low kick at %s display Hz while keeping t
 
 it('preserves preparation and retimes every left-kick phase consistently',()=>{
   for(const [id,extra] of Object.entries(original.preparationExtension)) {
+    if(synchronizedPunch(id)||synchronizedKick(id))continue; // New phase clocks are asserted against their reference attack above.
     const old=original.animations[id as keyof typeof original.animations],move=original.moves[id as keyof typeof original.moves];
     const before=old.keys.map(frame=>frame===old.duration-1?Math.round(old.duration*1.25)-1:
       frame===move.startup+move.active-1?Math.round((frame+1)*1.25)-1:Math.round(frame*1.25));

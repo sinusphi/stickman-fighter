@@ -9,6 +9,8 @@ import { neutralInput, buttonBit } from '../../src/input/types';
 import { createReplay, parseReplay, playReplay } from '../../src/debug/replay';
 import { HitFeedback } from '../../src/render/feedback';
 
+const highStart=32+MOVES.forward_spin_hk.startup;
+const spinTime=(f:number)=>f<=24?Math.round(f/24*MOVES.forward_spin_hk.startup):MOVES.forward_spin_hk.startup+(f-24)/5*(MOVES.forward_spin_hk.active-1);
 const mk=buttonBit('MK'),hk=buttonBit('HK');
 const cases=[['tornado_mk',mk,80],['forward_spin_hk',hk,100],['tornado_spin_combo',mk|hk,180]] as const;
 const forward=(facing:number,buttons=0)=>({...neutralInput(),right:facing===1,left:facing===-1,buttons});
@@ -19,8 +21,8 @@ it('assigns readable colored-path geometry to each tornado and both combo kicks'
  expect(animationTrails('tornado_spin_combo').map(t=>t.joint)).toEqual(['rightFoot','leftFoot']);
  expect(sampleTrails('tornado_spin_combo',28)[0].length).toBeGreaterThan(5);
  expect(sampleTrails('tornado_spin_combo',28)[1]).toEqual([]);
- expect(sampleTrails('tornado_spin_combo',56)[0]).toEqual([]);
- expect(sampleTrails('tornado_spin_combo',56)[1].length).toBeGreaterThan(5);
+ expect(sampleTrails('tornado_spin_combo',highStart)[0]).toEqual([]);
+ expect(sampleTrails('tornado_spin_combo',highStart)[1].length).toBeGreaterThan(5);
 });
 it.each([['tornado_mk',18],['forward_spin_hk',18],['tornado_spin_combo',48]] as const)('%s exposes a mirrored waist arc during its turn',(id,frame)=>{
  const right=sampleRotationTrail(id,frame,1),left=sampleRotationTrail(id,frame,-1);
@@ -33,19 +35,19 @@ it.each([['forward_spin_hk',0],['tornado_spin_combo',32]] as const)('%s turns on
   const shin=[pose[`${side}Foot`][0]-pose[`${side}Knee`][0],pose[`${side}Foot`][1]-pose[`${side}Knee`][1]];
   return (thigh[0]*shin[0]+thigh[1]*shin[1])/625;
  };
- for(const facing of [-1,1])for(let frame=6;frame<=29;frame+=.25) {
+ for(const facing of [-1,1])for(let frame=spinTime(6);frame<=spinTime(29);frame+=.25) {
   const pose=samplePose(id,frame+offset,facing);
   expect(extension(pose,'left'),`${id}/${frame}/kick`).toBeGreaterThan(Math.cos(Math.PI/18));
   expect(extension(pose,'right'),`${id}/${frame}/support`).toBeGreaterThan(Math.cos(Math.PI/18));
   expect(pose.rightFoot[1]).toBeCloseTo(0,8);
  }
- const rear=samplePose(id,18+offset);
- expect(sampleYaw(id,18+offset)!%360).toBeGreaterThan(90);
- expect(sampleYaw(id,18+offset)!%360).toBeLessThan(120);
+ const rear=samplePose(id,spinTime(18)+offset);
+ expect(sampleYaw(id,spinTime(18)+offset)!%360).toBeGreaterThan(90);
+ expect(sampleYaw(id,spinTime(18)+offset)!%360).toBeLessThan(120);
  expect(rear.leftFoot[0]).toBeLessThan(rear.hip[0]-30);
  expect(rear.leftFoot[1]).toBeLessThan(rear.hip[1]-20);
  for(const frame of [24,29]) {
-  const pose=samplePose(id,frame+offset);
+  const pose=samplePose(id,spinTime(frame)+offset);
   expect(extension(pose,'left')).toBeCloseTo(1,8);
   expect(extension(pose,'right')).toBeCloseTo(1,8);
   expect(pose.leftFoot[0]-pose.hip[0]).toBeGreaterThan(34);
@@ -104,12 +106,12 @@ it.each(cases)('%s has exact limb boxes, fixed bones, no floor penetration and a
 it('jumps for the right tornado and flows through a grounded pivot to the left high spin',()=>{
  const hop=samplePose('tornado_spin_combo',24);
  expect(hop.leftFoot[1]).toBeLessThan(-12);expect(hop.rightFoot[1]).toBeLessThan(-12);
- const middle=samplePose('tornado_spin_combo',28),high=samplePose('tornado_spin_combo',56);
+ const middle=samplePose('tornado_spin_combo',28),high=samplePose('tornado_spin_combo',highStart);
  expect(middle.rightFoot[0]).toBeGreaterThan(40);expect(middle.rightFoot[1]).toBeGreaterThan(-70);
  expect(high.leftFoot[1]).toBeLessThan(-85);expect(high.rightFoot[1]).toBeCloseTo(0,8);
  expect(high.neck[0]).toBeLessThan(high.hip[0]-25);
  const move=MOVES.tornado_spin_combo;
- expect(move.frames.flatMap((f,i)=>f.hitboxes.length?[i]:[])).toEqual([28,29,30,31,32,56,57,58,59,60,61]);
+ expect(move.frames.flatMap((f,i)=>f.hitboxes.length?[i]:[])).toEqual([28,29,30,31,32,...Array.from({length:MOVES.forward_spin_hk.active},(_,i)=>highStart+i)]);
  expect(move.frames[38].hitboxes).toEqual([]);
 });
 it.each(['tornado_mk','tornado_spin_combo'])('%s keeps the hip airborne while lowering the non-kicking leg',id=>{
@@ -147,7 +149,7 @@ it.each(cases)('%s lands the expected damage in both facings and replays through
  }
 });
 it('uses MID then HIGH blocking and hit feedback; each group contacts only once',()=>{
- for(const [frame,level] of [[28,'MID'],[56,'HIGH']] as const)for(const direction of [1,4] as const) {
+ for(const [frame,level] of [[28,'MID'],[highStart,'HIGH']] as const)for(const direction of [1,4] as const) {
   const game=setup(1,42),[a,b]=game.fighters;a.state='Attack';a.moveId='tornado_spin_combo';a.moveFrame=frame;b.input.current.direction=direction;
   expect(collectContacts(game)).toHaveLength(1);
   const before=snapshot(game);resolveCombat(game);
@@ -207,7 +209,7 @@ it.each(cases)('%s turns continuously through a visible front and sweeps both ar
  for(const xs of Object.values(hands)){expect(Math.min(...xs)).toBeLessThan(-6);expect(Math.max(...xs)).toBeGreaterThan(6);}
 });
 
-it.each([['forward_spin_hk',24],['tornado_spin_combo',56]] as const)('%s keeps distinct, visibly bent arms at the high kick', (id,frame)=>{
+it.each([['forward_spin_hk',MOVES.forward_spin_hk.startup],['tornado_spin_combo',highStart]] as const)('%s keeps distinct, visibly bent arms at the high kick', (id,frame)=>{
  for(const facing of [-1,1]) {
   const p=samplePose(id,frame,facing);
   const upper=(side:string)=>[p[side+'Elbow'][0]-p[side+'Shoulder'][0],p[side+'Elbow'][1]-p[side+'Shoulder'][1]];

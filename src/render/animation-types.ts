@@ -17,7 +17,11 @@ export interface Animation {
   fixedLegDepth?: boolean;
   /** Preserve authored hops while preventing interpolation below the floor. */
   clampFloor?: boolean;
-  /** Grounded kicks follow foot paths with a planted support and fixed bones. */
+  /** `footIK`: crouching kicks follow foot paths with a planted support and
+   * fixed bones. `plantedSupport`: standing rear-leg kicks keep the guard's
+   * front foot planted while the kicking leg stays as authored. `plantedPivot`:
+   * the rear-leg middle and high kicks pivot the front foot in under the body,
+   * so the support leg ends angled back like the left kick's support. */
   legInterpolation?: string;
   trail?: Trail;
   /** Additional presentation-only paths let a combo hand the visual emphasis

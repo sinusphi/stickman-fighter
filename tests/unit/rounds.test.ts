@@ -40,4 +40,23 @@ describe('round and match rules',()=>{
     game.fighters[1].hp=0;step(game);expect(game.round.phase).toBe('matchOver');expect(game.round.wins).toEqual([2,0]);
     for(let i=0;i<200;i++)step(game);expect(game.round.phase).toBe('matchOver');
   });
+  it('plays the finishing attack to its end after a KO instead of freezing it',()=>{
+    const game=createGame();const [a,b]=game.fighters;a.x=400*rules.unit;b.x=448*rules.unit;b.hp=30;
+    step(game,[{...neutralInput(),buttons:1},neutralInput()]);
+    for(let i=0;i<MOVES.standing_lp.startup;i++)step(game);
+    expect(game.round.reason).toBe('KO');expect(a.state).toBe('Attack');
+    const frameAtKo=a.moveFrame,x=a.x;
+    while(game.hitstop)step(game);
+    expect(a.moveFrame).toBe(frameAtKo);
+    // Held buttons/direction after the KO must neither start a move nor walk.
+    let last=a.moveFrame;
+    for(let i=0;i<MOVES.standing_lp.duration && a.state==='Attack';i++) {
+      step(game,[{...neutralInput(),buttons:i%2,right:true},neutralInput()]);
+      if(a.state==='Attack'){expect(a.moveFrame).toBe(last+1);last=a.moveFrame;}
+    }
+    expect(a.state).toBe('Idle');expect(a.moveId).toBe(null);
+    const idleFrame=a.stateFrame;step(game);expect(a.stateFrame).toBe(idleFrame+1);
+    expect(Math.abs(a.x-x)).toBeLessThanOrEqual(Math.abs(MOVES.standing_lp.advance?.distance??0));
+    expect(b.state).toBe('KO');expect(game.round.phase).toBe('roundOver');
+  });
 });
