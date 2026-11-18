@@ -175,7 +175,12 @@ export const MIRROR_YAW_ANIMATIONS: ReadonlySet<string> = new Set(['jumping_uppe
 export function sampleYaw(id: string, time: number): number | undefined {
   return sampleViewTrack(id,time,'yaw');
 }
-function sampleViewTrack(id: string, time: number, track: 'turn'|'yaw'): number | undefined {
+/** Head-facing yaw. It follows the torso unless a move authors an independent
+ * look direction, such as the tornado's fixed forward gaze. */
+export function sampleHeadYaw(id: string, time: number): number | undefined {
+  return sampleViewTrack(id,time,'headYaw')??sampleYaw(id,time);
+}
+function sampleViewTrack(id: string, time: number, track: 'turn'|'yaw'|'headYaw'): number | undefined {
   const animation=animations[id]??animations.Idle;
   const frame=animation.loop?((time%animation.durationFrames)+animation.durationFrames)%animation.durationFrames:Math.max(0,Math.min(time,animation.durationFrames-1));
   const keys=animation.keyframes, end=keys.findIndex(key=>key.frame>frame);

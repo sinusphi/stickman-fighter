@@ -1,11 +1,12 @@
-import data from '../data/contact-geometry.json';
+import data from '../data/contact-geometry';
 import {FIGURE_SCALE} from '../data/figure-scale';
 import type {Fighter} from './types';
 import type {Capsule} from '../data/contact-shapes';
+import {POSE_CONTACT_MOVES} from '../data/pose-contact-moves';
 interface Geometry {loop:boolean;frames:{body:Capsule[];strikes:Record<string,Capsule>}[]}
 const geometry=data as unknown as Record<string,Geometry>;
 export function usesPoseContact(id:string):boolean {
- return /^(standing|crouching|airborne)_(hp|mk|lmk|hk|rhk)$/.test(id) || ['spin_mk','spin_hk','tornado_mk','forward_spin_hk','tornado_spin_combo'].includes(id);
+ return POSE_CONTACT_MOVES.has(id);
 }
 function frameFor(f:Fighter,hitLevel?:string) {
  const id=f.state==='Attack'&&f.moveId?f.moveId:f.state==='Walk'&&f.vx*f.facing<0?'WalkBackward':

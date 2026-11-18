@@ -1,0 +1,92 @@
+{
+  "attacks/13_attack_1.wav": {
+    "durationMs": 244.72016895459345,
+    "sampleRate": 7576,
+    "bytes": 3796,
+    "peak": 0.6875,
+    "rmsDb": -12.120440311587375,
+    "onsetMs": 21.307286166842662,
+    "peakMs": 31.54699049630412,
+    "trim": 1.013962784990649
+  },
+  "attacks/14_attack_2.wav": {
+    "durationMs": 282.73495248152057,
+    "sampleRate": 7576,
+    "bytes": 4372,
+    "peak": 0.6875,
+    "rmsDb": -12.007700442876823,
+    "onsetMs": 28.699049630411825,
+    "peakMs": 42.76663146779303,
+    "trim": 1.0008869393471649
+  },
+  "attacks/15_attack_3.wav": {
+    "durationMs": 553.0623020063358,
+    "sampleRate": 7576,
+    "bytes": 8468,
+    "peak": 0.6875,
+    "rmsDb": -11.279454746001347,
+    "onsetMs": 7.843717001055968,
+    "peakMs": 12.539598732840549,
+    "trim": 0.9203917926334547
+  },
+  "attacks/16_attack_4.wav": {
+    "durationMs": 202.48152059134108,
+    "sampleRate": 7576,
+    "bytes": 3156,
+    "peak": 0.6875,
+    "rmsDb": -11.371113101867788,
+    "onsetMs": 18.535374868004226,
+    "peakMs": 22.043294614572332,
+    "trim": 0.9301557071176706
+  },
+  "attacks/18_attack_6.wav": {
+    "durationMs": 303.8542766631468,
+    "sampleRate": 7576,
+    "bytes": 4692,
+    "peak": 0.6875,
+    "rmsDb": -9.974869419169,
+    "onsetMs": 5.071805702217529,
+    "peakMs": 49.63041182682154,
+    "trim": 0.792033354062341
+  },
+  "attacks/1A_attack_8.wav": {
+    "durationMs": 126.45195353748682,
+    "sampleRate": 7576,
+    "bytes": 2004,
+    "peak": 0.6875,
+    "rmsDb": -10.753491212720716,
+    "onsetMs": 3.3558606124604013,
+    "peakMs": 52.66631467793031,
+    "trim": 0.8663124596426575
+  },
+  "attacks/1D_attack_10.wav": {
+    "durationMs": 240.49630411826823,
+    "sampleRate": 7576,
+    "bytes": 3732,
+    "peak": 0.6875,
+    "rmsDb": -11.081237946280833,
+    "onsetMs": 41.89862724392819,
+    "peakMs": 61.7740232312566,
+    "trim": 0.8996257905089774
+  },
+  "attacks/22_attack_block.wav": {
+    "durationMs": 215.1531151003168,
+    "sampleRate": 7576,
+    "bytes": 3348,
+    "peak": 0.6875,
+    "rmsDb": -8.102391713934589,
+    "onsetMs": 6.259767687434002,
+    "peakMs": 13.199577613516366,
+    "trim": 0.6384392602250387
+  },
+  "attacks/59_whoosh.wav": {
+    "durationMs": 248.9440337909187,
+    "sampleRate": 7576,
+    "bytes": 3860,
+    "peak": 0.6875,
+    "rmsDb": -11.117560370131947,
+    "onsetMs": 0.5839493136219642,
+    "peakMs": 31.810982048574445,
+    "trim": 0.9033956988339131
+  }
+}

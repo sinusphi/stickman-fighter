@@ -1,11 +1,13 @@
 import { FIGURE_SCALE } from '../data/figure-scale';
-import { advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleYaw, MIRROR_YAW_ANIMATIONS } from '../render/skeleton';
+import { advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS } from '../render/skeleton';
 import { drawFigure, drawTrail } from '../render/figure';
 import { sampleDepths } from '../render/depth';
 import { facePoint } from '../render/facing';
 import type { Palette } from '../platform/theme';
 import { onLanguageChange, t } from '../platform/i18n';
 import { drawKneeSwoosh } from '../render/impact';
+import { comboLabel, comboMoves } from '../platform/combos';
+import { MOVES, type CompiledMove } from '../data/schema';
 
 const tx=(key: Parameters<typeof t>[0])=>`data-i18n="${key}">${t(key)}`;
 const previewKeys: Record<string, Parameters<typeof t>[0]> = {
@@ -18,16 +20,22 @@ const previewKeys: Record<string, Parameters<typeof t>[0]> = {
   HitMiddlePunch:'preview.hitPunch', HitLOW:'preview.hitLow', HitMID:'preview.hitMid',
   HitHIGH:'preview.hitHigh', Landing:'preview.landing', KO:'preview.ko',
 };
-const specialLabels: Record<string, string> = {
-  spin_mk:'Spin Middle Kick · 4+MK', spin_hk:'Spin High Kick · 6+HK',
-  jumping_uppercut:'Jumping Uppercut · 6+HP', tornado_mk:'Tornado · 6+MK',
-  forward_spin_hk:'Spin · 4+HK', tornado_spin_combo:'Tornado → Spin · 6+MK+HK',
+/** Display names of the single-button hold specials; inputs come from the move data. */
+const specialNames: Record<string, string> = {
+  spin_mk:'Spin Middle Kick', spin_hk:'Spin High Kick', jumping_uppercut:'Jumping Uppercut',
+  tornado_mk:'Tornado', forward_spin_hk:'Spin', dwit_chagi:'Dwit Chagi', left_turn_kick:'Left Turn Kick',
 };
+const specialSides: Record<string, 'left' | 'right'> = { forward_spin_hk:'left', jumping_uppercut:'right', tornado_mk:'right' };
+const specialMoves = Object.values(MOVES).filter(move=>move.command.type==='hold' && move.command.buttons.length===1);
+const commandText = (command: CompiledMove['command']) => `${command.directions.join('/')}+${command.buttons.join('+')}`;
 function animationLabel(id: string): string {
   if(previewKeys[id])return t(previewKeys[id]);
-  if(specialLabels[id]) {
-    const side=id==='forward_spin_hk'?'left':['jumping_uppercut','tornado_mk'].includes(id)?'right':null;
-    return specialLabels[id]+(side?` (${t(`preview.${side}`)})`:'');
+  const combo=comboMoves.find(move=>move.animation===id);
+  if(combo)return `${comboLabel(combo.id)} · ${commandText(combo.command as CompiledMove['command'])}`;
+  const special=specialMoves.find(move=>move.animation===id);
+  if(special) {
+    const side=specialSides[special.id];
+    return `${specialNames[special.id]??special.id} · ${commandText(special.command)}${side?` (${t(`preview.${side}`)})`:''}`;
   }
   const match=/^(standing|crouching|airborne)_(lp|mp|hp|lk|lmk|hk|rlk|mk|rhk)$/.exec(id);
   if(match) {
@@ -36,18 +44,28 @@ function animationLabel(id: string): string {
   }
   return id;
 }
-// Derive the inventory from the renderer so new clips cannot silently disappear.
-const previewAnimationIds = [
-  ...Object.keys(animations).filter(id=>id.startsWith('Demo')),
-  ...Object.keys(animations).filter(id=>!id.startsWith('Demo')),
+// Explicit categories and button order, with a fallback for new renderer clips.
+const previewButtonOrder=['lp','mp','hp','lk','lmk','hk','rlk','mk','rhk'];
+const previewGroups: {key: Parameters<typeof t>[0]; ids: string[]}[] = [
+  {key:'preview.groupMovement',ids:['Idle','Walk','WalkBackward','Crouch','CrouchWalk','JumpSquat','Airborne','Landing']},
+  ...(['standing','crouching','airborne'] as const).map(stance=>({key:`preview.${stance}` as Parameters<typeof t>[0],ids:previewButtonOrder.map(button=>`${stance}_${button}`)})),
+  {key:'preview.groupSpecials',ids:[...new Set(['jumping_uppercut','left_turn_kick','dwit_chagi','spin_mk','forward_spin_hk','spin_hk','tornado_mk',...specialMoves.map(move=>move.animation)])]},
+  {key:'combo.summary',ids:comboMoves.map(move=>move.animation)},
+  {key:'preview.groupReactions',ids:['Blockstun','CrouchBlock','Hitstun','HitMiddlePunch','HitLOW','HitMID','HitHIGH','Knockdown','KO']},
+  {key:'preview.groupDemos',ids:Object.keys(animations).filter(id=>id.startsWith('Demo'))},
 ];
+const listedIds=new Set(previewGroups.flatMap(group=>group.ids));
+previewGroups.push({key:'preview.groupOther',ids:Object.keys(animations).filter(id=>!listedIds.has(id)).sort()});
 export const previewMarkup = `
 <details id="animation-preview">
   <summary ${tx('preview.summary')}</summary>
   <p class="hint" ${tx('preview.help')}</p>
   <div class="preview-controls">
     <label><span ${tx('preview.animation')}</span> <select id="preview-animation">
-      ${previewAnimationIds.map(id=>`<option value="${id}">${animationLabel(id)}</option>`).join('')}
+      ${previewGroups.map(group=>{
+        const ids=group.ids.filter(id=>id in animations);
+        return ids.length?`<optgroup data-label-key="${group.key}" label="${t(group.key)}">${ids.map(id=>`<option value="${id}">${animationLabel(id)}</option>`).join('')}</optgroup>`:'';
+      }).join('')}
     </select></label>
     <label><span ${tx('preview.speed')}</span> <select id="preview-speed"><option value="0.25">¼×</option><option value="0.5" selected>½×</option><option value="1">1×</option></select></label>
     <button id="preview-play" type="button">${t('preview.play')}</button><button id="preview-step" type="button" ${tx('preview.step')}</button>
@@ -74,6 +92,7 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
   // Only translate on language changes, never from the animation frame loop.
   onLanguageChange(()=>{
     for(const option of select.options)option.textContent=animationLabel(option.value);
+    for(const group of select.querySelectorAll('optgroup'))group.label=t(group.dataset.labelKey as Parameters<typeof t>[0]);
     sync();
   });
   range.max=String(animations[select.value].durationFrames-1);
@@ -114,7 +133,7 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
       drawTrail(ctx,samples[index],palette.p1,fade,trail.directional??true,facing,trail.directional?palette.revenge:palette.special);
     });
     drawTrail(ctx,sampleRotationTrail(id,time),palette.revenge,.72,true,facing,palette.special);
-    drawFigure(ctx,pose,palette.p1,palette,facing,0,sampleDepths(id,time),sampleTurn(id,time),sampleYaw(id,time),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
+    drawFigure(ctx,pose,palette.p1,palette,facing,0,sampleDepths(id,time),sampleTurn(id,time),sampleHeadYaw(id,time),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
     drawKneeSwoosh(ctx,id,time,facing,palette.p1,palette);
     for(const trail of trails)if(!isKneeTrail(trail) && time>=trail.fromFrame && time<=trail.toFrame) {
       const anchor=facePoint(pose[trail.joint],facing);ctx.fillStyle=trail.directional?palette.special:palette.p1;ctx.beginPath();ctx.arc(anchor[0],anchor[1],4.2,0,Math.PI*2);ctx.fill();

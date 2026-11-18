@@ -1,6 +1,6 @@
 import rules from '../data/rules.json';
 import type { RawInput } from '../input/types';
-import { createFighter } from './state';
+import { createFighter, createRound } from './factory';
 import type { GameState } from './types';
 
 export interface RoundState {
@@ -12,9 +12,7 @@ export interface RoundState {
   winner: number | null;
   reason: 'KO' | 'TIME OVER' | 'DOUBLE KO' | 'DRAW' | null;
 }
-export function createRound(): RoundState {
-  return { phase:'fighting', number:1, timer:rules.roundSeconds*rules.hz, wins:[0,0], transition:0, winner:null, reason:null };
-}
+export { createRound };
 export function resetRound(game: GameState, inputs: [RawInput, RawInput]): void {
   const resources = game.fighters.map(fighter => structuredClone(fighter.resources));
   game.fighters = [createFighter(0),createFighter(1)];

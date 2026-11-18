@@ -1,3 +1,4 @@
+import { requiresCrouchGuard } from '../simulation/guard';
 import rules from '../data/rules.json';
 import { KNOWLEDGE, MOVE_INFO, nextHitLevel, reaches } from './knowledge';
 import type { View } from './observation';
@@ -86,7 +87,7 @@ export class UtilityBrain implements CpuBrain {
     const level = enemyMove ? nextHitLevel(o.moveId,o.moveFrame) : null;
     if (level!==null && distance<(enemyMove?.reach ?? 0)+40*U && this.rng.next()<p.blockChance) {
       const correct = this.rng.next()<p.correctBlockChance;
-      return { kind:'block', low:correct ? level==='LOW' : level!=='LOW', score:1.3, reason:`Denkpause: guard ${level}` };
+      return { kind:'block', low:correct === requiresCrouchGuard(level!, enemyMove?.stance, o.y<0), score:1.3, reason:`Denkpause: guard ${level}` };
     }
     const canRetreat = room>=MIN_BACK_ROOM;
     if (canRetreat && distance<SWEET_SPOT && (this.tactic!=='pressure' || this.rng.next()<.25))
@@ -120,7 +121,7 @@ export class UtilityBrain implements CpuBrain {
     const protectLead = v.round.timer < 15*rules.hz && s.hp>o.hp;
     if (danger && this.rng.next()<p.blockChance && (this.guardingSince<0 || v.frame-this.guardingSince<90)) {
       const correct = this.rng.next()<p.correctBlockChance;
-      add({kind:'block', low:correct ? level==='LOW' : level!=='LOW', score:1.3+(lowHealth?.1:0), reason:`guard ${level}`});
+      add({kind:'block', low:correct === requiresCrouchGuard(level!, enemyMove?.stance, o.y<0), score:1.3+(lowHealth?.1:0), reason:`guard ${level}`});
     }
     const aerial = o.y<0 || o.state==='JumpSquat';
     const antiAir = aerial && this.rng.next()<Math.min(.95,p.antiAirChance+this.jumpHabit*p.adaptation);

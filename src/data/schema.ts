@@ -36,6 +36,18 @@ export interface Move {
 }
 export type CompiledMove = Move & { frames: FrameBoxes[]; duration: number };
 
+/** Buttons that still attack from the crouch; the other kicks do nothing there. */
+export const CROUCH_BUTTONS: readonly Button[] = ['LP', 'MP', 'HP', 'LK', 'RLK'];
+/** Order in which simultaneously pressed buttons become the buffered command. */
+export const NORMAL_PRIORITY = rules.normalPriority as Button[];
+/** Ground travel after `frame` frames of a move's `advance` (smoothstep, integer subpixels).
+ * Single source for simulation, chord upgrades and CPU reach. */
+export function advanceAt(advance: Move['advance'], frame: number): number {
+  if (!advance) return 0;
+  const t = Math.max(0, Math.min(1, frame / advance.frames));
+  return Math.round(advance.distance * t * t * (3 - 2 * t));
+}
+
 function assert(condition: unknown, message: string): asserts condition { if (!condition) throw Error(`Ungültige Spieldaten: ${message}`); }
 function integer(value: number, min = 0): boolean { return Number.isSafeInteger(value) && value >= min; }
 function validateBox(box: Box): void {
@@ -69,7 +81,7 @@ export function validatePoses(value: unknown): void {
     const tracks=animation.keyframes[0].rotations??[];
     assert(animation.trails===undefined || Array.isArray(animation.trails),`${id}: zusätzliche Bewegungsspuren.`);
     const trails=[...(animation.trail?[animation.trail]:[]),...(animation.trails??[])];
-    assert(trails.length<=4,`${id}: zu viele Bewegungsspuren.`);
+    assert(trails.length<=5,`${id}: zu viele Bewegungsspuren.`);
     for(const trail of trails)assert((trail.directional===undefined || typeof trail.directional==='boolean') && joints.has(trail.joint) && integer(trail.fromFrame) && integer(trail.toFrame) && trail.toFrame>=trail.fromFrame && trail.toFrame<animation.durationFrames && Number.isFinite(trail.historyFrames) && trail.historyFrames>0 && trail.historyFrames<=30,`${id}: Bewegungsspur.`);
     let previous=-1;
     for(const key of animation.keyframes) {
@@ -102,16 +114,19 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
     assert(['LOW','MID','HIGH'].includes(move.hitLevel), `${move.id}: Hit-Level.`);
     assert(move.animation in poses.animations, `${move.id}: Animation fehlt.`);
     assert([move.startup,move.recovery,move.damage,move.hitstun,move.blockstun,move.pushbackHit,move.pushbackBlock,move.hitstop].every(n => integer(n)) && integer(move.active,1), `${move.id}: Frame-Data.`);
-    assert(move.advance===undefined || integer(move.advance.frames,1) && move.advance.frames<=move.startup && integer(move.advance.distance) && move.stance!=='airborne',`${move.id}: Vorwärtsschritt.`);
+    assert(move.advance===undefined || integer(move.advance.frames,1) && move.advance.frames<=move.startup+(move.multiHit?move.active:0) && integer(move.advance.distance) && move.stance!=='airborne',`${move.id}: Vorwärtsschritt.`);
     assert(move.groundHitReaction===undefined || move.groundHitReaction==='middlePunch',`${move.id}: Bodenreaktion.`);
     assert(move.slideSpeed===undefined || integer(move.slideSpeed),`${move.id}: Rutschgeschwindigkeit.`);
     assert(move.command && ['normal','motion','hold'].includes(move.command.type) && ['pressed','released'].includes(move.command.trigger) && move.command.buttons.every(b => BUTTONS.includes(b)) && move.command.directions.every(d=>integer(d,1)&&d<=9), `${move.id}: Command.`);
     if(move.command.type==='hold') {
+      // Structural rules instead of a whitelist, so new combos need no schema change.
+      // The engine starts a move from the highest-priority newly pressed button,
+      // therefore `button` must be exactly that button of the command.
       const {directions,buttons}=move.command;
-      const single=buttons.length===1 && buttons[0]===move.button;
-      const back=directions[0]===4 && ['LK','MK','HK'].includes(move.button) && single;
-      const forward=directions[0]===6 && (single && ['HP','MK','HK'].includes(move.button) || move.button==='HK' && buttons.length===2 && buttons.includes('MK') && buttons.includes('HK'));
-      assert(move.stance==='standing' && move.command.trigger==='pressed' && directions.length===1 && (back||forward),`${move.id}: Hold-Command nur für stehende Richtung+Angriffe.`);
+      const lead=NORMAL_PRIORITY.find(b=>buttons.includes(b));
+      assert(move.stance==='standing' && move.command.trigger==='pressed' && directions.length===1 && [4,6].includes(directions[0]) &&
+        buttons.length>=1 && buttons.length<=2 && new Set(buttons).size===buttons.length && lead===move.button,
+        `${move.id}: Hold-Command nur im Stand mit Richtung 4 oder 6 und ein oder zwei verschiedenen Tasten; \`button\` muss die Taste mit der höchsten Priorität (rules.normalPriority) sein.`);
     }
     assert(Array.isArray(move.cancelWindows) && Array.isArray(move.hitGroups) && move.hitGroups.length > 0 && move.hitGroups.every(g => typeof g.id === 'string' && integer(g.maxHitsPerTarget,1)), `${move.id}: Hit-/Cancel-Gruppen.`);
     assert(move.hitGroups.every(g=>(g.hitLevel===undefined || ['LOW','MID','HIGH'].includes(g.hitLevel)) && (g.damage===undefined || integer(g.damage))),`${move.id}: Treffergruppen-Level oder Schaden.`);
@@ -155,5 +170,11 @@ export function validateResources(value: unknown): asserts value is Resources {
   }
 }
 validateResources(rules.resources);
+assert(NORMAL_PRIORITY.length===BUTTONS.length && BUTTONS.every(b=>NORMAL_PRIORITY.includes(b)),'rules.normalPriority muss jede Taste genau einmal enthalten.');
 validatePoses(poses);
 export const MOVES = validateMoves(rawMoves);
+/** Authored legacy clips remain available for rendering; only these moves can be played. */
+export function isPlayableMove(move: CompiledMove): boolean {
+  return move.stance !== 'crouching' || CROUCH_BUTTONS.includes(move.button);
+}
+export const PLAYABLE_MOVES = Object.fromEntries(Object.entries(MOVES).filter(([, move]) => isPlayableMove(move)));

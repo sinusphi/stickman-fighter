@@ -1,0 +1,22 @@
+{
+  "hit": {
+    "punch": {
+      "light": ["attacks/13_attack_1.wav"],
+      "middle": ["attacks/14_attack_2.wav", "attacks/1D_attack_10.wav"],
+      "high": ["attacks/15_attack_3.wav"]
+    },
+    "kick": {
+      "light": ["attacks/16_attack_4.wav"],
+      "middle": ["attacks/16_attack_4.wav", "attacks/18_attack_6.wav"],
+      "high": ["attacks/15_attack_3.wav", "attacks/18_attack_6.wav"]
+    },
+    "knee": {
+      "light": ["attacks/1A_attack_8.wav"],
+      "middle": ["attacks/1A_attack_8.wav"],
+      "high": ["attacks/1A_attack_8.wav"]
+    }
+  },
+  "block": ["attacks/22_attack_block.wav"],
+  "swing": ["attacks/59_whoosh.wav"],
+  "rate": { "punch": 1.0, "kick": 0.88, "knee": 1.0 }
+}

@@ -27,5 +27,5 @@ export interface Animation {
   /** Additional presentation-only paths let a combo hand the visual emphasis
    * from one striking limb to the next without changing legacy move data. */
   trails?: Trail[];
-  keyframes: { frame: number; pose: string; easing: string; rotations?: Rotation[]; depths?: SegmentDepths; turn?: number; yaw?: number }[];
+  keyframes: { frame: number; pose: string; easing: string; rotations?: Rotation[]; depths?: SegmentDepths; turn?: number; yaw?: number; headYaw?: number }[];
 }

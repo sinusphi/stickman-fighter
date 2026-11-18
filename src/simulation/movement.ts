@@ -1,4 +1,4 @@
-import { MOVES } from '../data/schema';
+import { MOVES, advanceAt } from '../data/schema';
 import rules from '../data/rules.json';
 import type { Fighter, FighterState } from './types';
 
@@ -12,22 +12,19 @@ export function transition(f: Fighter, state: FighterState, remaining = 0): void
 export function recoverGround(f: Fighter): void {
   const direction = f.input.current.direction;
   f.crouching = direction <= 3;
-  transition(f, f.crouching ? direction === 3 ? 'CrouchWalk' : 'Crouch' : direction === 4 || direction === 6 ? 'Walk' : 'Idle');
+  transition(f, f.crouching ? 'Crouch' : direction === 4 || direction === 6 ? 'Walk' : 'Idle');
 }
 export function moveFighter(f: Fighter, stationary = false): boolean {
   f.stateFrame++;
   if(f.state==='Attack' && f.moveId && f.y===0) {
     const advance=MOVES[f.moveId].advance;
-    if(advance) {
-      const offset=(frame:number)=>{const t=Math.max(0,Math.min(1,frame/advance.frames));return Math.round(advance.distance*t*t*(3-2*t));};
-      f.x+=f.attackFacing*(offset(f.moveFrame)-offset(f.moveFrame-1));
-    }
+    if(advance) f.x+=f.attackFacing*(advanceAt(advance,f.moveFrame)-advanceAt(advance,f.moveFrame-1));
   }
   if(f.state==='Hitstun' && f.y===0 && f.hitReaction==='middlePunch') {
     f.x+=f.vx;
     f.vx=Math.sign(f.vx)*Math.max(0,Math.abs(f.vx)-rules.hitSlideFriction);
   }
-  if (f.state === 'Blockstun') { f.crouching = f.input.current.direction === 1; f.vx = 0; }
+  if (f.state === 'Blockstun') { f.crouching = f.input.current.direction <= 3; f.vx = 0; }
   if (['Landing', 'Hitstun', 'Blockstun'].includes(f.state)) {
     f.remaining--;
     if (f.remaining <= 0) recoverGround(f);
@@ -44,13 +41,11 @@ export function moveFighter(f: Fighter, stationary = false): boolean {
       f.airAttackUsed = false; transition(f, 'JumpSquat', rules.jumpSquat);
     } else {
       const crouching = direction <= 3;
-      // Down-back holds a stationary crouching guard (see canBlock); only
-      // down-forward walks in the crouch.
-      const horizontal = stationary || direction === 1 ? 0 : (direction - 1) % 3 - 1;
-      const next: FighterState = crouching ? horizontal ? 'CrouchWalk' : 'Crouch' : horizontal ? 'Walk' : 'Idle';
+      const horizontal = stationary || crouching ? 0 : (direction - 1) % 3 - 1;
+      const next: FighterState = crouching ? 'Crouch' : horizontal ? 'Walk' : 'Idle';
       if (f.state !== next) transition(f, next);
       f.crouching = crouching;
-      f.vx = horizontal * f.facing * (crouching ? rules.crouchForwardSpeed : horizontal > 0 ? rules.forwardSpeed : rules.backwardSpeed) || 0;
+      f.vx = horizontal * f.facing * (horizontal > 0 ? rules.forwardSpeed : rules.backwardSpeed) || 0;
       f.x += f.vx;
     }
   }

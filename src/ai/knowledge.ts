@@ -1,4 +1,4 @@
-import { MOVES, type CompiledMove, type HitLevel } from '../data/schema';
+import { MOVES, PLAYABLE_MOVES, advanceAt, type CompiledMove, type HitLevel } from '../data/schema';
 import { FIGURE_SCALE } from '../data/figure-scale';
 import bodies from '../data/bodies.json';
 import type { Box } from '../simulation/collision';
@@ -19,8 +19,7 @@ export function buildKnowledge(moves: Record<string, CompiledMove>): MoveKnowled
   return Object.values(moves).map(m => {
     const boxes: ActiveBox[] = [];
     m.frames.forEach((frame, i) => {
-      const t = m.advance ? Math.min(1, i / m.advance.frames) : 0;
-      const advance = Math.round((m.advance?.distance ?? 0) * t*t*(3-2*t));
+      const advance = advanceAt(m.advance, i);
       for (const b of frame.hitboxes) {
         const group = m.hitGroups.find(g => g.id === b.hitGroup)!;
         const scaled = scaledBox(b);
@@ -34,8 +33,8 @@ export function buildKnowledge(moves: Record<string, CompiledMove>): MoveKnowled
       boxes, reach:Math.max(...boxes.map(b => b.x+b.width)), lastActive };
   });
 }
-export const KNOWLEDGE = buildKnowledge(MOVES);
-export const MOVE_INFO = Object.fromEntries(KNOWLEDGE.map(m => [m.id, m]));
+export const KNOWLEDGE = buildKnowledge(PLAYABLE_MOVES);
+export const MOVE_INFO = Object.fromEntries(buildKnowledge(MOVES).map(m => [m.id, m]));
 const hurt = Object.fromEntries(Object.entries(bodies).map(([s,b]) => [s,b.hurtboxes.map(scaledBox)]));
 /** Tests the perceived current geometry, never a simulated future game state. */
 export function reaches(m: MoveKnowledge, self: VisibleFighter, opponent: VisibleFighter, margin = 0): boolean {

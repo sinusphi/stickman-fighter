@@ -44,7 +44,7 @@ export interface GameState {
   frame: number;
   combatFrame: number;
   fighters: [Fighter, Fighter];
-  inputConfig: { socd: SocdConfig; bufferFrames: number };
+  inputConfig: { socd: SocdConfig; bufferFrames: number; autoBlock?: [boolean, boolean] };
   hitstop: number;
   lastContact: { attacker: number; defender: number; blocked: boolean; frame: number; hitLevel?: HitLevel; poses?: ContactPose[] } | null;
   measurements: { attacker: number; defender: number; attackerReady: number | null; defenderReady: number | null; complete: boolean }[];

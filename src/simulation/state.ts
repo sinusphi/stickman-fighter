@@ -1,25 +1,16 @@
-import rules from '../data/rules.json';
-import type { Fighter, GameState } from './types';
-import { createInputState } from '../input/history';
+import type { GameState } from './types';
 import { captureInput } from '../input/commands';
 import { neutralInput, type RawInput } from '../input/types';
 import { moveFighter } from './movement';
 import { resolvePushboxes } from './collision';
 import { advanceAttack, measureAdvantage, resolveCombat, startAttack, standingHoldEligible } from './combat';
-import { advanceRound, createRound, resolveRound } from './rounds';
+import { advanceRound, resolveRound } from './rounds';
+import { createFighter, createGame } from './factory';
 import { dummyInput } from '../debug/training';
 import { applyEvents, type ControlEvent } from './events';
 
-export function createFighter(id: number): Fighter {
-  return { resources: structuredClone(rules.resources), id, x: rules.spawns[id], y: 0, vx: 0, vy: 0, facing: id === 0 ? 1 : -1, state: 'Idle', stateFrame: 0, hp: rules.maxHealth,
-    input: createInputState(), crouching: false, remaining: 0, jumpX: 0, airAttackUsed: false, landingRecovery: 0,
-    moveId: null, moveFrame: 0, attackFacing: id === 0 ? 1 : -1, attackId: 0, hitTargets: [],
-    comboCount: 0, damageScalePermille: rules.damageScaleUnit, juggleState: 0, advantage: 'n/a' };
-}
-
-export function createGame(): GameState {
-  return { schemaVersion: 2, frame: 0, combatFrame: 0, fighters: [createFighter(0), createFighter(1)], inputConfig: { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }, hitstop: 0, lastContact: null, measurements: [], round: createRound(), training: { enabled:false, dummy:'stand' } };
-}
+// Factories live in ./factory so events and rounds can use them without an import cycle.
+export { createFighter, createGame };
 
 export function updateFacing(game: GameState): void {
   const [a, b] = game.fighters;

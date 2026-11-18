@@ -1,11 +1,13 @@
 import bodies from '../data/bodies.json';
 import rules from '../data/rules.json';
-import { MOVES, groupValue, type CompiledMove, type FrameBoxes, type HitLevel, type HitGroup } from '../data/schema';
-import { buttonBit } from '../input/types';
+import { CROUCH_BUTTONS, MOVES, advanceAt, isPlayableMove, groupValue, type CompiledMove, type FrameBoxes, type HitLevel, type HitGroup } from '../data/schema';
+import { buttonBit, type Button, type Direction } from '../input/types';
 import { consumeCommand } from '../input/commands';
 import { readHistory } from '../input/history';
 import { isActionable, isGroundActionable, recoverGround, transition } from './movement';
 import { clampToStage, overlaps, resolvePushboxes, stance, worldBox } from './collision';
+import { requiresCrouchGuard } from './guard';
+import type { Stance } from './collision';
 import type { Fighter, GameState } from './types';
 import { hasPoseContact, usesPoseContact } from './pose-contact';
 
@@ -24,31 +26,73 @@ export function advanceAttack(f: Fighter): void {
 export function standingHoldEligible(f: Fighter): boolean {
   return (f.state==='Idle' || f.state==='Walk') && f.y===0 && !f.crouching;
 }
-export function startAttack(f: Fighter, combatFrame: number, holdEligible = standingHoldEligible(f)): void {
-  // Real keyboard chords can straddle simulation frames. Upgrade only the
-  // first three startup frames of a fresh forward-direction kick, preserving elapsed
-  // time, advance and attack identity. Never turn recovery buffers into chords.
-  if (f.state==='Attack' && ['tornado_mk','spin_hk'].includes(f.moveId??'') && f.moveFrame>0 && f.moveFrame<=3) {
-    const first=buttonBit(f.moveId==='tornado_mk'?'MK':'HK');
-    const second=buttonBit(f.moveId==='tornado_mk'?'HK':'MK');
-    const current=f.input.current,history=readHistory(f.input.history).slice(-f.moveFrame-1);
-    if (f.input.pending?.button===(f.moveId==='tornado_mk'?'HK':'MK') &&
-      (current.pressed&second)!==0 && (current.held&(first|second))===(first|second) &&
-      history.length===f.moveFrame+1 && (history[0].pressed&first)!==0 &&
-      history.every(frame=>frame.direction===6 && (frame.held&first)!==0)) {
-      f.moveId='tornado_spin_combo';f.landingRecovery=MOVES.tornado_spin_combo.recovery;
-      f.input.pending=null;
-      return;
-    }
+/** Frames after a single kick started in which its chord partner may still arrive. */
+export const CHORD_WINDOW_FRAMES = 3;
+/**
+ * Two-button chords whose physical keys can straddle simulation frames. The
+ * single move started by whichever key arrived first is upgraded in place
+ * during its first startup frames. Order matters: the first matching entry
+ * wins. `sources` maps each single move to the button that started it; the
+ * partner button is the other one of the pair. `travel` keeps both key
+ * orders on the same world path:
+ *  - undoSource: the single's own advance is undone,
+ *  - catchUpTarget: the chord's advance for the elapsed frames is applied,
+ *  - none: both singles and the chord share the same travel.
+ */
+interface ChordUpgrade { sources: Readonly<Record<string, Button>>; direction: Direction; target: string; travel: 'undoSource' | 'catchUpTarget' | 'none' }
+export const CHORD_UPGRADES: readonly ChordUpgrade[] = [
+  // Forward H+N. Remove the single right high kick’s startup advance.
+  { sources: { spin_hk: 'HK', standing_rhk: 'RHK' }, direction: 6, target: 'middle_high_punch_combo', travel: 'undoSource' },
+  // Forward G+B.
+  { sources: { standing_lmk: 'LMK', tornado_mk: 'MK' }, direction: 6, target: 'middle_high_low_combo', travel: 'undoSource' },
+  // Forward V+B.
+  { sources: { standing_rlk: 'RLK', tornado_mk: 'MK' }, direction: 6, target: 'spin_high_middle_combo', travel: 'undoSource' },
+  // Back LK+LMK.
+  { sources: { left_turn_kick: 'LK', standing_lmk: 'LMK' }, direction: 4, target: 'double_high_kick', travel: 'catchUpTarget' },
+  // Forward MK+HK.
+  { sources: { tornado_mk: 'MK', spin_hk: 'HK' }, direction: 6, target: 'tornado_spin_combo', travel: 'none' },
+];
+const advanceOffset = (moveId: string, frame: number): number => advanceAt(MOVES[moveId].advance, frame);
+function chordCompleted(f: Fighter, first: Button, second: Button, direction: Direction): boolean {
+  const mask = buttonBit(first) | buttonBit(second), current = f.input.current;
+  const history = readHistory(f.input.history).slice(-f.moveFrame - 1);
+  return f.input.pending?.button === second && (current.pressed & buttonBit(second)) !== 0 &&
+    (current.held & mask) === mask && history.length === f.moveFrame + 1 &&
+    (history[0].pressed & buttonBit(first)) !== 0 &&
+    history.every(frame => frame.direction === direction && (frame.held & buttonBit(first)) !== 0);
+}
+/** Upgrades a fresh single kick into its chord. Never turns recovery buffers into chords. */
+function upgradeChord(f: Fighter): boolean {
+  if (f.state !== 'Attack' || !f.moveId || f.moveFrame <= 0 || f.moveFrame > CHORD_WINDOW_FRAMES) return false;
+  for (const chord of CHORD_UPGRADES) {
+    const first = chord.sources[f.moveId];
+    if (!first) continue;
+    const second = Object.values(chord.sources).find(button => button !== first)!;
+    if (!chordCompleted(f, first, second, chord.direction)) continue;
+    if (chord.travel === 'undoSource') f.x -= f.attackFacing * advanceOffset(f.moveId, f.moveFrame);
+    f.moveId = chord.target; f.landingRecovery = MOVES[chord.target].recovery;
+    if (chord.travel === 'catchUpTarget') f.x += f.attackFacing * advanceOffset(chord.target, f.moveFrame);
+    f.input.pending = null;
+    return true;
   }
+  return false;
+}
+export function startAttack(f: Fighter, combatFrame: number, holdEligible = standingHoldEligible(f)): void {
+  if (upgradeChord(f)) return;
   if (!isActionable(f) || !f.input.pending) return;
   const button = f.input.pending.button;
-  // Reserved chord: consume it so releasing back cannot emit a buffered LK.
-  if (holdEligible && button==='LK' && f.input.current.direction===4) {
-    consumeCommand(f.input, true, combatFrame);
+  if (stance(f) === 'crouching' && !CROUCH_BUTTONS.includes(button)) {
+    f.input.pending = null;
     return;
   }
-  const candidates = Object.values(MOVES).filter(move => move.stance === stance(f) && move.button === button && (move.command.type === 'normal' || (move.command.type==='hold' ? holdEligible && move.command.directions.includes(f.input.current.direction) && move.command.buttons.every(b=>Boolean(f.input.current.pressed & buttonBit(b))) : f.input.pending!.motions.includes(move.command.motionId ?? ''))));
+  const pending = f.input.pending, current = f.input.current;
+  const commandMatches = (move: CompiledMove): boolean => {
+    const command = move.command;
+    if (command.type === 'normal') return true;
+    if (command.type === 'hold') return holdEligible && command.directions.includes(current.direction) && command.buttons.every(b => Boolean(current.pressed & buttonBit(b)));
+    return pending.motions.includes(command.motionId ?? '');
+  };
+  const candidates = Object.values(MOVES).filter(move => isPlayableMove(move) && move.stance === stance(f) && move.button === button && commandMatches(move));
   const category={normal:0,hold:1,motion:2};
   candidates.sort((a,b) => category[b.command.type] - category[a.command.type] || b.command.priority-a.command.priority || (a.id < b.id ? -1 : 1));
   const move = candidates[0];
@@ -57,10 +101,17 @@ export function startAttack(f: Fighter, combatFrame: number, holdEligible = stan
   f.landingRecovery = move.recovery;
   if (f.y < 0) f.airAttackUsed = true; else f.vx = 0;
 }
-export function canBlock(f: Fighter, level: HitLevel): boolean {
+export function canBlock(f: Fighter, level: HitLevel, autoBlock = false, attackStance: Stance = 'standing', airborne = false): boolean {
   if (f.y < 0 || !(isGroundActionable(f) || f.state === 'Blockstun')) return false;
   const direction = f.input.current.direction;
-  return direction === 1 ? level !== 'HIGH' : direction === 4 && level !== 'LOW';
+  const raw = f.input.previous;
+  const forward = f.facing === 1 ? raw.right : raw.left;
+  const back = f.facing === 1 ? raw.left : raw.right;
+  const automatic = !raw.up && !forward && !raw.buttons && !f.input.current.pressed &&
+    ((!raw.down && !back && direction === 5) || (raw.down && (direction === 1 || direction === 2)));
+  const crouching = direction >= 1 && direction <= 3;
+  if (crouching !== requiresCrouchGuard(level, attackStance, airborne)) return false;
+  return (autoBlock && automatic) || direction === 1 || direction === 4;
 }
 
 interface Contact { attacker: Fighter; defender: Fighter; move: CompiledMove; hitGroup: HitGroup; group: string; blocked: boolean; side: number }
@@ -86,7 +137,7 @@ export function collectContacts(game: GameState): Contact[] {
       if (usesPoseContact(move.id)) {
         if (!hasPoseContact(attacker,defender,hitbox.hitGroup,game.lastContact?.defender===defender.id?game.lastContact.hitLevel:undefined)) continue;
       }
-      contacts.push({ attacker, defender, move, hitGroup, group, blocked: canBlock(defender,hitGroup.hitLevel??move.hitLevel), side: defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1 });
+      contacts.push({ attacker, defender, move, hitGroup, group, blocked: canBlock(defender,hitGroup.hitLevel??move.hitLevel,game.inputConfig.autoBlock?.[defender.id],move.stance,attacker.y<0), side: defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1 });
     }
   }
   return contacts;
@@ -112,8 +163,11 @@ export function resolveCombat(game: GameState): void {
     defender.moveId = null; defender.landingRecovery = 0;
     defender.vx = 0;
     if (blocked) {
-      defender.crouching = defender.input.current.direction === 1;
-      transition(defender,'Blockstun',groupValue(move,hitGroup,'blockstun'));
+      defender.crouching = defender.input.current.direction <= 3;
+      const fullDamage = Math.trunc((hitGroup.damage ?? move.damage) * attacker.damageScalePermille / rules.damageScaleUnit);
+      if (!game.training.enabled) defender.hp = Math.max(0, defender.hp - Math.round(fullDamage * .08));
+      if (!game.training.enabled && defender.hp === 0) { transition(defender,'KO'); defender.input.pending = null; }
+      else transition(defender,'Blockstun',groupValue(move,hitGroup,'blockstun'));
     } else {
       attacker.comboCount = wasStunned ? attacker.comboCount + 1 : 1;
       const baseDamage = hitGroup.damage ?? move.damage;

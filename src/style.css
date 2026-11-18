@@ -38,7 +38,7 @@ h1 { font-size:22px; letter-spacing:-1px; margin:0; text-transform:uppercase; }
 #round-label { font-size:8px;letter-spacing:1px; }
 canvas { display:block; width:100%; aspect-ratio:960/420; }
 .arena-caption { display:flex;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--subtle-line);font-size:10px;letter-spacing:1px;color:var(--muted); }
-.toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:16px 0 24px; }
+.toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:16px 0 10px; }
 .toolbar-group { display:flex; flex-wrap:wrap; gap:6px; }
 .toolbar button { font-size:11px; }
 .controls { display:grid;grid-template-columns:1fr 1fr;gap:32px;border-top:1px solid var(--subtle-line);padding-top:23px; }
@@ -63,7 +63,7 @@ summary { cursor:pointer;font-weight:600; }
 .debug { display:grid;grid-template-columns:1fr 1fr;gap:20px;font:11px/1.6 'Courier New',monospace; }
 .debug pre { white-space:pre-wrap; }
 [hidden] { display:none !important; }
-.training-bar { display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:0 0 22px; }
+.training-bar { display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:0 0 16px; }
 .training-bar button { font-size:10px;padding:8px 10px; }
 .debug { border-top:1px solid var(--subtle-line);padding:15px 0; }
 .input-history pre { max-height:350px;overflow:auto; }
@@ -88,6 +88,13 @@ select { background:var(--key); }
 @media(max-width:400px) { h1{font-size:16px}.brand .eyebrow{font-size:8px}.resource-label{font-size:8px;gap:3px} }
 
 .preview-controls { display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0; }
+.preview-controls label { min-width:0;max-width:100%; }
+.combo-list { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:16px 0 0; }
+.combo-list li { border:1px solid var(--subtle-line);border-radius:4px;padding:14px;line-height:1.6; }
+.combo-command { margin:8px 0;color:var(--muted); }
+.combo-bindings { display:flex;flex-wrap:wrap;gap:8px 24px; }
+.combo-bindings>span { display:flex;align-items:center;gap:5px; }
+@media(max-width:700px) { .combo-list{grid-template-columns:1fr} }
 .preview-controls label { display:flex;flex-wrap:wrap;align-items:center;gap:8px; }
 .preview-controls select { max-width:100%; }
 .preview-timeline { display:flex;gap:12px;align-items:center; }

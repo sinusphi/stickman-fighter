@@ -31,10 +31,12 @@ export class HitFeedback {
       const opponent=game.fighters[1-f.id];
       this.relaxFrames[f.id]=opponent.state==='KO'&&f.state==='Idle'&&f.y===0
         ? Math.min(RELAX_FRAMES,this.relaxFrames[f.id]+(previous.hitstop?0:1)) : 0;
-      if(f.hp<previous.fighters[f.id].hp) {
+      const contact=game.lastContact;
+      // Blocked strikes cost chip damage too, but they are no hit: no hit pose, no flash.
+      const chip=contact?.defender===f.id && contact.blocked;
+      if(f.hp<previous.fighters[f.id].hp && !chip) {
         const attacker=previous.fighters[1-f.id],current=game.fighters[1-f.id];
         const moveId=attacker.moveId??current.moveId;
-        const contact=game.lastContact;
         this.levels[f.id]=(contact?.defender===f.id?contact.hitLevel:undefined)??(moveId?MOVES[moveId]?.hitLevel:undefined);
       } else if(!['Hitstun','Knockdown','KO'].includes(f.state))this.levels[f.id]=undefined;
     }

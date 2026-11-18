@@ -3,10 +3,13 @@ import { BUTTONS, buttonBit, neutralInput, type Button, type RawInput, type Socd
 
 export type Action = 'up' | 'down' | 'left' | 'right' | Button;
 export const ACTIONS: Action[] = ['up', 'left', 'down', 'right', ...BUTTONS];
-export interface PlayerControls { keys: Record<Action, string>; gamepadIndex: number | null; padButtons: Record<Button, number>; padDirections: Record<'up'|'down'|'left'|'right', number>; axes: { horizontal: number; vertical: number } }
+export interface PlayerControls { autoBlock?: boolean; keys: Record<Action, string>; gamepadIndex: number | null; padButtons: Record<Button, number>; padDirections: Record<'up'|'down'|'left'|'right', number>; axes: { horizontal: number; vertical: number } }
 export interface Controls { schemaVersion: number; socd: SocdConfig; bufferFrames: number; deadzone: number; releaseThreshold: number; triggerThreshold: number; players: PlayerControls[] }
 export interface PadReading { connected: boolean; axes: readonly number[]; buttons: readonly { value: number }[] }
 export const DEFAULT_CONTROLS = defaults as Controls;
+/** Smallest accepted analog button threshold; resting buttons report exactly 0. */
+export const MIN_TRIGGER_THRESHOLD = 0.05;
+const STORAGE_KEY = 'stickman.controls';
 
 export function validateControls(value: unknown): Controls {
   const c = structuredClone(value) as Controls;
@@ -30,7 +33,10 @@ export function validateControls(value: unknown): Controls {
   if (!modes.includes(c.socd?.horizontal) || !modes.includes(c.socd?.vertical)) throw Error('Ungültige SOCD-Regel.');
   if (!Number.isInteger(c.bufferFrames) || c.bufferFrames < 1 || c.bufferFrames > 30) throw Error('Input-Buffer muss 1–30 Frames umfassen.');
   if (![c.deadzone, c.releaseThreshold, c.triggerThreshold].every(n => Number.isFinite(n) && n >= 0 && n <= 1) || c.releaseThreshold >= c.deadzone) throw Error('Ungültige Stick-/Trigger-Schwellen.');
+  // A threshold of 0 would report every resting or missing button as pressed.
+  if (c.triggerThreshold < MIN_TRIGGER_THRESHOLD) throw Error(`Trigger-Schwelle muss zwischen ${MIN_TRIGGER_THRESHOLD} und 1 liegen.`);
   for (const p of c.players) {
+    if (p.autoBlock !== undefined && typeof p.autoBlock !== 'boolean') throw Error('Ungültige Auto-Block-Einstellung.');
     if (!ACTIONS.every(a => typeof p.keys?.[a] === 'string' && /^[A-Za-z0-9]{1,40}$/.test(p.keys[a]))) throw Error('Unvollständige oder ungültige Tastaturbelegung.');
     const indexes = [...Object.values(p.padDirections ?? {}), p.axes?.horizontal, p.axes?.vertical];
     if (!BUTTONS.every(b => Number.isInteger(p.padButtons?.[b]) && p.padButtons[b]>=-1 && p.padButtons[b]<=63) || !['up','down','left','right'].every(d => Number.isInteger(p.padDirections?.[d as 'up']))) throw Error('Unvollständige Controllerbelegung.');
@@ -55,7 +61,7 @@ export class Devices {
   capture: ((code: string) => void) | null = null;
 
   constructor() {
-    try { const stored = localStorage.getItem('stickman.controls'); if (stored) this.config = validateControls(JSON.parse(stored)); } catch { /* Invalid stored settings fall back to defaults. */ }
+    try { const stored = localStorage.getItem(STORAGE_KEY); if (stored) this.config = validateControls(JSON.parse(stored)); } catch { /* Invalid stored settings fall back to defaults. */ }
     window.addEventListener('keydown', event => {
       if (this.capture) { event.preventDefault(); event.stopImmediatePropagation(); const capture = this.capture; this.capture = null; capture(event.code); return; }
       if ((event.target as HTMLElement).matches('input,select,textarea,button')) return;
@@ -70,11 +76,21 @@ export class Devices {
     const response = await fetch(`${import.meta.env.BASE_URL}config/controls.json`);
     if (!response.ok) throw Error('Konfigurationsdatei konnte nicht geladen werden.');
     const configured = validateControls(await response.json());
-    try { const stored = localStorage.getItem('stickman.controls'); this.config = stored ? validateControls(JSON.parse(stored)) : configured; }
+    try { const stored = localStorage.getItem(STORAGE_KEY); this.config = stored ? validateControls(JSON.parse(stored)) : configured; }
     catch { this.config = configured; }
   }
   clear(): void { this.held.clear(); this.taps.clear(); this.axes = [[0, 0], [0, 0]]; }
-  persist(): void { this.config = validateControls(this.config); localStorage.setItem('stickman.controls', JSON.stringify(this.config)); this.clear(); }
+  /**
+   * Validates and activates a complete configuration. An invalid draft throws
+   * and leaves the active configuration untouched. A valid one always becomes
+   * active for this session; the result only reports whether it was stored.
+   */
+  apply(next: Controls): { saved: boolean } {
+    const validated = validateControls(next);
+    this.config = validated; this.clear();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(validated)); return { saved: true }; }
+    catch { return { saved: false }; }
+  }
   sample(pads: (PadReading | null)[] = Array.from(navigator.getGamepads?.() ?? [])): [RawInput, RawInput] {
     const inputs = this.config.players.map((profile, player) => {
       const raw = neutralInput(); raw.taps = 0;
@@ -85,7 +101,8 @@ export class Devices {
       }
       const pad = profile.gamepadIndex === null ? null : pads[profile.gamepadIndex];
       if (pad?.connected) {
-        const pressed = (index: number) => index>=0 && (pad.buttons[index]?.value ?? 0) >= this.config.triggerThreshold;
+        const threshold = Math.max(MIN_TRIGGER_THRESHOLD, this.config.triggerThreshold);
+        const pressed = (index: number) => { const value = index >= 0 ? pad.buttons[index]?.value : undefined; return value !== undefined && value > 0 && value >= threshold; };
         for (const button of BUTTONS) if (pressed(profile.padButtons[button])) raw.buttons |= buttonBit(button);
         for (const direction of ['up','down','left','right'] as const) raw[direction] ||= pressed(profile.padDirections[direction]);
         for (const [axis, index] of [profile.axes.horizontal, profile.axes.vertical].entries()) {

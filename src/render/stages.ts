@@ -345,21 +345,22 @@ function paintStage(ctx: Ctx, stage: StageId, palette: Palette, pan: number): vo
 
 /** Pan steps below this size reuse the cached stage image. */
 const PAN_STEP = .5;
-let cache: { stage: StageId; palette: Palette; pan: number; image: HTMLCanvasElement } | null = null;
+let cache: { stage: StageId; palette: Palette; pan: number; scale: number; image: HTMLCanvasElement } | null = null;
 
 /** Draws the complete stage background, including the HUD fade. The image is
  * cached per stage, palette and quantised pan, so a paused or standing match
  * only blits one bitmap per frame. */
-export function drawStage(ctx: Ctx, stage: StageId, palette: Palette, pan = 0): void {
+export function drawStage(ctx: Ctx, stage: StageId, palette: Palette, pan = 0, scale = 1): void {
   const quantised=Math.round(pan/PAN_STEP)*PAN_STEP;
   if(typeof document==='undefined') { paintStage(ctx,stage,palette,quantised);return; }
-  if(!cache||cache.stage!==stage||cache.palette!==palette||cache.pan!==quantised) {
+  if(!cache||cache.stage!==stage||cache.palette!==palette||cache.pan!==quantised||cache.scale!==scale) {
     const image=cache?.image??document.createElement('canvas');
-    image.width=STAGE_VIEW.width;image.height=STAGE_VIEW.height;
-    paintStage(image.getContext('2d')!,stage,palette,quantised);
-    cache={stage,palette,pan:quantised,image};
+    image.width=Math.round(STAGE_VIEW.width*scale);image.height=Math.round(STAGE_VIEW.height*scale);
+    const target=image.getContext('2d')!;target.setTransform(scale,0,0,scale,0,0);
+    paintStage(target,stage,palette,quantised);
+    cache={stage,palette,pan:quantised,scale,image};
   }
-  ctx.drawImage(cache.image,0,0);
+  ctx.drawImage(cache.image,0,0,STAGE_VIEW.width,STAGE_VIEW.height);
 }
 
 /** Contact shadow on the floor; it shrinks and fades while the fighter is airborne. */

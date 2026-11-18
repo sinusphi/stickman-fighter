@@ -5,8 +5,10 @@ import type { GameState } from './simulation/types';
 import type { ControlEvent } from './simulation/events';
 import { FixedLoop } from './platform/loop';
 import { KoSlowMotion } from './platform/slow-motion';
-import { render } from './render/canvas';
+import { render, fitCanvas } from './render/canvas';
 import { HitFeedback } from './render/feedback';
+import { HitAudio } from './platform/audio';
+import { newContactSounds, newSwingSounds } from './platform/hit-sound';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
 import { Devices, saveJson, type Action } from './platform/devices';
@@ -14,14 +16,17 @@ import { setupSettings } from './platform/settings';
 import { setupStage } from './platform/stage';
 import { STAGES, type StageId } from './render/stages';
 import { markup } from './platform/markup';
-import { inputLines, stateLine } from './debug/display';
 import { createReplay, parseReplay, MAX_REPLAY_FRAMES, type Replay } from './debug/replay';
 import type { DummyMode } from './debug/training';
+import { Hud } from './platform/hud';
 import rules from './data/rules.json';
 import { CpuPlayer } from './ai';
 import { loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles';
 import { neutralInput } from './input/types';
 import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
+
+/** Upper bound for replay files read into memory (see message.replayTooLarge). */
+const MAX_REPLAY_FILE_BYTES = 64 * 1024 * 1024;
 
 async function main(): Promise<void> {
   document.querySelector<HTMLDivElement>('#app')!.innerHTML = markup;
@@ -37,7 +42,7 @@ async function main(): Promise<void> {
   const devices = new Devices();
   await devices.loadConfiguration();
   let game = createGame();
-  game.inputConfig = { socd: structuredClone(devices.config.socd), bufferFrames: devices.config.bufferFrames };
+  game.inputConfig = { socd: structuredClone(devices.config.socd), bufferFrames: devices.config.bufferFrames, autoBlock: devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean] };
   let previous = snapshot(game);
   // Accessing localStorage itself can throw when persistence is disabled.
   const storage = { getItem:(key:string)=>window.localStorage.getItem(key), setItem:(key:string,value:string)=>window.localStorage.setItem(key,value) };
@@ -51,6 +56,15 @@ async function main(): Promise<void> {
   cpuLevelOne.value = cpuSettings.playerOneDifficulty;
   cpuLevel.value = cpuSettings.difficulty;
   const feedback = new HitFeedback();
+  const audio = new HitAudio();
+  for (const event of ['keydown', 'pointerdown', 'touchstart']) {
+    window.addEventListener(event, () => audio.unlock(), { capture: true, passive: true });
+  }
+  // Presentation only: whooshes for every strike (whiffs included), then hits/blocks of this step.
+  const playContactSound = () => {
+    for (const swing of newSwingSounds(game, previous)) audio.playSwing(swing);
+    for (const contact of newContactSounds(game, previous)) audio.playContact(contact);
+  };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
   const slowMotion = new KoSlowMotion();
@@ -63,8 +77,6 @@ async function main(): Promise<void> {
   let lastReplay: Replay | null = null;
   let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnRelaxFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
   const message = (text: string) => { element('notice').textContent = text; };
-  const dummyName = (mode: DummyMode) => t(`dummy.${mode}`);
-  const difficultyName = (difficulty: Difficulty) => t(`difficulty.${difficulty}`);
   let layout = new Map<string,string>();
   function refreshBindings(): void {
     const names:Record<string,string>={ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Space:'␣',ShiftLeft:'⇧',ShiftRight:'⇧',ControlLeft:'Ctrl',ControlRight:'Ctrl'};
@@ -90,7 +102,8 @@ async function main(): Promise<void> {
       if (!entry) { setPaused(true); return; }
       step(game,entry.inputs,entry.events);
       if(entry.events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
-      feedback.update(game,previous);playback.index++;
+      feedback.update(game,previous);
+      playContactSound();playback.index++;
       if (playback.index === playback.replay.frames.length) { setPaused(true); message(t('message.replayEnded')); }
     } else {
       const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
@@ -109,6 +122,7 @@ async function main(): Promise<void> {
       step(game,inputs,events);
       if(events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
       feedback.update(game,previous);
+      playContactSound();
       if (events.some(e=>e.type==='reset'||e.type==='training')) previous=snapshot(game);
       if (demoActive && game.round.phase === 'matchOver') {
         if (++demoMatchOverFrames >= DEMO_MATCH_HOLD) { demoMatchOverFrames = 0; pendingEvents.push({ type:'reset' }); }
@@ -167,23 +181,29 @@ async function main(): Promise<void> {
     boxes:()=>showBoxes=!showBoxes, inputs:()=>showInputs=!showInputs, states:()=>showStates=!showStates,
     training:toggleTraining, dummy:changeDummy, record:toggleRecord, play:toggleReplay,
     cpu:toggleCpu, demo:toggleDemo,
+    sound:()=>{audio.setMuted(!audio.isMuted());audio.unlock();},
   };
   for (const [id,action] of Object.entries(actions)) button(id).onclick=()=>{ action(); updateUI(); };
   button('export-replay').onclick=()=>{ const replay=recording??lastReplay; if(replay)saveJson('stickman-replay.json',replay); };
   button('import-replay').onclick=()=>{ setPaused(true); element<HTMLInputElement>('replay-file').click(); };
+  // Each selection gets a ticket; a slower earlier read that finishes later is discarded.
+  let replayImportTicket=0;
   element<HTMLInputElement>('replay-file').onchange=async event=>{
-    const input=event.target as HTMLInputElement;
+    const input=event.target as HTMLInputElement, file=input.files?.[0], ticket=++replayImportTicket;
+    input.value='';
+    if(!file)return;
     try {
-      const file=input.files?.[0]; if(!file)return;
-      if(file.size>64*1024*1024)throw Error(t('message.replayTooLarge'));
-      const imported=parseReplay(JSON.parse(await file.text()));
+      if(file.size>MAX_REPLAY_FILE_BYTES)throw Error(t('message.replayTooLarge'));
+      const text=await file.text();
+      if(ticket!==replayImportTicket)return;
+      const imported=parseReplay(JSON.parse(text));
       if(playback)stopPlayback();
       if(recording){recording=null;}
       lastReplay=imported;message(t('message.replayLoaded',{frames:imported.frames.length}));
-    } catch(error) { message(String(error)); }
-    finally { input.value='';updateUI(); }
+    } catch(error) { if(ticket===replayImportTicket)message(String(error)); }
+    finally { updateUI(); }
   };
-  const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames}});},message);
+  const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message);
   element('settings-details').addEventListener('toggle',event=>{ if((event.target as HTMLDetailsElement).open)setPaused(true); });
   document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button'))(document.activeElement as HTMLElement)?.blur(); });
   const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo' };
@@ -197,62 +217,19 @@ async function main(): Promise<void> {
   document.addEventListener('visibilitychange',()=>{if(document.hidden){devices.clear();setPaused(true);}});
   window.addEventListener('gamepaddisconnected',()=>{devices.clear();setPaused(true);message(t('message.controllerLost'));});
 
+  const hud = new Hud(document);
   function updateUI(): void {
-    const trainingCpu=game.training.enabled && game.training.dummy==='cpu';
-    const cpuActive=cpuSettings.enabled && !game.training.enabled && !playback;
-    const demoActive=cpuSettings.demo && !game.training.enabled && !playback;
-    const cpuPresent=cpuActive || trainingCpu || demoActive;
-    button('cpu').disabled=game.training.enabled || !!playback;
-    button('demo').disabled=game.training.enabled || !!playback;
-    cpuLevelOne.disabled=!!playback || game.training.enabled;
-    cpuLevel.disabled=!!playback || (game.training.enabled && !trainingCpu);
-    button('cpu').setAttribute('aria-pressed',String(cpuActive || trainingCpu));
-    button('demo').setAttribute('aria-pressed',String(demoActive));
-    button('cpu').textContent=trainingCpu?t('cpu.trainingDummy'):game.training.enabled?t('cpu.trainingPriority'):playback?t('cpu.replayPriority'):`CPU: ${t(cpuActive?'common.on':'common.off')} · F8`;
-    button('demo').textContent=game.training.enabled?t('demo.trainingPriority'):playback?t('demo.replayPriority'):`Demo: ${t(demoActive?'common.on':'common.off')} · F9`;
-    element('p1-label').textContent=demoActive?'CPU 01':'PLAYER 01';
-    element('p2-label').textContent=demoActive?'CPU 02':cpuPresent?'CPU':'PLAYER 02';
-    const demoLevels=`${difficultyName(cpuSettings.playerOneDifficulty).toUpperCase()} VS ${difficultyName(cpuSettings.difficulty).toUpperCase()}`;
-    element('match-status').textContent=`${playback?'REPLAY':trainingCpu?'TRAINING · CPU · '+difficultyName(cpuSettings.difficulty).toUpperCase():game.training.enabled?'TRAINING':demoActive?'DEMO · '+demoLevels:cpuActive?'VS CPU · '+difficultyName(cpuSettings.difficulty).toUpperCase():'LOCAL VERSUS'} · ${rules.hz} HZ`;
-    element('cpu-debug').hidden=!cpuPresent;
-    element('cpu-debug').textContent=demoActive
-      ? cpus.map((cpu,i)=>`CPU ${i+1}: ${cpu.debug.reason}${cpu.debug.kind==='attack'?' '+cpu.debug.moveId:''} (${cpu.debug.score.toFixed(2)})`).join('\n')
-      : cpuPresent?`CPU 2: ${cpus[1].debug.reason}${cpus[1].debug.kind==='attack'?' '+cpus[1].debug.moveId:''} (${cpus[1].debug.score.toFixed(2)})`:'';
-    button('pause').textContent=t(loop.paused?'button.continue':'button.pause');
-    button('step').disabled=!loop.paused;
-    button('boxes').setAttribute('aria-pressed',String(showBoxes));
-    button('inputs').setAttribute('aria-pressed',String(showInputs));
-    button('states').setAttribute('aria-pressed',String(showStates));
-    button('training').setAttribute('aria-pressed',String(game.training.enabled));
-    button('dummy').disabled=!game.training.enabled;
-    button('dummy').textContent=`Dummy: ${dummyName(game.training.dummy)} · F5`;
-    button('record').textContent=t(recording?'button.stopRecord':'button.record');
-    button('record').setAttribute('aria-pressed',String(!!recording));
-    button('play').disabled=!playback&&!lastReplay?.frames.length&&!recording?.frames.length;
-    button('play').textContent=t(playback?'button.leaveReplay':'button.replay');
-    button('export-replay').disabled=!(recording??lastReplay)?.frames.length;
-    element('debug').hidden=!showStates; element('input-history').hidden=!showInputs;
-    for(const f of game.fighters) {
-      for(const name of ['revenge','special'] as const) {
-        const resource=f.resources[name], track=element(`resource-${f.id}-${name}`);
-        element(`resource-value-${f.id}-${name}`).textContent=`${resource.current} / ${resource.max}`;
-        track.setAttribute('aria-valuenow',String(resource.current));track.setAttribute('aria-valuemax',String(resource.max));
-        (track.firstElementChild as HTMLElement).style.width=`${resource.current/resource.max*100}%`;
-      }
-      element(`hp-${f.id}`).textContent=`${f.hp} / ${rules.maxHealth}`;
-      const bar=element(`health-${f.id}`);bar.style.width=`${f.hp/rules.maxHealth*100}%`;bar.parentElement!.setAttribute('aria-valuenow',String(f.hp));
-      element(`wins-${f.id}`).innerHTML=Array.from({length:rules.winsRequired},(_,i)=>`<span class="${game.round.wins[f.id]>i?'won':''}"></span>`).join('');
-      element(`state-${f.id}`).textContent=`${stateLine(f)}\n${t('state.inputFrame')} ${game.frame} · ${t('state.combatFrame')} ${game.combatFrame} · Hitstop ${game.hitstop}f`;
-      if(showInputs)element(`input-${f.id}`).textContent=inputLines(f);
-    }
-    element('timer').textContent=game.training.enabled?'∞':String(Math.ceil(game.round.timer/rules.hz)).padStart(2,'0');
-    element('round-label').textContent=game.training.enabled?'TRAINING':`ROUND ${String(game.round.number).padStart(2,'0')}`;
-    element('arena-mode').textContent=playback?`REPLAY / ${playback.index} : ${playback.replay.frames.length}`:recording?`REC / ${recording.frames.length} FRAMES`:trainingCpu?`TRAINING / CPU · ${difficultyName(cpuSettings.difficulty).toUpperCase()}`:game.training.enabled?`TRAINING / ${dummyName(game.training.dummy).toUpperCase()}`:demoActive?`${STAGES[stage].caption} / CPU-DEMO · ${demoLevels}`:cpuActive?`${STAGES[stage].caption} / VS CPU · ${difficultyName(cpuSettings.difficulty).toUpperCase()}`:`${STAGES[stage].caption} / LOCAL 1V1`;
-    canvas.dataset.frame=String(game.frame);canvas.dataset.ready='true';
+    hud.update({
+      game, paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
+      playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
+      recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
+      show:{boxes:showBoxes,inputs:showInputs,states:showStates}, stageCaption:STAGES[stage].caption,
+    });
   }
-  onLanguageChange(()=>{translateDocument();updateUI();});
+  onLanguageChange(()=>{translateDocument();hud.invalidate();updateUI();});
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
+    fitCanvas(canvas);
     render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames);
     preview(time,palette);
     pollSettings();updateUI();requestAnimationFrame(frame);

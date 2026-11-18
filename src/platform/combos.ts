@@ -1,0 +1,32 @@
+import moves from '../data/moves.json';
+import { t, type TranslationKey } from './i18n';
+
+export const comboLabelKeys: Record<string, TranslationKey> = {
+  tornado_spin_combo: 'combo.tornadoSpin',
+  spin_high_middle_combo: 'combo.spinHighMiddle',
+  middle_high_low_combo: 'combo.middleHighLow',
+  middle_high_punch_combo: 'combo.middleHighPunch',
+  double_high_kick: 'combo.doubleHigh',
+};
+// Commands come from the move data; the order follows comboLabelKeys (forward
+// combos, then back). Combos without a label yet follow at the end, by id.
+const comboOrder=(id: string)=>{ const index=Object.keys(comboLabelKeys).indexOf(id); return index<0?Number.MAX_SAFE_INTEGER:index; };
+export const comboMoves = moves.filter(move=>move.command.buttons.length>1).sort((a,b)=>
+  comboOrder(a.id)-comboOrder(b.id) || (a.id<b.id?-1:a.id>b.id?1:0));
+export function comboLabel(id: string): string {
+  return comboLabelKeys[id]?t(comboLabelKeys[id]):id;
+}
+const tx=(key: TranslationKey)=>`data-i18n="${key}">${t(key)}`;
+
+export const comboMarkup = `
+<details id="combo-list">
+  <summary ${tx('combo.summary')}</summary>
+  <p class="hint" ${tx('combo.help')}</p>
+  <ul class="combo-list">
+    ${comboMoves.map(move=>`<li data-combo="${move.id}">
+      <strong ${comboLabelKeys[move.id]?tx(comboLabelKeys[move.id]):`>${move.id}`}</strong>
+      <div class="combo-command"><span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span> + <span class="mono">${move.command.buttons.join(' + ')}</span></div>
+      <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: ${move.command.buttons.map(button=>`<kbd data-owner="${player}" data-control="${button}">${button}</kbd>`).join(' + ')}</span>`).join('')}</div>
+    </li>`).join('')}
+  </ul>
+</details>`;

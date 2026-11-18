@@ -1,6 +1,6 @@
 import type { GameState } from './types';
 import type { DummyMode } from '../debug/training';
-import { createGame } from './state';
+import { createGame } from './factory';
 
 export type ControlEvent =
   | { type: 'reset' }
