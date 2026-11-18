@@ -1,11 +1,12 @@
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const output='test-results/footwork';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome-stable',headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
  const page=await browser.newPage({viewport:{width:1440,height:1000},...(process.env.FOOTWORK_VIDEO==='1'?{recordVideo:{dir:output,size:{width:1440,height:1000}}}:{})});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();await page.locator('#pause').click();
+ await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();await page.locator('#pause').click();
  await page.evaluate(async()=>{
   const {samplePose,animations}=await import('/src/render/skeleton.ts');const {sampleDepths}=await import('/src/render/depth.ts');
   const {drawFigure}=await import('/src/render/figure.ts');const {readPalette}=await import('/src/platform/theme.ts');

@@ -1,11 +1,12 @@
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const output='test-results/crouching-kicks';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome-stable',headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
  const page=await browser.newPage({viewport:{width:1600,height:1100}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
+ await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
  if(await page.locator('#step').isDisabled())await page.locator('#pause').click();
  await page.locator('#states').click();
  const names=['lk','lmk','hk','rlk','mk','rhk'];
@@ -14,6 +15,12 @@ try {
   await page.locator('#step').evaluate(b=>{for(let i=0;i<110;i++)b.click();});await page.keyboard.up('d');
   const down=player===0?'s':'ArrowDown';await page.keyboard.down(down);await page.keyboard.down(key);
   await page.locator('#step').click();await page.keyboard.up(key);
+  if(!['lk','rlk'].includes(names[i])) {
+   await expect(page.locator(`#state-${player}`)).toContainText('Crouch');
+   await page.locator('#step').evaluate(b=>{for(let i=0;i<10;i++)b.click();});
+   expect(Number((await page.locator(`#hp-${1-player}`).textContent()).split('/')[0])).toBe(1000);
+   await page.keyboard.up(down);continue;
+  }
   await expect(page.locator(`#state-${player}`)).toContainText(`crouching_${names[i]}`);
   await page.locator('#step').evaluate(b=>{for(let i=0;i<65;i++)b.click();});
   expect(Number((await page.locator(`#hp-${1-player}`).textContent()).split('/')[0])).toBeLessThan(1000);
@@ -38,5 +45,5 @@ try {
   });
  });
  await page.locator('#crouch-sheet').screenshot({path:`${output}/phases.png`});
- expect(errors).toEqual([]);console.log('All six crouching kicks: both players, contact, recovery and phase sheet passed.');
+ expect(errors).toEqual([]);console.log('Crouch kicks: LK/RLK contact and recovery, four disabled kicks, both players and legacy phase sheet passed.');
 }finally {await browser.close();}

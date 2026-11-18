@@ -1,12 +1,12 @@
 import { chromium, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const output='test-results/leg-kicks';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');
+  await page.goto(TEST_URL);
   await page.locator('#game[data-ready="true"]').waitFor();
   await page.locator('#pause').click();await page.locator('#states').click();
   const actions=['lk','lmk','hk','rlk','mk','rhk'];
@@ -24,7 +24,7 @@ try {
     }
   }
   for(const theme of ['light','dark']) {
-    if(theme==='light')await page.locator('#theme').click();
+    if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
     await page.locator('.controls').screenshot({path:`${output}/${theme}-controls.png`});
     await page.evaluate(async()=>{
       const {samplePose,sampleTurn}=await import('/src/render/skeleton.ts');
@@ -36,7 +36,7 @@ try {
       const canvas=document.createElement('canvas');canvas.id='leg-kicks-sheet';canvas.width=1500;canvas.height=1200;
       canvas.style.cssText='width:1500px;height:1200px;max-width:none;aspect-ratio:auto';document.body.append(canvas);
       const ctx=canvas.getContext('2d');ctx.fillStyle=p.arena;ctx.fillRect(0,0,1500,1200);
-      ['lk','lmk','hk','rlk','mk','rhk'].forEach((kick,row)=>[0,.25,.5,.75,1].forEach((t,col)=>{
+      ['lk','lmk','hk','rlk','mk','rhk'].forEach((kick,row)=>[0,.25,.5,.75,1].forEach((_,col)=>{
         const id=`standing_${kick}`,move=MOVES[id];
         const frame=[0,Math.max(0,move.startup-2),move.startup,move.startup+move.active+4,move.duration-1][col];
         ctx.save();ctx.translate(col*300+150,row*200+180);ctx.scale(1.45,1.45);

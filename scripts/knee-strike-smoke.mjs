@@ -1,15 +1,15 @@
 import {chromium,expect} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
-import {existsSync} from 'node:fs';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 // Knee before middle/high kicks: rendered knee contact with burst, fading burst,
 // following kick contact, and a kick-only distance. Both facings and both themes.
 const output='test-results/knee-strike';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
  const summary={};
  for(const theme of ['dark','light']) {
   const page=await browser.newPage({viewport:{width:1600,height:1200},colorScheme:theme}),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
+  await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
   if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
   await page.locator('#pause').click();

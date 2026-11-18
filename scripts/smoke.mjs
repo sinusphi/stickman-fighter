@@ -1,13 +1,14 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { mkdir, readFile } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 
 const engine = process.env.TEST_BROWSER === 'firefox' ? firefox : chromium;
 const browser = await engine.launch(engine === chromium ? {
-  executablePath: process.env.CHROME_PATH || (existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),
+  executablePath: chromeExecutable(),
   headless: true, args: ['--no-sandbox'],
 } : { headless:true });
-const url = process.env.TEST_URL || 'http://127.0.0.1:5173';
+const url = TEST_URL;
+const output = 'test-results/smoke'; await mkdir(output, { recursive: true });
 const errors=[];
 try {
   const page=await browser.newPage({viewport:{width:1280,height:1080},acceptDownloads:true});
@@ -17,6 +18,19 @@ try {
   await expect(page.locator('html')).toHaveAttribute('lang','en');
   await expect(page.locator('#reset')).toHaveText('Restart');
   await expect(page.locator('#language')).toHaveText('DE');
+  await page.locator('#settings-details summary').click();
+  await expect(page.locator('[data-auto-block="0"]')).not.toBeChecked();
+  await expect(page.locator('[data-auto-block="1"]')).not.toBeChecked();
+  await page.locator('[data-auto-block="0"]').check();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('stickman.controls')).players[0].autoBlock)).toBe(true);
+  await page.reload();await page.locator('canvas[data-ready="true"]').waitFor();
+  await page.locator('#settings-details summary').click();
+  await expect(page.locator('[data-auto-block="0"]')).toBeChecked();
+  await expect(page.locator('[data-auto-block="1"]')).not.toBeChecked();
+  await page.locator('[data-auto-block="0"]').uncheck();
+  await page.locator('#settings-details summary').click();
+  if(await page.locator('#step').isEnabled())await page.locator('#pause').click();
+
   await page.locator('#language').click();
   await expect(page.locator('html')).toHaveAttribute('lang','de');
   await expect(page.locator('#reset')).toHaveText('Neustart');
@@ -65,14 +79,14 @@ try {
   await page.locator('[data-player="0"][data-action="LP"]').click();await page.keyboard.press('u');
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('stickman.controls')).players[0].keys.LP)).toBe('KeyU');
   await page.locator('#settings-details summary').click();
-  await page.screenshot({path:`/tmp/stickman-${engine===firefox?'firefox':'chrome'}-training.png`,fullPage:true});
+  await page.screenshot({path:`${output}/${engine===firefox?'firefox':'chrome'}-training.png`,fullPage:true});
   await page.reload();await page.locator('canvas[data-ready="true"]').waitFor();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('stickman.controls')).players[0].keys.LP)).toBe('KeyU');
   await page.keyboard.press('u');await expect(page.locator('#state-0')).toContainText('standing_lp');
   await page.keyboard.press('p');
   await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
   await expect(page.locator('#pause')).toHaveText('Resume · P');
-  await page.screenshot({path:`/tmp/stickman-${engine===firefox?'firefox':'chrome'}-final.png`,fullPage:true});
+  await page.screenshot({path:`${output}/${engine===firefox?'firefox':'chrome'}-final.png`,fullPage:true});
   await page.evaluate(()=>{
     window.testPad={id:'Simulated arcade stick',index:0,connected:true,mapping:'standard',timestamp:0,axes:[0,0],buttons:Array.from({length:20},()=>({value:0,pressed:false,touched:false}))};
     Object.defineProperty(navigator,'getGamepads',{configurable:true,value:()=>[window.testPad]});

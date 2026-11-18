@@ -1,15 +1,15 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
 const name=engine===firefox?'firefox':'chrome',output=`test-results/cpu/${name}`;
 await mkdir(output,{recursive:true});
-const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
+const browser=await engine.launch(engine===chromium?{executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']}:{headless:true});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100},acceptDownloads:true}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',msg=>{if(msg.type()==='error'&&!msg.location().url.endsWith('/favicon.ico'))errors.push(msg.text());});
-  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5181');await page.locator('#game[data-ready="true"]').waitFor();
+  await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
   await page.keyboard.press('p');await page.keyboard.press('F3');await page.keyboard.press('F8');
   await expect(page.locator('#cpu')).toHaveAttribute('aria-pressed','true');
   await page.locator('#cpu-level').selectOption('hard');await page.locator('#cpu-level').blur();
@@ -38,7 +38,7 @@ try {
   }
   await page.keyboard.press('p');await page.keyboard.press('F6');
   const hp=await Promise.all([0,1].map(i=>page.locator(`#hp-${i}`).textContent()));
-  expect(samples.some(s=>parseInt(s.hp)<1000)).toBe(true);
+  expect(samples.some(s=>parseInt(s.hp,10)<1000)).toBe(true);
   downloadPromise=page.waitForEvent('download');await page.locator('#export-replay').click();download=await downloadPromise;
   replay=JSON.parse(await readFile(await download.path(),'utf8'));
   await download.saveAs(`${output}/match.json`);

@@ -1,10 +1,11 @@
 import {chromium,expect} from '@playwright/test';
 import {mkdir} from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 await mkdir('test-results/jumping-uppercut',{recursive:true});
-const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome-stable',headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
  const page=await browser.newPage({viewport:{width:1600,height:850}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
+ await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
  await page.locator('#pause').click();await page.locator('#states').click();
  for(const [player,forward,punch] of [[0,'KeyD','KeyY'],[1,'ArrowLeft','Numpad9']]) {
   await page.locator('#reset').click();await page.keyboard.down(forward);await page.locator('#step').click();

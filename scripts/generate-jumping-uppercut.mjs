@@ -2,6 +2,7 @@
 import { createServer } from 'vite';
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
+import { PYTHON } from './python.mjs';
 const server=await createServer({server:{middlewareMode:true,ws:false,hmr:false,watch:null},appType:'custom'});
 try {
  const {buildPose}=await server.ssrLoadModule('/src/render/skeleton.ts');
@@ -67,7 +68,7 @@ try {
   else if(path===pp) {
    const patch={poses:Object.fromEntries(Object.entries(data.poses).filter(([name])=>name.startsWith(id+'_'))),animations:{[id]:data.animations[id]}};
    await new Promise((resolve,reject)=>{
-    const child=execFile('python',['-c',"import json,sys; from pathlib import Path; p=Path(sys.argv[1]); data=json.loads(p.read_text()); patch=json.load(sys.stdin); [data[k].update(v) for k,v in patch.items()]; p.write_text(json.dumps(data,indent=2)+'\\n')",path.pathname],error=>error?reject(error):resolve());
+    const child=execFile(PYTHON,['-c',"import json,sys; from pathlib import Path; p=Path(sys.argv[1]); data=json.loads(p.read_text()); patch=json.load(sys.stdin); [data[k].update(v) for k,v in patch.items()]; p.write_text(json.dumps(data,indent=2)+'\\n')",path.pathname],error=>error?reject(error):resolve(undefined));
     child.stdin.end(JSON.stringify(patch));
    });
   }else await writeFile(path,result);

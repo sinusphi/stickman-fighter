@@ -5,6 +5,12 @@ try {
  const {samplePose}=await server.ssrLoadModule('/src/render/skeleton.ts');
  const {strikeCapsule,kneeCapsule,capsuleBoxes}=await server.ssrLoadModule('/src/data/contact-shapes.ts');
  const path=new URL('../src/data/moves.json',import.meta.url),moves=JSON.parse(await readFile(path,'utf8'));
+ // Head-height punches and high kicks require standing guard; knee groups stay MID.
+ for(const move of moves.filter(m=>['standing_lp','standing_hp','standing_hk','standing_rhk'].includes(m.id))) {
+  if(process.argv.includes('--check')) {
+   if(move.hitLevel!=='HIGH')throw Error(`${move.id}: high strike must use HIGH guard level`);
+  } else move.hitLevel='HIGH';
+ }
  const bodies=JSON.parse(await readFile(new URL('../src/data/bodies.json',import.meta.url),'utf8'));
  for(const move of moves.filter(m=>m.command.type==='normal' && ['MP','HP','MK','LMK','HK','RHK'].includes(m.button))) {
   const ranges=[];

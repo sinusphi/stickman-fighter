@@ -1,10 +1,10 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
 const name=engine===firefox?'firefox':'chrome';
-const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
-const url=process.env.TEST_URL||'http://127.0.0.1:5180';
+const browser=await engine.launch(engine===chromium?{executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']}:{headless:true});
+const url=TEST_URL;
 const output=`test-results/stages/${name}`;await mkdir(output,{recursive:true});
 const stages=['dojo','rooftop','shrine'],captions={dojo:'THE DOJO',rooftop:'THE ROOFTOP',shrine:'THE SHRINE'};
 const report={};
@@ -19,7 +19,7 @@ try {
   await page.locator('#pause').click();
   const frame=await page.locator('#game').getAttribute('data-frame');
   for(const theme of ['light','dark']) {
-    if(theme==='light')await page.locator('#theme').click();
+    if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     for(const stage of stages) {
       await page.locator(`[data-stage="${stage}"]`).click();

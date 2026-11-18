@@ -1,14 +1,14 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
 const name=engine===firefox?'firefox':'chrome';
-const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
+const browser=await engine.launch(engine===chromium?{executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']}:{headless:true});
 const output='test-results/update-02';await mkdir(output,{recursive:true});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
+  await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
   await page.locator('#animation-preview summary').click();
   await expect(page.locator('#pause')).toHaveText('Resume · P');
   const frame=await page.locator('#game').getAttribute('data-frame');
@@ -16,20 +16,27 @@ try {
     await page.locator('#preview-time').fill(String(value));
     await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame',value.toFixed(2));
   };
+  // Derive the checked frames from the demo data so retiming cannot silently break the smoke:
+  // the demos hold, then turn 360° linearly between keyframes 1 and 2.
+  const demo=await page.evaluate(async()=>{const {default:data}=await import('/src/data/poses.json');const a=data.animations.DemoBodyCW;return {start:a.keyframes[1].frame,full:a.keyframes[2].frame,last:a.durationFrames-1};});
+  // Check on a whole frame (fractional frames keep animating trails) with an exact angle.
+  const at=f=>demo.start+(demo.full-demo.start)*f;
+  const fraction=[1/2,2/3,1/3,3/4,1/4].find(f=>Math.abs(at(f)-Math.round(at(f)))<1e-9);
+  const turn=Math.round(at(fraction)),angle=(360*fraction).toFixed(1),late=demo.start+(demo.full-demo.start)*.75;
   for(const theme of ['light','dark']) {
-    if(theme==='light')await page.locator('#theme').click();
+    if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
     for(const mode of ['Body','Legs'])for(const direction of ['CW','CCW']) {
       const id=`Demo${mode}${direction}`;await page.locator('#preview-animation').selectOption(id);
-      await scrub(42);
-      await expect(page.locator('#preview-status')).toContainText(direction==='CW'?'180.0° · ↻':'-180.0° · ↺');
+      await scrub(turn);
+      await expect(page.locator('#preview-status')).toContainText(direction==='CW'?`${angle}° · ↻`:`-${angle}° · ↺`);
       const frozen=await page.locator('#preview-canvas').evaluate(c=>c.toDataURL());
       await page.waitForTimeout(100);
       expect(await page.locator('#preview-canvas').evaluate(c=>c.toDataURL())).toBe(frozen);
-      await page.locator('#preview-step').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame','43.00');
+      await page.locator('#preview-step').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame',(turn+1).toFixed(2));
       await page.locator('#preview-mirror').click();
       await expect(page.locator('#preview-status')).toContainText(direction==='CW'?'↺':'↻');
       await page.locator('#preview-mirror').click();
-      await scrub(57);await page.locator('#animation-preview').screenshot({path:`${output}/${name}-${theme}-${id}.png`});
+      await scrub(late);await page.locator('#animation-preview').screenshot({path:`${output}/${name}-${theme}-${id}.png`});
     }
     for(const id of ['HitLOW','HitMID','HitHIGH','Landing']) {
       await page.locator('#preview-animation').selectOption(id);await scrub(0);
@@ -43,7 +50,7 @@ try {
   await page.locator('#preview-play').click();
   const stopped=await page.locator('#preview-canvas').getAttribute('data-frame');await page.waitForTimeout(100);
   expect(await page.locator('#preview-canvas').getAttribute('data-frame')).toBe(stopped);
-  await scrub(104.75);await page.locator('#preview-play').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame','105.00');
+  await scrub(demo.last-.25);await page.locator('#preview-play').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame',demo.last.toFixed(2));
   await expect(page.locator('#preview-play')).toHaveText('Play');
   await page.locator('#preview-reset').click();await expect(page.locator('#preview-canvas')).toHaveAttribute('data-frame','0.00');
   expect(await page.locator('#game').getAttribute('data-frame')).toBe(frame);
@@ -66,7 +73,7 @@ try {
       f.state='Attack';f.moveId=moveId;f.moveFrame=MOVES[moveId].startup-1;f.attackId=1;
       const replay=createReplay(game),n={up:false,down:false,left:false,right:false,buttons:0};
       replay.frames.push({inputs:[n,n],events:[]});step(game,[n,n]);
-      const canvas=document.createElement('canvas');canvas.width=960;canvas.height=420;
+      const canvas=document.createElement('canvas'),target=document.getElementById('game');canvas.width=target.width;canvas.height=target.height; // fitCanvas may enlarge the backing store
       render(canvas,game,snapshot(game),1,true,false,readPalette(),[undefined,level]);
       return {replay,hp:game.fighters[1].hp,image:canvas.toDataURL()};
     },{moveId,level});

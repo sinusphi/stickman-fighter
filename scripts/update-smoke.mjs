@@ -1,10 +1,10 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
 const name=engine===firefox?'firefox':'chrome';
-const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
-const url=process.env.TEST_URL||'http://127.0.0.1:5180';
+const browser=await engine.launch(engine===chromium?{executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']}:{headless:true});
+const url=TEST_URL;
 const output='test-results/update-01';await mkdir(output,{recursive:true});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];
@@ -13,7 +13,7 @@ try {
   await page.locator('#pause').click();
   await expect(page.getByRole('progressbar')).toHaveCount(6);
   for(const theme of ['light','dark']) {
-    if(theme==='light')await page.locator('#theme').click();
+    if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     const frame=await page.locator('#game').getAttribute('data-frame');
     await expect.poll(async()=>page.evaluate(()=>{
@@ -110,7 +110,8 @@ try {
   const blocked=await browser.newPage();
   await blocked.addInitScript(()=>{Object.defineProperty(window,'localStorage',{get(){throw Error('storage disabled');}});});
   await blocked.goto(url);await blocked.locator('canvas[data-ready="true"]').waitFor();
-  await blocked.locator('#theme').click();await expect(blocked.locator('html')).toHaveAttribute('data-theme','dark');
+  await expect(blocked.locator('html')).toHaveAttribute('data-theme','dark');
+  await blocked.locator('#theme').click();await expect(blocked.locator('html')).toHaveAttribute('data-theme','light'); // session-only switch
   expect(errors).toEqual([]);
   console.log(`${name}: theme persistence/keyboard/storage fallback, Canvas colors, six meters at 0/25/100%, mirrored fill, replay return, narrow layout and all attack contact sheets passed.`);
 } finally {await browser.close();}

@@ -1,17 +1,17 @@
 import { chromium, firefox, expect } from '@playwright/test';
-import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const engine=process.env.TEST_BROWSER==='firefox'?firefox:chromium;
 const name=engine===firefox?'firefox':'chrome',output='test-results/leg-kicks/style';
 await mkdir(output,{recursive:true});
-const browser=await engine.launch(engine===chromium?{executablePath:process.env.CHROME_PATH||(existsSync('/usr/bin/google-chrome-stable')?'/usr/bin/google-chrome-stable':undefined),headless:true,args:['--no-sandbox']}:{headless:true});
+const browser=await engine.launch(engine===chromium?{executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']}:{headless:true});
 try {
   const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');
+  await page.goto(TEST_URL);
   await page.locator('#game[data-ready="true"]').waitFor();await page.locator('#pause').click();
   for(const theme of ['light','dark']) {
-    if(theme==='light')await page.locator('#theme').click();
+    if(await page.locator('html').getAttribute('data-theme')!==theme)await page.locator('#theme').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
     const result=await page.evaluate(async()=>{
       const {samplePose,animations,sampleTurn}=await import('/src/render/skeleton.ts');
@@ -49,21 +49,21 @@ try {
         drawFigure(pair,standingPose,facing===1?p.p1:p.p2,p,facing,0,sampleDepths('Idle',0));
         pair.restore();
       }
-      const [hero,h]=sheet('style-hero',1200,990);
+      const [,h]=sheet('style-hero',1200,990);
       const examples=[['Idle',0],['Blockstun',0],['CrouchBlock',0],['spin_mk',13],['spin_mk',14],['spin_mk',37],['Walk',0],['Walk',8],['KO',36]];
       examples.forEach(([id,time],i)=>{
         const facing=i%2?-1:1,x=(i%3)*400+200,y=Math.floor(i/3)*330+300;
         h.save();h.translate(x,y);h.scale(2,2);drawFigure(h,samplePose(id,time),i%2?p.p2:p.p1,p,facing,0,sampleDepths(id,time),sampleTurn(id,time));h.restore();
         h.fillStyle=p.text;h.font='14px monospace';h.fillText(`${id} / ${time} · P${i%2+1}`,i%3*400+20,Math.floor(i/3)*330+24);
       });
-      const ids=Object.keys(animations),[all,c]=sheet('style-all',1200,ids.length*160);
+      const ids=Object.keys(animations),[,c]=sheet('style-all',1200,ids.length*160);
       ids.forEach((id,row)=>[0,.25,.5,.75,1].forEach((fraction,col)=>{
         const time=(animations[id].durationFrames-1)*fraction,facing=col%2?-1:1;
         c.save();c.translate(col*240+120,row*160+132);
         drawFigure(c,samplePose(id,time),col%2?p.p2:p.p1,p,facing,0,sampleDepths(id,time),sampleTurn(id,time));c.restore();
         c.fillStyle=p.text;c.font='11px monospace';c.fillText(`${id} / ${time.toFixed(1)}`,col*240+8,row*160+16);
       }));
-      const [ko,kctx]=sheet('style-ko',1200,600);
+      const [,kctx]=sheet('style-ko',1200,600);
       [0,6,14,23,32,36].forEach((time,i)=>{
         kctx.save();kctx.translate(i%3*400+200,Math.floor(i/3)*300+270);kctx.scale(2,2);
         drawFigure(kctx,samplePose('KO',time),p.p1,p,1,0,sampleDepths('KO',time));kctx.restore();
@@ -145,9 +145,16 @@ try {
         colorPixels.push([...joint.getImageData(Math.round(150-16*4*FIGURE_SCALE),150,1,1).data]);
       }
       // The central torso must remain filled through the shoulder-to-hip span.
+      // The guard keeps both fists in front of the chest, so the arms are
+      // parked far up and away to probe the torso fill itself.
+      const torsoProbe=document.createElement('canvas');torsoProbe.width=400;torsoProbe.height=760;
+      const torsoCtx=torsoProbe.getContext('2d');
+      torsoCtx.fillStyle=p.arena;torsoCtx.fillRect(0,0,400,760);torsoCtx.translate(200,690);torsoCtx.scale(5,5);
+      drawFigure(torsoCtx,{...pose,leftElbow:[-1000,-1000],leftHand:[-1000,-1000],rightElbow:[1000,-1000],rightHand:[1000,-1000]},p.p1,p);
+      const torsoPixel=(x,y)=>[...torsoCtx.getImageData(Math.round(200+x*5*FIGURE_SCALE),Math.round(690+y*5*FIGURE_SCALE),1,1).data];
       const torsoPixels=[];
       for(const t of [.4,.5,.6,.7,.8])for(const dx of [-1,0,1])
-        torsoPixels.push(pixel(pose.neck[0]+(pose.hip[0]-pose.neck[0])*t+dx,pose.neck[1]+(pose.hip[1]-pose.neck[1])*t));
+        torsoPixels.push(torsoPixel(pose.neck[0]+(pose.hip[0]-pose.neck[0])*t+dx,pose.neck[1]+(pose.hip[1]-pose.neck[1])*t));
       const player=p.p1.slice(1).match(/../g).map(v=>parseInt(v,16));
 
       const angle=Math.atan2(pose.head[1]-pose.neck[1],pose.head[0]-pose.neck[0])+Math.PI/2;
@@ -224,15 +231,20 @@ try {
       game.round.wins=[match?1:0,0];f.x=400*256;game.fighters[1].x=448*256;game.fighters[1].hp=30;
       f.state='Attack';f.moveId='standing_lp';f.moveFrame=MOVES.standing_lp.startup-1;f.attackId=1;
       const replay=createReplay(game),n={up:false,down:false,left:false,right:false,buttons:0};
+      // Independent count of presentation frames since the KO: hitstop holds the fall.
+      let expectedKo=0;
       for(let i=0;i<count;i++) {
         replay.frames.push({inputs:[n,n],events:[]});const old=snapshot(game);step(game,[n,n]);feedback.update(game,old);
+        if(old.fighters[1].state==='KO'&&game.fighters[1].state==='KO'&&!old.hitstop)expectedKo++;
       }
-      const canvas=document.createElement('canvas');canvas.width=960;canvas.height=420;
-      render(canvas,game,snapshot(game),1,true,false,readPalette(),feedback.levels,feedback.koFrames);
-      return {replay,image:canvas.toDataURL(),koFrame:feedback.koFrames[1],phase:game.round.phase};
+      const canvas=document.createElement('canvas'),target=document.getElementById('game');canvas.width=target.width;canvas.height=target.height; // fitCanvas may enlarge the backing store
+      render(canvas,game,snapshot(game),1,true,false,readPalette(),feedback.levels,feedback.koFrames,undefined,false,feedback.relaxFrames);
+      const {animations}=await import('/src/render/skeleton.ts');expectedKo=Math.min(expectedKo,animations.KO.durationFrames-1); // the fall holds its last pose
+      return {replay,image:canvas.toDataURL(),koFrame:feedback.koFrames[1],expectedKo,phase:game.round.phase};
     },{match,count});
     expect(fixture.phase).toBe(match?'matchOver':'roundOver');
-    expect(fixture.koFrame).toBe(count===55?36:11);
+    expect(fixture.koFrame).toBeGreaterThan(0);
+    expect(fixture.koFrame).toBe(fixture.expectedKo);
     await page.locator('#replay-file').setInputFiles({name:'ko.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(fixture.replay))});
     await page.locator('#play').click();await expect(page.locator('#notice')).toContainText('Replay ended');
     await expect.poll(()=>page.locator('#game').evaluate(c=>c.toDataURL())).toBe(fixture.image);

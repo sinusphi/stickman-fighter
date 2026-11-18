@@ -7,6 +7,10 @@ try {
   const path=new URL('../src/data/moves.json',import.meta.url),moves=JSON.parse(await readFile(path,'utf8'));
   let count=0;
   for(const move of moves.filter(m=>['spin_mk','spin_hk'].includes(m.id))) {
+    const hitLevel=move.id==='spin_hk'?'HIGH':'MID';
+    if(process.argv.includes('--check')) {
+      if(move.hitLevel!==hitLevel)throw Error(`${move.id}: guard level must be ${hitLevel}`);
+    } else move.hitLevel=hitLevel;
     const frames=Array.from({length:move.startup+move.active+move.recovery},(_,frame)=>({
       from:frame,to:frame,...spinFrameBoxes(samplePose(move.animation,frame),frame>=move.startup && frame<move.startup+move.active),
     }));

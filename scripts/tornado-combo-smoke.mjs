@@ -1,10 +1,11 @@
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
+import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const output='test-results/tornado-combo';await mkdir(output,{recursive:true});
-const browser=await chromium.launch({executablePath:'/usr/bin/google-chrome-stable',headless:true,args:['--no-sandbox']});
+const browser=await chromium.launch({executablePath:chromeExecutable(),headless:true,args:['--no-sandbox']});
 try {
  const page=await browser.newPage({viewport:{width:1440,height:1050}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(process.env.TEST_URL||'http://127.0.0.1:5180');await page.locator('#game[data-ready="true"]').waitFor();
+ await page.goto(TEST_URL);await page.locator('#game[data-ready="true"]').waitFor();
  await page.locator('#pause').click();await page.locator('#states').click();
  for(const [id,keys,damage,player] of [['tornado_mk',['b'],80,0],['forward_spin_hk',['h'],100,0],['tornado_spin_combo',['b','h'],180,0],['tornado_spin_combo',['Numpad2','Numpad6'],180,1]]) {
   await page.locator('#reset').click();await page.keyboard.down('d');
@@ -50,20 +51,23 @@ try {
   await page.locator('#animation-preview').screenshot({path:`${output}/${id}.png`});
  }
  await page.evaluate(async()=>{
-  const {samplePose,sampleTurn,sampleYaw}=await import('/src/render/skeleton.ts'),{sampleDepths}=await import('/src/render/depth.ts');
+  const {samplePose,sampleTurn,sampleHeadYaw}=await import('/src/render/skeleton.ts'),{sampleDepths}=await import('/src/render/depth.ts');
   const {drawFigure}=await import('/src/render/figure.ts'),{readPalette}=await import('/src/platform/theme.ts');
   const {MOVES}=await import('/src/data/schema.ts');
-  const palette=readPalette(),c=document.createElement('canvas');c.id='combo-sheet';c.width=1920;c.height=780;c.style.cssText='width:1920px;height:780px;max-width:none;aspect-ratio:auto';document.body.append(c);
+  const palette=readPalette(),c=document.createElement('canvas');c.id='combo-sheet';c.width=2720;c.height=1560;c.style.cssText='width:2720px;height:1560px;max-width:none;aspect-ratio:auto';document.body.append(c);
   const ctx=c.getContext('2d');ctx.fillStyle=palette.arena;ctx.fillRect(0,0,c.width,c.height);
-  ['tornado_mk','forward_spin_hk','tornado_spin_combo'].forEach((id,row)=>{
-   const move=MOVES[id],frames=Array.from(new Set([0,...Array.from({length:8},(_,i)=>Math.round((i+1)*(move.duration-1)/9)),move.startup,move.startup+move.active-1,move.duration-1])).sort((a,b)=>a-b);
+  ['tornado_mk','forward_spin_hk','tornado_spin_combo'].forEach((id,index)=>{
+   for(const facing of [1,-1]) {
+   const row=index*2+(facing===1?0:1);
+   const move=MOVES[id],frames=Array.from(new Set([0,...(id==='tornado_spin_combo'?[32,36,40,44]:[]),...Array.from({length:8},(_,i)=>Math.round((i+1)*(move.duration-1)/9)),move.startup,move.startup+move.active-1,move.duration-1])).sort((a,b)=>a-b);
    frames.forEach((frame,col)=>{
     ctx.save();ctx.translate(col*160+75,row*260+225);ctx.scale(1.5,1.5);
     ctx.strokeStyle=palette.ground;ctx.beginPath();ctx.moveTo(-48,0);ctx.lineTo(50,0);ctx.stroke();
-    drawFigure(ctx,samplePose(id,frame),palette.p1,palette,1,0,sampleDepths(id,frame),sampleTurn(id,frame),sampleYaw(id,frame));
-    for(const box of MOVES[id].frames[frame].hitboxes){ctx.strokeStyle=palette.hit;ctx.strokeRect(box.x/256,box.y/256,box.width/256,box.height/256);}
-    ctx.restore();ctx.fillStyle=palette.text;ctx.font='12px monospace';ctx.fillText(`${id} / ${frame}`,col*160+5,row*260+18);
+    drawFigure(ctx,samplePose(id,frame),palette.p1,palette,facing,0,sampleDepths(id,frame),sampleTurn(id,frame),sampleHeadYaw(id,frame));
+    for(const box of MOVES[id].frames[frame].hitboxes){ctx.strokeStyle=palette.hit;ctx.strokeRect((facing===1?box.x:-box.x-box.width)/256,box.y/256,box.width/256,box.height/256);}
+    ctx.restore();ctx.fillStyle=palette.text;ctx.font='12px monospace';ctx.fillText(`${id==='tornado_spin_combo'?'Combo':id==='tornado_mk'?'Tornado':'Spin'} / ${frame} / ${facing}`,col*160+5,row*260+18);
    });
+   }
   });
  });
  await page.locator('#combo-sheet').screenshot({path:`${output}/phases.png`});
