@@ -16,6 +16,12 @@ it('loads a saved language and falls back safely when storage is invalid or bloc
   expect(loadLanguage({getItem:()=>{throw Error('denied');}})).toBe('en');
 });
 
+it('starts when merely reading window.localStorage throws',()=>{
+  const blocked={};Object.defineProperty(blocked,'localStorage',{get(){throw Error('storage disabled');}});
+  vi.stubGlobal('window',blocked);
+  expect(loadLanguage()).toBe('en');
+});
+
 it('switches dictionaries, interpolates values and persists the selection',()=>{
   const setItem=vi.fn();vi.stubGlobal('localStorage',{getItem:()=>null,setItem});
   setLanguage('de');

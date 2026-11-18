@@ -53,12 +53,12 @@ it.each(['Blockstun','Hitstun','Crouch','CrouchWalk','Airborne','JumpSquat','Lan
     expect(f.moveId?.startsWith('spin_')??false).toBe(false);
   }
 });
-it('retains crouching/air normal kicks and does not treat diagonal back as 4',()=>{
+it('rejects removed crouch kicks, retains air kicks and rejects diagonal back commands',()=>{
   for(const button of variants)for(const posture of ['crouch','jump','air']) {
     const game=setup(),f=game.fighters[0];
     if(posture==='air'){f.state='Airborne';f.y=-100*256;f.vy=0;}
     step(game,[{...back(1,button),down:posture==='crouch',up:posture==='jump'},neutralInput()]);
-    if(posture==='crouch')expect(f.moveId).toBe(`crouching_${button.toLowerCase()}`);
+    if(posture==='crouch')expect(f.moveId).toBe(null);
     if(posture==='air')expect(f.moveId).toBe(`airborne_${button.toLowerCase()}`);
     if(posture==='jump')expect(f.state).toBe('JumpSquat');
   }
@@ -70,7 +70,7 @@ it('never upgrades buffered or hitstop presses; holding kick does not repeat; a 
   expect(f.moveId).toBe('standing_mk');
   const stopped=setup();stopped.hitstop=2;
   step(stopped,[back(1,'LK'),neutralInput()]);step(stopped,[back(1,'LK'),neutralInput()]);step(stopped,[back(1,'LK'),neutralInput()]);
-  expect(stopped.fighters[0].moveId).toBeNull();
+  expect(stopped.fighters[0].moveId).toBe('standing_lk');
   const repeated=setup();step(repeated,[spinCommand(1,'HK'),neutralInput()]);
   for(let n=0;n<70;n++)step(repeated,[spinCommand(1,'HK'),neutralInput()]);
   expect(repeated.fighters[0].moveId).toBe(null);expect(repeated.fighters[0].attackId).toBe(1);
@@ -142,15 +142,15 @@ it('retains the reference arm counterbalance through the high-spin contact',()=>
       expect(pose[side+joint]).toEqual(reference[side+joint]);
   }
 });
-it('removes the low spin and reserves back + LK without a delayed normal kick',()=>{
+it('replaces the removed low spin with the reference left turn kick',()=>{
   expect(MOVES.spin_lk).toBeUndefined();expect(animations.spin_lk).toBeUndefined();
   for(const facing of [-1,1])for(const held of [0,10]) {
     const game=setup(facing);
     for(let i=0;i<held;i++)step(game,[back(facing),neutralInput()]);
     step(game,[back(facing,'LK'),neutralInput()]);
-    expect(game.fighters[0].moveId).toBeNull();
-    for(let i=0;i<12;i++)step(game,[{...neutralInput(),buttons:buttonBit('LK')},neutralInput()]);
-    expect(game.fighters[0].attackId).toBe(0);
+    expect(game.fighters[0].moveId).toBe('left_turn_kick');
+    for(let i=0;i<MOVES.left_turn_kick.duration+15;i++)step(game,[{...neutralInput(),buttons:buttonBit('LK')},neutralInput()]);
+    expect(game.fighters[0].attackId).toBe(1);
     step(game);step(game,[{...neutralInput(),buttons:buttonBit('LK')},neutralInput()]);
     expect(game.fighters[0].moveId).toBe('standing_lk');
   }
@@ -175,9 +175,9 @@ it.each(variants)('%s follows the block matrix and transfers exact corner pushba
     b.input.current.direction=crouch?1:4; // Body remains standing: isolate the block rule from geometric ducking.
     const start=a.x;resolveCombat(game);
     expect(game.lastContact).not.toBe(null);
-    const blocked=true;expect(game.lastContact!.blocked).toBe(blocked);
+    const blocked=crouch===(move.hitLevel!=='HIGH');expect(game.lastContact!.blocked).toBe(blocked);
     expect(a.x).toBe(start-facing*(blocked?move.pushbackBlock:move.pushbackHit));
-    expect(b.hp).toBe(blocked?1000:1000-move.damage);
+    expect(b.hp).toBe(blocked?1000-Math.round(move.damage*.08):1000-move.damage);
     expect(b.remaining).toBe(blocked?move.blockstun:move.hitstun);
   }
 });

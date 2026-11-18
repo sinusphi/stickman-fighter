@@ -32,14 +32,14 @@ it.each([1,-1])('only unblocked middle punches buckle and slide a grounded targe
   for(let frame=0;frame<45;frame++) {
    const inputs:[ReturnType<typeof neutralInput>,ReturnType<typeof neutralInput>]=[
     {...neutralInput(),buttons:frame===0?buttonBit('MP'):0},
-    {...neutralInput(),left:blocked&&facing===-1,right:blocked&&facing===1}];
+    {...neutralInput(),down:blocked,left:blocked&&facing===-1,right:blocked&&facing===1}];
    const wasContacted=contacted,oldX=b.x,oldStop=game.hitstop;
    replay.frames.push({inputs,events:[]});step(game,inputs);
    if(!contacted&&game.lastContact) {
     contacted=true;contactX=b.x;
     expect(game.lastContact.blocked).toBe(blocked);
     expect(b.hitReaction).toBe(blocked?undefined:'middlePunch');
-    expect(animationId(b,'MID')).toBe(blocked?'Blockstun':'HitMiddlePunch');
+    expect(animationId(b,'MID')).toBe(blocked?'CrouchBlock':'HitMiddlePunch');
     expect(b.vx).toBe(blocked?0:facing*1536);
    }
    if(wasContacted&&oldStop)expect(b.x).toBe(oldX);

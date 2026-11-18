@@ -1,15 +1,17 @@
 import { expect, it } from 'vitest';
 import { MOVES } from '../../src/data/schema';
 import rig from '../../src/data/poses.json';
-import { animationTrails, samplePose, sampleRotationTrail, sampleTrails, sampleYaw } from '../../src/render/skeleton';
+import { animationTrails, sampleHeadYaw, samplePose, sampleRotationTrail, sampleTrails, sampleYaw } from '../../src/render/skeleton';
 import { spinFrameBoxes } from '../../src/data/spin-boxes';
 import { createGame, step, snapshot } from '../../src/simulation/state';
 import { collectContacts, resolveCombat } from '../../src/simulation/combat';
 import { neutralInput, buttonBit } from '../../src/input/types';
 import { createReplay, parseReplay, playReplay } from '../../src/debug/replay';
 import { HitFeedback } from '../../src/render/feedback';
+import { eyeViews } from '../../src/render/figure';
 
-const highStart=32+MOVES.forward_spin_hk.startup;
+const comboOffset=40;
+const highStart=comboOffset+MOVES.forward_spin_hk.startup;
 const spinTime=(f:number)=>f<=24?Math.round(f/24*MOVES.forward_spin_hk.startup):MOVES.forward_spin_hk.startup+(f-24)/5*(MOVES.forward_spin_hk.active-1);
 const mk=buttonBit('MK'),hk=buttonBit('HK');
 const cases=[['tornado_mk',mk,80],['forward_spin_hk',hk,100],['tornado_spin_combo',mk|hk,180]] as const;
@@ -29,7 +31,7 @@ it.each([['tornado_mk',18],['forward_spin_hk',18],['tornado_spin_combo',48]] as 
  expect(right.length).toBeGreaterThan(4);expect(left).toHaveLength(right.length);
  right.forEach(([x,y],i)=>{expect(left[i][0]).toBeCloseTo(-x,8);expect(left[i][1]).toBeCloseTo(y,8);});
 });
-it.each([['forward_spin_hk',0],['tornado_spin_combo',32]] as const)('%s turns on a straight support leg and carries an extended HK leg around the back', (id,offset)=>{
+it.each([['forward_spin_hk',0],['tornado_spin_combo',comboOffset]] as const)('%s turns on a straight support leg and carries an extended HK leg around the back', (id,offset)=>{
  const extension=(pose:ReturnType<typeof samplePose>,side:'left'|'right')=>{
   const thigh=[pose[`${side}Knee`][0]-pose.hip[0],pose[`${side}Knee`][1]-pose.hip[1]];
   const shin=[pose[`${side}Foot`][0]-pose[`${side}Knee`][0],pose[`${side}Foot`][1]-pose[`${side}Knee`][1]];
@@ -71,7 +73,7 @@ it.each(cases)('%s triggers on its configured direction chord in either facing',
 it('keeps normal priorities and rejects diagonals',()=>{
  for(const input of [neutralInput(),{...forward(1),down:true}]) {
   const game=setup();step(game,[{...input,buttons:mk|hk},neutralInput()]);
-  expect(game.fighters[0].moveId).toBe(input.down?'crouching_hk':'standing_hk');
+  expect(game.fighters[0].moveId).toBe(input.down?null:'standing_hk');
  }
  const priority=setup();step(priority,[forward(1,mk|hk|buttonBit('HP')),neutralInput()]);expect(priority.fighters[0].moveId).toBe('jumping_uppercut');
  const released=setup();step(released,[forward(1),neutralInput()]);step(released,[{...neutralInput(),buttons:mk|hk},neutralInput()]);expect(released.fighters[0].moveId).toBe('standing_hk');
@@ -153,7 +155,7 @@ it('uses MID then HIGH blocking and hit feedback; each group contacts only once'
   const game=setup(1,42),[a,b]=game.fighters;a.state='Attack';a.moveId='tornado_spin_combo';a.moveFrame=frame;b.input.current.direction=direction;
   expect(collectContacts(game)).toHaveLength(1);
   const before=snapshot(game);resolveCombat(game);
-  expect(game.lastContact?.blocked).toBe(direction===4||level==='MID');
+  expect(game.lastContact?.blocked).toBe(direction===1?level==='MID':level==='HIGH');
   if(direction===1&&level==='HIGH') {
    const feedback=new HitFeedback();feedback.update(game,before);expect(feedback.levels[1]).toBe('HIGH');feedback.reset(game);expect(feedback.levels[1]).toBe('HIGH');
   }
@@ -197,7 +199,7 @@ it('rejects late, released, direction-interrupted, higher-priority and hitstop c
   expect(game.fighters[0].moveId).toBe(first===mk?'tornado_mk':'spin_hk');
  }
 });
-it.each(cases)('%s turns continuously through a visible front and sweeps both arms across the torso',id=>{
+it.each(cases)('%s turns continuously through a visible front with controlled arm movement',id=>{
  let previous=0,front=0;const hands={left:[],right:[]} as Record<string,number[]>;
  for(let t=0;t<MOVES[id].duration;t+=.5) {
   const yaw=sampleYaw(id,t)!;expect(yaw).toBeGreaterThanOrEqual(previous);previous=yaw;
@@ -206,7 +208,22 @@ it.each(cases)('%s turns continuously through a visible front and sweeps both ar
   for(const side of ['left','right'])hands[side].push(p[side+'Hand'][0]-p.neck[0]);
  }
  expect(front).toBeGreaterThanOrEqual(4);
- for(const xs of Object.values(hands)){expect(Math.min(...xs)).toBeLessThan(-6);expect(Math.max(...xs)).toBeGreaterThan(6);}
+ for(const [side,xs] of Object.entries(hands)) {
+  // The single tornado's right arm settles into guard after landing instead
+  // of crossing the torso solely to satisfy a recovery swing.
+  if(id==='tornado_mk'&&side==='right')expect(Math.min(...xs)).toBeGreaterThan(6);
+  else expect(Math.min(...xs)).toBeLessThan(-6);
+  expect(Math.max(...xs)).toBeGreaterThan(6);
+ }
+});
+
+it('keeps the tornado head looking straight ahead through the kick and combo',()=>{
+ for(const id of ['tornado_mk','tornado_spin_combo'])for(const frame of [0,6,12,18,24,28,32,40,46,highStart,61,69]) {
+  if(frame>=MOVES[id].duration)continue;
+  expect(sampleHeadYaw(id,frame)).toBe(0);
+  expect(eyeViews(0,sampleHeadYaw(id,frame))).toHaveLength(1);
+ }
+ expect(sampleHeadYaw('forward_spin_hk',18)).toBe(sampleYaw('forward_spin_hk',18));
 });
 
 it.each([['forward_spin_hk',MOVES.forward_spin_hk.startup],['tornado_spin_combo',highStart]] as const)('%s keeps distinct, visibly bent arms at the high kick', (id,frame)=>{
@@ -221,6 +238,64 @@ it.each([['forward_spin_hk',MOVES.forward_spin_hk.startup],['tornado_spin_combo'
    const cosine=(u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v));
    // Neither a straight arm nor a fully doubled-back, invisible forearm.
    expect(cosine).toBeGreaterThan(-.9);expect(cosine).toBeLessThan(.5);
+  }
+ }
+});
+
+it.each(['tornado_mk','tornado_spin_combo'])('%s keeps the head stacked and arms bent through intermediate turn frames',id=>{
+ for(const facing of [-1,1])for(let frame=6;frame<=32;frame+=.25) {
+  const p=samplePose(id,frame,facing);
+  expect(p.head[1]).toBeLessThan(p.neck[1]-8);
+  expect(Math.abs(p.head[0]-p.neck[0])).toBeLessThan(2);
+  for(const side of ['left','right']) {
+   const shoulder=p[side+'Shoulder'],elbow=p[side+'Elbow'],hand=p[side+'Hand'];
+   const u=[elbow[0]-shoulder[0],elbow[1]-shoulder[1]],v=[hand[0]-elbow[0],hand[1]-elbow[1]];
+   const cosine=(u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v));
+   expect(cosine,`${id}/${frame}/${side}`).toBeGreaterThan(-.9);
+   // Sweeping arms may extend while changing their visible bend direction.
+   expect(hand[1]).toBeGreaterThan(p.head[1]+6);
+  }
+ }
+});
+it('settles the right forearm smoothly after the tornado landing',()=>{
+ for(const facing of [-1,1]) {
+  let previousAngle:number|undefined;
+  for(let frame=38;frame<=54;frame++) {
+   const pose=samplePose('tornado_mk',frame,facing);
+   const angle=Math.atan2(pose.rightHand[1]-pose.rightElbow[1],pose.rightHand[0]-pose.rightElbow[0])*180/Math.PI;
+   if(previousAngle!==undefined) {
+    const change=((angle-previousAngle+540)%360)-180;
+    expect(Math.abs(change),`facing ${facing}, frame ${frame}`).toBeLessThan(8);
+   }
+   previousAngle=angle;
+  }
+ }
+});
+it.each(['tornado_mk','tornado_spin_combo'])('%s keeps the right arm in guard before takeoff',id=>{
+ for(const facing of [-1,1])for(let frame=0;frame<=12;frame+=.5) {
+  const pose=samplePose(id,frame,facing);
+  const angle=(from:number[],to:number[])=>Math.atan2(to[1]-from[1],facing*(to[0]-from[0]))*180/Math.PI;
+  const upper=angle(pose.rightShoulder,pose.rightElbow),fore=angle(pose.rightElbow,pose.rightHand);
+  expect(upper,`${id}, facing ${facing}, frame ${frame}`).toBeGreaterThan(80);
+  expect(upper,`${id}, facing ${facing}, frame ${frame}`).toBeLessThan(96);
+  expect(fore,`${id}, facing ${facing}, frame ${frame}`).toBeGreaterThan(-52);
+  expect(fore,`${id}, facing ${facing}, frame ${frame}`).toBeLessThan(-28);
+ }
+});
+it('shares the complete tornado between single and combo and lands before the next spin',()=>{
+ for(const facing of [-1,1]) {
+  for(let frame=0;frame<=32;frame+=.25) {
+   const single=samplePose('tornado_mk',frame,facing),combo=samplePose('tornado_spin_combo',frame,facing);
+   // Cubic arm tangents anticipate the different recovery after frame 32.
+   for(const joint of Object.keys(single))for(const axis of [0,1])expect(combo[joint][axis]).toBeCloseTo(single[joint][axis],Number.isInteger(frame)?8:1);
+  }
+  const landing=samplePose('tornado_spin_combo',40,facing);
+  expect(Math.max(landing.leftFoot[1],landing.rightFoot[1])).toBeCloseTo(0,8);
+  expect(Math.abs(landing.rightFoot[0]-landing.hip[0])).toBeLessThan(10);
+  for(let frame=32;frame<44;frame+=.25) {
+   const p=samplePose('tornado_spin_combo',frame,facing),next=samplePose('tornado_spin_combo',frame+.25,facing);
+   for(const joint of ['head','neck','leftHand','rightHand','leftFoot','rightFoot'])
+    expect(Math.hypot(next[joint][0]-p[joint][0],next[joint][1]-p[joint][1]),`${frame}/${joint}`).toBeLessThan(5);
   }
  }
 });

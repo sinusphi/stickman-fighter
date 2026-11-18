@@ -111,7 +111,7 @@ it('captures both levels on a real trade and repeats the same feedback after rep
   for(const f of game.fighters){f.state='Attack';f.moveId='standing_lp';f.moveFrame=MOVES.standing_lp.startup-1;f.attackId=1;}
   const initial=snapshot(game),feedback=new HitFeedback();
   step(game,[neutralInput(),neutralInput()]);feedback.update(game,initial);
-  expect(game.fighters.every(f=>f.hp<1000)).toBe(true);expect(feedback.levels).toEqual(['MID','MID']);
+  expect(game.fighters.every(f=>f.hp<1000)).toBe(true);expect(feedback.levels).toEqual(['HIGH','HIGH']);
   const replay=snapshot(initial),other=new HitFeedback();step(replay);other.update(replay,initial);
   expect(replay).toEqual(game);expect(other.levels).toEqual(feedback.levels);
 });

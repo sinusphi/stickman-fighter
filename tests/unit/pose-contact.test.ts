@@ -11,7 +11,7 @@ import {createReplay,parseReplay,playReplay,validateSnapshot} from '../../src/de
 
 const hash=async(value:unknown)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(value)))),n=>n.toString(16).padStart(2,'0')).join('');
 it('preserves every damage, stun and pushback value, the fast punches and the full uppercut',async()=>{
- for(const m of moves)expect(m).toMatchObject(baseline.damage[m.id as keyof typeof baseline.damage]);
+ for(const [id,stats] of Object.entries(baseline.damage))expect(moves.find(m=>m.id===id)).toMatchObject(stats);
  for(const [id,digest] of Object.entries(baseline.preserved))expect(await hash(moves.find(m=>m.id===id)),id).toBe(digest);
  expect(await hash({animation:poses.animations.jumping_uppercut,poses:Object.fromEntries(Object.entries(poses.poses).filter(([id])=>id.startsWith('jumping_uppercut_')))})).toBe(baseline.uppercut);
 });
@@ -26,8 +26,8 @@ it('matches each heavy normal phase to its middle reference, with all middle/hig
  }
  for(const id of ['spin_hk','forward_spin_hk'])for(const key of ['startup','active','recovery','duration'] as const)expect(MOVES[id][key]).toBe(MOVES.standing_mk[key]);
  const combo=MOVES.tornado_spin_combo,high=combo.frames.flatMap((f,i)=>f.hitboxes.some(b=>b.hitGroup==='spin')?[i]:[]);
- expect(high).toEqual(Array.from({length:MOVES.forward_spin_hk.active},(_,i)=>32+MOVES.forward_spin_hk.startup+i));
- expect(combo.duration-32).toBe(MOVES.forward_spin_hk.duration);
+ expect(high).toEqual(Array.from({length:MOVES.forward_spin_hk.active},(_,i)=>40+MOVES.forward_spin_hk.startup+i));
+ expect(combo.duration-40).toBe(MOVES.forward_spin_hk.duration);
 });
 it('rejects the empty corners of diagonal limb rectangles, including parallel and zero-length segments',()=>{
  expect(capsulesOverlap([0,0,20,20,1],[0,20,0,20,1])).toBe(false);

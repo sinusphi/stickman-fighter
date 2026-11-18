@@ -19,9 +19,9 @@ function playAttack(button = 'LP', defender = neutralInput()) {
 }
 
 describe('move data', () => {
-  it('provides 27 normals and six hold attacks with contiguous frame data', () => {
+  it('provides 27 normals and twelve hold attacks with contiguous frame data', () => {
     expect(Object.values(MOVES).filter(m=>m.command.type==='normal')).toHaveLength(27);
-    expect(Object.values(MOVES).filter(m=>m.command.type==='hold')).toHaveLength(6);
+    expect(Object.values(MOVES).filter(m=>m.command.type==='hold')).toHaveLength(12);
     for (const move of Object.values(MOVES)) {
       // startup/active describe the main strike; an early knee group has its own window.
       const early=new Set(move.hitGroups.filter(g=>g.activeFrames).map(g=>g.id));
@@ -68,7 +68,7 @@ describe('frame combat', () => {
   });
   it.each<[{ direction: number; level: HitLevel; expected: boolean }]>([
     [{direction:1,level:'LOW',expected:true}], [{direction:4,level:'LOW',expected:false}],
-    [{direction:1,level:'MID',expected:true}], [{direction:4,level:'MID',expected:true}],
+    [{direction:1,level:'MID',expected:true}], [{direction:4,level:'MID',expected:false}],
     [{direction:1,level:'HIGH',expected:false}], [{direction:4,level:'HIGH',expected:true}],
     [{direction:2,level:'LOW',expected:false}],
   ])('uses the block matrix %o', ({direction,level,expected})=>{
@@ -80,13 +80,13 @@ describe('frame combat', () => {
   });
   it('allows continued guard in blockstun but no aerial guard',()=>{
     const f=createGame().fighters[0];f.state='Blockstun';f.input.current.direction=4;
-    expect(canBlock(f,'MID')).toBe(true);f.y=-1;expect(canBlock(f,'MID')).toBe(false);
+    expect(canBlock(f,'HIGH')).toBe(true);f.y=-1;expect(canBlock(f,'HIGH')).toBe(false);
   });
-  it('blocks lows only with down-back, without chip damage',()=>{
+  it('blocks lows only with down-back, with rounded eight percent chip damage',()=>{
     const standing=playAttack('LK',{...neutralInput(),right:true});
     expect(standing.fighters[1].hp).toBe(965);
     const crouching=playAttack('LK',{...neutralInput(),down:true,right:true});
-    expect(crouching.fighters[1].hp).toBe(1000);expect(crouching.fighters[1].state).toBe('Blockstun');
+    expect(crouching.fighters[1].hp).toBe(997);expect(crouching.fighters[1].state).toBe('Blockstun');
   });
   it('lets a high kick whiff a crouching body by geometry',()=>{
     // Up close the rising knee reaches the ducking head; the kick itself still passes over.

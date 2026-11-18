@@ -98,14 +98,15 @@ it('keeps hitboxes on the right striking arm only during the active phase',()=>{
   }
  });
 });
-it('hits once at close range, can be blocked and whiffs at distance',()=>{
+it('hits once at close range and whiffs against crouching guard or at distance',()=>{
  for(const blocked of [false,true])for(const distance of [36,240]) {
   const game=createGame();game.fighters[0].x=300*256;game.fighters[1].x=(300+distance)*256;
   if(blocked){game.fighters[1].state='Blockstun';game.fighters[1].remaining=90;}
-  const defender=blocked?{...neutralInput(),right:true}:neutralInput();
+  const defender=blocked?{...neutralInput(),right:true,down:true}:neutralInput();
   step(game,[{...neutralInput(),right:true,buttons:buttonBit('HP')},defender]);
   for(let i=0;i<80;i++)step(game,[neutralInput(),defender]);
   expect(game.fighters[1].hp).toBe(!blocked&&distance===36?1000-MOVES.jumping_uppercut.damage:1000);
-  if(distance===36)expect(game.lastContact?.blocked).toBe(blocked);
+  if(distance===36&&!blocked)expect(game.lastContact?.blocked).toBe(false);
+  else expect(game.lastContact).toBe(null);
  }
 });

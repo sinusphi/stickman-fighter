@@ -6,7 +6,7 @@ import { overlaps, pushbox, resolvePushboxes, worldBox } from '../../src/simulat
 import rules from '../../src/data/rules.json';
 
 describe('movement and AABB collision', () => {
-  it('moves forwards faster than backwards, walks forward in the crouch and holds still on down-back', () => {
+  it('moves forwards faster than backwards, holds still in the crouch on down-forward and down-back', () => {
     const game = createGame(); const start = game.fighters[0].x;
     step(game, [{ ...neutralInput(), right: true }, neutralInput()]);
     expect(game.fighters[0].x - start).toBe(rules.forwardSpeed);
@@ -20,8 +20,9 @@ describe('movement and AABB collision', () => {
     expect(game.fighters[0].x).toBe(crouchX);
     expect(game.fighters[0].vx).toBe(0);
     step(game, [{ ...neutralInput(), down: true, right: true }, neutralInput()]);
-    expect(game.fighters[0].state).toBe('CrouchWalk');
-    expect(game.fighters[0].x - crouchX).toBe(rules.crouchForwardSpeed);
+    expect(game.fighters[0].state).toBe('Crouch');
+    expect(game.fighters[0].x).toBe(crouchX);
+    expect(game.fighters[0].vx).toBe(0);
   });
   it('uses authored squat and landing durations with fixed jump velocity', () => {
     const game = createGame();

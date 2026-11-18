@@ -81,7 +81,7 @@ it('maps both nine-button keyboards and migrates stored six-button settings with
   expect(migrated.players[1].keys.MK).toBe('Numpad2');expect(migrated.players[1].keys.LMK).toBe('Numpad5');
   for(const player of migrated.players)expect(new Set(Object.values(player.keys)).size).toBe(13);
 });
-it.each(['RLK','LMK','RHK'] as const)('%s selects all stances, deals damage and replays higher input bits deterministically',button=>{
+it.each(['RLK','LMK','RHK'] as const)('%s respects stance restrictions and replays higher input bits deterministically',button=>{
   for(const stance of ['standing','crouching','airborne'])for(const facing of [1,-1]) {
     const game=createGame(),[a,b]=game.fighters;
     a.x=480*256;b.x=a.x+facing*40*256;
@@ -91,9 +91,10 @@ it.each(['RLK','LMK','RHK'] as const)('%s selects all stances, deals damage and 
       const inputs:[ReturnType<typeof neutralInput>,ReturnType<typeof neutralInput>]=[
         {...neutralInput(),down:stance==='crouching',buttons:i===0?buttonBit(button):0},neutralInput()];
       replay.frames.push({inputs,events:[]});step(game,inputs);
-      if(i===0)expect(a.moveId).toBe(`${stance}_${button.toLowerCase()}`);
+      if(i===0)expect(a.moveId).toBe(stance==='crouching' && button!=='RLK'?null:`${stance}_${button.toLowerCase()}`);
     }
-    expect(b.hp).toBeLessThan(1000);
+    if(stance==='crouching' && button!=='RLK')expect(b.hp).toBe(1000);
+    else expect(b.hp).toBeLessThan(1000);
     expect(playReplay(parseReplay(replay))).toEqual(snapshot(game));
   }
   expect(validRaw({...neutralInput(),buttons:BUTTON_MASK,taps:buttonBit(button)})).toBe(true);

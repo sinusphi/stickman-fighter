@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { MOVES, groupValue, validateMoves, type HitGroup } from '../../src/data/schema';
 import moveData from '../../src/data/moves.json';
-import contactGeometry from '../../src/data/contact-geometry.json';
+import contactGeometry from '../../src/data/contact-geometry';
 import { animations, animationTrails, samplePose } from '../../src/render/skeleton';
 import { kneeImpact } from '../../src/render/impact';
 import { createGame, step, snapshot } from '../../src/simulation/state';
@@ -102,17 +102,19 @@ it('uses the knee reactions for the knee and the unchanged kick reactions for th
   }
 });
 
-it('is blocked like any MID hit, standing or crouch-guarding', () => {
+it('requires crouching guard for the MID knee and deals chip damage', () => {
   // Guard only from shortly before the knee, so holding back cannot walk out of range.
   for (const [button, id] of KICKS) for (const down of [false, true]) {
     const [from] = knee(id).activeFrames!, guard = (i: number) => ({ ...neutralInput(), right: i >= from - 2, down });
-    const { game, hits } = play(button, 42, false, guard);
-    expect(hits, id).toEqual([]); expect(game.fighters[1].hp).toBe(1000);
+    const { hits } = play(button, 42, false, guard);
+    expect(hits.length,id).toBeGreaterThan(0);
+    expect(hits[0].damage,id).toBe(down?Math.round(knee(id).damage!*.08):knee(id).damage);
+    expect(hits[0].state,id).toBe(down?'Blockstun':'Hitstun');
     const first = duel(42);
     for (let i = 0; i < 40 && !first.lastContact; i++) step(first, [{ ...neutralInput(), buttons: i === 0 ? buttonBit(button) : 0 }, guard(i)]);
-    expect(first.lastContact?.blocked, id).toBe(true);
+    expect(first.lastContact?.blocked, id).toBe(down);
     expect(first.fighters[0].moveFrame, id).toBeLessThanOrEqual(knee(id).activeFrames![1]);
-    expect(first.fighters[1].state).toBe('Blockstun'); expect(first.fighters[1].remaining).toBe(knee(id).blockstun);
+    expect(first.fighters[1].state).toBe(down?'Blockstun':'Hitstun'); expect(first.fighters[1].remaining).toBe(down?knee(id).blockstun:knee(id).hitstun);
   }
 });
 

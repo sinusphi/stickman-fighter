@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_CONTROLS, Devices } from '../../src/platform/devices';
+import { DEFAULT_CONTROLS, Devices, MIN_TRIGGER_THRESHOLD, validateControls } from '../../src/platform/devices';
 import { buttonBit } from '../../src/input/types';
 import publicDefaults from '../../public/config/controls.json';
 
@@ -48,5 +48,35 @@ describe('browser device adapters',()=>{
     const p=pad();p.buttons[10].value=1;p.buttons[11].value=1;p.axes[2]=-0.8;
     const input=devices.sample([p])[1];expect(input.buttons).toBe(1);expect(input.up).toBe(true);expect(input.left).toBe(true);
     expect(devices.sample([null])[1].buttons).toBe(0);
+  });
+  it('rejects a trigger threshold of 0 and never reads resting or missing buttons as pressed',()=>{
+    expect(()=>validateControls({...structuredClone(DEFAULT_CONTROLS),triggerThreshold:0})).toThrow(/Trigger/);
+    expect(validateControls({...structuredClone(DEFAULT_CONTROLS),triggerThreshold:MIN_TRIGGER_THRESHOLD}).triggerThreshold).toBe(MIN_TRIGGER_THRESHOLD);
+    const devices=new Devices();devices.config.players[0].gamepadIndex=0;
+    devices.config.triggerThreshold=0; // bypasses validation, e.g. an outdated in-memory config
+    const p=pad();p.buttons.length=2; // mapped buttons and d-pad indexes beyond the pad
+    expect(devices.sample([p])[0]).toEqual({left:false,right:false,up:false,down:false,buttons:0,taps:0});
+    p.buttons[0].value=0.01;
+    expect(devices.sample([p])[0].buttons).toBe(0);
+  });
+});
+
+describe('atomic control changes',()=>{
+  it('keeps a valid change active for the session when storage fails',()=>{
+    const setItem=vi.fn(()=>{throw Error('QuotaExceededError');});
+    vi.stubGlobal('localStorage',{getItem:()=>null,setItem});
+    const devices=new Devices();key('keydown','KeyR');
+    const next=structuredClone(devices.config);next.bufferFrames=9;
+    expect(devices.apply(next)).toEqual({saved:false});
+    expect(devices.config.bufferFrames).toBe(9);expect(setItem).toHaveBeenCalledOnce();
+    expect(devices.sample([])[0].buttons).toBe(0); // held keys were cleared with the change
+  });
+  it('reports a stored change and leaves the active config untouched on an invalid draft',()=>{
+    const devices=new Devices();const before=structuredClone(devices.config);
+    const next=structuredClone(devices.config);next.bufferFrames=12;
+    expect(devices.apply(next)).toEqual({saved:true});
+    const invalid=structuredClone(devices.config);invalid.bufferFrames=0;
+    expect(()=>devices.apply(invalid)).toThrow();
+    expect(devices.config).toEqual({...before,bufferFrames:12});
   });
 });
