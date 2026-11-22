@@ -66,8 +66,12 @@ Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hock
 - Deine Blickrichtung bleibt fest: Rückwärtslaufen dreht dich nicht um. **Doppeltipp nach hinten** dreht dich um (kurze Drehanimation, währenddessen kein Angriff). Ein einzelner Druck nach hinten kann weiterhin einen Command-Move einleiten.
 - Nur wenige Gegner vor dir greifen gleichzeitig an, die anderen lauern auf Abstand. Gegner im Rücken greifen selten an, und jeder Angriff von hinten wird angekündigt: Der Angreifer blinkt und zeigt ein **!**. Angriffe in den Rücken lassen sich nicht blocken.
 - Der Finisher der Fünfer-Combo wirft den Gegner in allen Modi um; im Survival werfen auch andere schwere Treffer den Basisgegner um.
+- Es gibt mehrere Gegnertypen von sehr leicht bis schwer (eigene Energie, Stabilität, Aggressivität und Reaktionszeit). Jeder Treffer bringt den Gegner aus dem Gleichgewicht; ist seine Standfestigkeit voll, fällt er um: ein sehr leichter Gegner nach etwa fünf Treffern, bei einer Combo nach etwa drei. Schwerere Typen halten mehr aus.
+- Der Director füllt die Gegnerplätze aus einem Schwierigkeitsbudget, das mit der Spielzeit wächst, immer mit einer Mischung aus leichten und mittleren Typen und gelegentlich einem schweren. Ein gefallener leichter Gegner wird meist durch einen leichten ersetzt. Dazwischen kommen kleine Wellen mit ein paar Extra-Gegnern.
+- **Miniboss:** Der erste erscheint nach 30 Sekunden Spielzeit. Solange ein Boss lebt, steht der Boss-Timer still und sonst greift niemand an (Duell: alle anderen schauen vom Rand zu). Hat der Boss die Arena verlassen, folgt der nächste nach 45 Sekunden, jeder härter als der vorige. Fällt ein Boss, greifen die wartenden Gegner sofort wieder an.
+- **Energie:** Jeder Treffer und jedes K.O. gibt etwas Energie zurück, ein Miniboss deutlich mehr (über 100 % hinaus als Reserve). Die Gains sinken mit der Spielzeit langsam.
 
-Alle Survival-Werte (Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Schwellwerte, Drehzeit) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
+Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gains, Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Schwellwerte, Drehzeit) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
 
 
 ## Moveliste
