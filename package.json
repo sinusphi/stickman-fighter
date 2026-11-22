@@ -1,6 +1,6 @@
 {
   "name": "stickman-fighter",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -49,7 +49,7 @@
     "generate:middle-high-low": "node scripts/generate-middle-high-low.mjs",
     "generate:move-table": "node scripts/generate-move-table.mjs",
     "smoke:middle-high-low": "node scripts/middle-high-low-smoke.mjs",
-    "generate:check": "npm run generate:spin-poses -- --check && npm run generate:spin-boxes -- --check && npm run generate:strike-boxes -- --check && npm run generate:walk -- --check && npm run generate:tornado -- --check && npm run generate:uppercut -- --check && npm run generate:dwit -- --check && npm run generate:left-turn -- --check && npm run generate:double-high -- --check && npm run generate:spin-high-middle -- --check && npm run generate:middle-high-low -- --check && npm run generate:middle-high-punch -- --check && npm run generate:punch-kick -- --check && npm run generate:kick-punch -- --check && npm run generate:contacts -- --check && npm run generate:move-table -- --check && npm run generate:sound-meta -- --check",
+    "generate:check": "npm run generate:spin-poses -- --check && npm run generate:spin-boxes -- --check && npm run generate:strike-boxes -- --check && npm run generate:walk -- --check && npm run generate:tornado -- --check && npm run generate:uppercut -- --check && npm run generate:dwit -- --check && npm run generate:left-turn -- --check && npm run generate:double-high -- --check && npm run generate:spin-high-middle -- --check && npm run generate:middle-high-low -- --check && npm run generate:middle-high-punch -- --check && npm run generate:punch-kick -- --check && npm run generate:kick-punch -- --check && npm run generate:throws -- --check && npm run generate:contacts -- --check && npm run generate:move-table -- --check && npm run generate:sound-meta -- --check",
     "check:full": "npm run check && npm run smoke:all",
     "smoke:core": "node scripts/run-smokes.mjs",
     "smoke:all": "node scripts/run-smokes.mjs all",
@@ -59,7 +59,9 @@
     "generate:punch-kick": "node scripts/generate-punch-kick-combo.mjs",
     "generate:kick-punch": "node scripts/generate-kick-punch-combo.mjs",
     "smoke:punch-kick-combos": "node scripts/punch-kick-combos-smoke.mjs",
-    "smoke:effects": "node scripts/effects-smoke.mjs"
+    "smoke:effects": "node scripts/effects-smoke.mjs",
+    "generate:throws": "node scripts/generate-throws.mjs",
+    "smoke:throws": "node scripts/throws-smoke.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
