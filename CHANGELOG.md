@@ -1,16 +1,33 @@
 # Changelog – Stickman Fighter
 
+## 1.12.0 · 22.11.2026
+
+- App-Version (`package.json`, `package-lock.json`, README-Badges) **1.11.0 → 1.12.0**, Replay-Engine-Version (`ENGINE_VERSION`) **1.10.0 → 1.11.0**: Das Trefferstärke-/Knockdown-System, `rules.hitStrength` sowie die Rules-Änderungen an Revenge/Special seit 1.11.0 ändern Simulation und Replay-Datenhash. Ältere Replays werden eindeutig abgewiesen.
+- Enthält den Survival-Modus (Teil 1) und die Änderungen der folgenden Einträge bis einschließlich „Special-Leiste von der Revenge-Leiste entkoppelt“.
+
+## 2026-11-22 · Survival-Modus, Teil 1: Fundament
+
+- **Neu: Survival-Modus** (F10 oder Button „Survival“). Der Spieler startet in der Mitte, Gegner laufen immer wieder von links und rechts herein, Tote werden bis zur Maximalzahl nachgespawnt. Kein reguläres Ende: Der Lauf endet erst bei leerer Energie. Highscore ist die überlebte Zeit (HUD-Timer, Banner am Ende, Bestzeit im `localStorage`). Backspace startet einen neuen Lauf, F10 führt zurück in den Versus. Würfe sind im Survival vorerst deaktiviert.
+- **Blickrichtung per Doppeltipp:** Im Survival bleibt die Blickrichtung fest, Rückwärtslaufen dreht nicht um. Doppeltipp nach hinten dreht mit kurzer Animation (8 Frames, Gelenke schließen sich zur Frontansicht, beide Augen sichtbar), währenddessen weder Angriff noch Laufen. Nur aus Stand oder Laufen; während Angriffen und Combos wird der Doppeltipp ignoriert, ein Rückwärtsdruck mit Taste startet weiterhin den Command-Move.
+- **Director** (`src/survival/director.ts`): Angriffs-Tokens vorne (2) mit Vorrang, eigenes kleines Rücken-Budget (1, 300 Frames Cooldown). Rücken-Angreifer laufen heran, blinken mit „!“ (32 Frames) und schlagen dann einmal zu. Rücken-Gegner rücken auf, sobald vorne höchstens einer übrig ist oder der Spieler sich umdreht, danach 50 Frames Gnadenfrist. Nach jeder Drehung wird sofort neu einsortiert. Zufällige Startverzögerung pro Token, Sperre für identische Moves (40 Frames) und Mindestabstand zwischen Angriffsstarts (10 Frames) gegen synchrone Moves. Volle Auswertung alle 6 Frames. Gegner ohne Token lauern auf Abstand und blocken gelegentlich.
+- Angriffe in den Rücken sind im Survival nicht blockbar (`GameState.noRearGuard`, nur dort gesetzt).
+- **Knockdown-Änderung (alle Modi):** Neues Trefferstärke-System (`rules.hitStrength`). Stärke = Schaden oder Override; ein Bodentreffer mit Stärke ≥ Stabilität wirft um (kurzer Hüpfer nach hinten, dann Knockdown und Aufstehen). Standard-Stabilität 150, der Finisher der Fünfer-Combo (`middle_high_punch_combo:punch`) hat Stärke 200 und ist damit im Versus der einzige Bodentreffer, der umwirft. Neues optionales Feld `Fighter.stability` für spätere Gegnertypen; der Survival-Basisgegner hat 100, dort werfen also auch schwere Treffer um.
+- Der vorhandene CPU-Gegner bekommt nur einen optionalen `gate`-Hook und `interrupt()`; ohne Gate (Versus, Demo, Training) verhält er sich unverändert.
+- Alle Survival-Werte stehen zentral in `src/survival/config.ts`.
+- Ändert `rules.json` und damit den Replay-Datenhash; gehört zur Engine-Version 1.11.0.
+- Tests: `tests/unit/survival.test.ts`, `tests/unit/hit-strength.test.ts`; Browser-Smoke `npm run smoke:survival`.
+
 ## 2026-11-22 · „Leiste voll“-Sounds wieder hörbar, Revenge noch großzügiger
 
 - **Fix:** Die „Leiste voll“-Sounds waren praktisch unhörbar. Gemessen lagen sie bei ca. −40 dBFS, also 15–20 dB unter den Treffern, und starteten exakt gleichzeitig mit dem Treffer, der die Leiste füllt. Dadurch gingen sie im Treffersound und im Kompressor unter. Jetzt liegen sie auf Trefferniveau (≈ −21,5 dBFS, Revenge-Gain 0,05 → 0,4, Special 0,07 → 0,55) und setzen 120 ms nach dem Treffer ein (`READY_OFFSET`). Rein präsentational.
 - `smoke:audio-loudness` misst jetzt auch beide Ready-Cues (−25 … −18 dBFS), damit das nicht wieder passiert.
 - Revenge lädt bei erlittenen Treffern noch großzügiger (`gainPerHit` 16 → 25). Voll nach rund 400 statt 625 Schaden.
-- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+- Ändert `rules.json` und damit den Replay-Datenhash; gehört zur Engine-Version 1.11.0.
 
 ## 2026-11-22 · Revenge lädt schneller, dezentere „Leiste voll“-Sounds
 
 - Revenge lädt bei erlittenen Treffern deutlich großzügiger (`gainPerHit` 10 → 16). Die Leiste ist jetzt nach rund 625 statt 1000 Schaden voll, also nicht mehr erst kurz vor dem K.o.
-- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+- Ändert `rules.json` und damit den Replay-Datenhash; gehört zur Engine-Version 1.11.0.
 - Die „Leiste voll“-Sounds sind neu: statt Sweep mit Schimmer jetzt ein kurzes, leises Chiptune-Arpeggio mit zwei weichen Echos (Revenge: tiefes Square-Moll, Special: helles Triangle-Dur bis zur Oktave). Rein präsentational.
 
 ## 2026-11-22 · Special-Leiste von der Revenge-Leiste entkoppelt
@@ -18,7 +35,7 @@
 - Special und Revenge füllten sich bisher exakt gleich und waren deshalb immer gleichzeitig voll.
 - Special lädt bei gelandeten Treffern jetzt langsamer (`gainPerHit` 10 → 7), Revenge bleibt bei 10.
 - Neu: Geblockte Treffer geben dem Angreifer ein kleines bisschen Special (`gainPerBlock` 1, mindestens 1 Punkt). Revenge bekommt bei Block weiterhin nichts.
-- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+- Ändert `rules.json` und damit den Replay-Datenhash; gehört zur Engine-Version 1.11.0.
 
 ## 1.11.0 · 22.11.2026
 
