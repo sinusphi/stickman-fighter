@@ -60,6 +60,43 @@ try {
       if (withEffects === without) throw Error(`${theme}/${stage}: effects not visible on the contact frame`);
     }
   }
+  // Bar full: a real imported state (training, P2 Revenge at 97) and one light punch fill
+  // the bar. Burst on the canvas, READY label and highlight in both themes.
+  const readyReplay = await page.evaluate(async () => {
+    const { createGame } = await import('/src/simulation/state.ts');
+    const { createReplay } = await import('/src/debug/replay.ts');
+    const { buttonBit } = await import('/src/input/types.ts');
+    const game = createGame(), [a, b] = game.fighters;
+    game.training = { enabled: true, dummy: 'stand' };
+    a.x = 450 * 256; b.x = a.x + 45 * 256; b.resources.revenge.current = 97;
+    const replay = createReplay(game), n = { up: false, down: false, left: false, right: false, buttons: 0 };
+    for (let i = 0; i < 90; i++) replay.frames.push({ inputs: [i === 60 ? { ...n, buttons: buttonBit('LP') } : n, n], events: [] });
+    return replay;
+  });
+  for (const theme of ['dark', 'light']) {
+    if (await page.locator('html').getAttribute('data-theme') !== theme) await page.locator('#theme').click();
+    await page.locator('#replay-file').setInputFiles({ name: 'ready.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(readyReplay)) });
+    await page.locator('#play').click(); await ensurePaused();
+    await expect(page.locator('#resource-ready-1-revenge')).not.toHaveClass(/is-visible/);
+    for (let i = 0; i < 90 && await page.locator('#resource-value-1-revenge').textContent() !== '100 / 100'; i++) await page.locator('#step').click();
+    await expect(page.locator('#resource-value-1-revenge')).toHaveText('100 / 100');
+    await expect(page.locator('#resource-ready-1-revenge')).toHaveClass(/is-visible/);
+    await expect(page.locator('#resource-ready-1-revenge')).toHaveText('REVENGE READY');
+    await expect(page.locator('#resource-1-revenge')).toHaveClass(/is-full/);
+    await expect(page.locator('#resource-1-revenge')).toHaveClass(/resource-flash/);
+    await expect(page.locator('#resource-ready-0-revenge')).not.toHaveClass(/is-visible/);
+    await page.waitForTimeout(80);
+    await page.locator('.arena').screenshot({ path: `${output}/${theme}-ready-burst.png` });
+    const withBurst = await canvasHash();
+    await page.locator('#settings-details summary').click(); await page.locator('#effects-toggle').uncheck();
+    await page.waitForTimeout(80);
+    const without = await canvasHash();
+    await expect(page.locator('#resource-1-revenge')).not.toHaveClass(/is-pulsing/);
+    await expect(page.locator('#resource-ready-1-revenge')).toHaveClass(/is-visible/);
+    await page.locator('#effects-toggle').check(); await page.locator('#settings-details summary').click();
+    if (withBurst === without) throw Error(`${theme}: bar-full burst not visible`);
+    await page.locator('#play').click();
+  }
   if (errors.length) throw Error(`Seitenfehler: ${errors.join(' | ')}`);
   console.log(`Effects Smoke ok — Bilder in ${output}`);
 } finally { await browser.close(); }

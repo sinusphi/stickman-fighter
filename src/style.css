@@ -51,6 +51,7 @@ kbd { font-size:11px; border:1px solid var(--line);border-bottom-width:3px;borde
 .key-row { display:flex;gap:4px; }
 .hint { font-size:11px;color:var(--muted);line-height:1.7; }
 .key-label { display:flex;justify-content:space-around;font-size:8px;color:var(--muted);margin-top:5px; }
+.throw-key { display:grid;justify-items:center;align-self:flex-start; }
 footer { margin-top:26px;padding-top:15px;border-top:1px solid var(--subtle-line);display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--muted); }
 .notice { min-height:18px;font-size:12px;color:var(--muted); }
 details { border-top:1px solid var(--subtle-line);padding:16px 0;font-size:12px; }
@@ -84,6 +85,24 @@ select { background:var(--key); }
 .special .resource-fill { background:var(--special); }
 .resource-player.player-two .resource-track { display:flex;justify-content:flex-end; }
 .resource-player.player-two .resource-label { flex-direction:row-reverse; }
+/* Bar full: static highlight always; flash and slow pulse only with effects on (classes set by the HUD). */
+.resource-ready { visibility:hidden;font-weight:700;letter-spacing:.08em;color:var(--revenge); }
+.special .resource-ready { color:var(--special); }
+.resource-ready.is-visible { visibility:visible; }
+.resource-track { --glow:var(--revenge); }
+.special .resource-track { --glow:var(--special); }
+.resource-track.is-full { border-color:var(--glow);box-shadow:0 0 0 1px var(--glow),0 0 5px var(--glow); }
+.resource-track.is-pulsing { animation:resource-pulse 3.2s ease-in-out infinite; }
+.resource-track.resource-flash { animation:resource-flash .45s ease-out 1,resource-pulse 3.2s ease-in-out .45s infinite; }
+.resource-track.resource-flash .resource-fill { animation:resource-fill-flash .45s ease-out 1; }
+@keyframes resource-pulse { 0%,100% { box-shadow:0 0 0 1px var(--glow),0 0 4px var(--glow); } 50% { box-shadow:0 0 0 1px var(--glow),0 0 8px var(--glow); } }
+@keyframes resource-flash { 0% { box-shadow:0 0 0 2px var(--rigLight),0 0 12px var(--glow); } 100% { box-shadow:0 0 0 1px var(--glow),0 0 4px var(--glow); } }
+@keyframes resource-fill-flash { 0% { filter:brightness(1.6) saturate(.8); } 100% { filter:none; } }
+/* Reduced motion: no flash, no pulse; a static, slightly stronger highlight instead. */
+@media (prefers-reduced-motion: reduce) {
+  .resource-track.is-pulsing, .resource-track.resource-flash, .resource-track.resource-flash .resource-fill { animation:none; }
+  .resource-track.resource-flash { box-shadow:0 0 0 2px var(--glow),0 0 8px var(--glow); }
+}
 @media(max-width:700px) { .header-actions{gap:0}.resource-hud{margin-top:0;padding:0 16px 16px;gap:24px}.resource-label{font-size:9px}.brand{gap:10px} }
 @media(max-width:400px) { h1{font-size:16px}.brand .eyebrow{font-size:8px}.resource-label{font-size:8px;gap:3px} }
 
@@ -92,6 +111,7 @@ select { background:var(--key); }
 .combo-list { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;list-style:none;padding:0;margin:16px 0 0; }
 .combo-list li { border:1px solid var(--subtle-line);border-radius:4px;padding:14px;line-height:1.6; }
 .combo-command { margin:8px 0;color:var(--muted); }
+.combo-section { display:block;margin-top:22px; }
 .combo-bindings { display:flex;flex-wrap:wrap;gap:8px 24px; }
 .combo-bindings>span { display:flex;align-items:center;gap:5px; }
 @media(max-width:700px) { .combo-list{grid-template-columns:1fr} }

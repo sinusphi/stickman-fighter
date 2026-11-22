@@ -7,7 +7,7 @@ import { readdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { createServer } from 'vite';
 
-const CORE = ['smoke', 'audio', 'update', 'cpu', 'stage', 'animation-preview', 'contact-timing'];
+const CORE = ['smoke', 'audio', 'update', 'cpu', 'stage', 'animation-preview', 'contact-timing', 'throws'];
 const available = readdirSync(new URL('.', import.meta.url)).filter(name => name.endsWith('smoke.mjs')).map(name => name === 'smoke.mjs' ? 'smoke' : name.replace(/-smoke\.mjs$/, '')).sort();
 const requested = process.argv.slice(2);
 const names = requested.length === 0 ? CORE : requested.includes('all') ? available : requested;

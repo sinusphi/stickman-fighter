@@ -68,5 +68,34 @@ try {
     expect(maximum - minimum, `${mode}/${type} loudness spread`).toBeLessThan(type === 'hit' || type === 'finisher' ? 5 : 4);
     console.log(`${mode}/${type}: ${minimum.toFixed(1)} … ${maximum.toFixed(1)} dBFS`);
   }
+  // "Bar full" cues must sit at hit level, otherwise the simultaneous impact masks them.
+  const ready = await page.evaluate(async () => {
+    const { HitAudio } = await import('/src/platform/audio.ts');
+    const originalContext = window.AudioContext, levels = {};
+    try {
+      for (const resource of ['revenge', 'special']) {
+        const context = new OfflineAudioContext(1, 48000, 48000);
+        Object.defineProperty(context, 'state', { value: 'running' });
+        window.AudioContext = function () { return context; };
+        const audio = new HitAudio({ search: '?samples=0' });
+        audio.setMuted(false); audio.unlock(); audio.playResourceReady(resource);
+        const samples = (await context.startRendering()).getChannelData(0), windowFrames = 4800;
+        let peak = 0, energy = 0, maximum = 0;
+        for (let i = 0; i < samples.length; i++) {
+          peak = Math.max(peak, Math.abs(samples[i])); energy += samples[i] * samples[i];
+          if (i >= windowFrames) energy -= samples[i - windowFrames] * samples[i - windowFrames];
+          if (i >= windowFrames - 1) maximum = Math.max(maximum, energy / windowFrames);
+        }
+        levels[resource] = { db: 10 * Math.log10(maximum), peak };
+      }
+    } finally { window.AudioContext = originalContext; }
+    return levels;
+  });
+  for (const [resource, { db, peak }] of Object.entries(ready)) {
+    expect(peak, `ready/${resource}`).toBeLessThan(0.8);
+    expect(db, `ready/${resource}`).toBeGreaterThan(-25);
+    expect(db, `ready/${resource}`).toBeLessThan(-18);
+    console.log(`ready/${resource}: ${db.toFixed(1)} dBFS`);
+  }
   console.log(`Audio loudness smoke passed (${results.length} real Web Audio renders, every move/hit group, WAV+synth and synth fallback, two sample/random variants).`);
 } finally { await browser.close(); }

@@ -20,12 +20,16 @@ const LANGUAGES = {
   en: {
     file: '../README.md', stance: { standing: 'Standing', crouching: 'Crouching', airborne: 'Jump' },
     hold: key => `hold ${key}`, air: buttons => `in the air ${buttons}`,
+    throws: { throw_forward: 'Hip Throw', throw_back: 'Shoulder Throw' }, unblockable: 'unblockable (throw)', whiff: 'whiff',
+    throwIntro: px => `Throws grab a standing or crouching opponent that can act, up to ${px} px beyond the own pushbox; frame data of throws: grab frame / whiff recovery, damage on impact.`,
     intro: count => `${count} moves. Directions are relative to the opponent (6 forward, 4 back); keys for the starting positions with default controls (P1 left, P2 right). Frames at 60 Hz, startup counted from frame 0. Knee hit groups of the standing middle/high kicks are included in the damage.`,
     header: '| Move | ID | Input | P1 | P2 | Startup / Active / Recovery | Total | Damage | Block level |',
   },
   de: {
     file: '../README.de.md', stance: { standing: 'Stand', crouching: 'Hocke', airborne: 'Sprung' },
     hold: key => `${key} halten`, air: buttons => `im Sprung ${buttons}`,
+    throws: { throw_forward: 'Hüftwurf', throw_back: 'Schulterwurf' }, unblockable: 'nicht blockbar (Wurf)', whiff: 'Fehlgriff',
+    throwIntro: px => `Würfe greifen einen stehenden oder hockenden, handlungsfähigen Gegner bis ${px} px vor der eigenen Pushbox; Frame-Daten der Würfe: Greif-Frame / Recovery beim Fehlgriff, Schaden beim Aufprall.`,
     intro: count => `${count} Moves. Richtungen relativ zum Gegner (6 vorwärts, 4 zurück); Tasten für die Ausgangsaufstellung mit Standardbelegung (P1 links, P2 rechts). Frames bei 60 Hz, Startup gezählt ab Frame 0. Knie-Treffergruppen der stehenden Middle-/Highkicks sind im Schaden mit aufgeführt.`,
     header: '| Move | ID | Eingabe | P1 | P2 | Startup / Aktiv / Recovery | Dauer | Schaden | Block-Level |',
   },
@@ -34,7 +38,10 @@ const label = code => ({ ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', Ar
 
 const server = await createServer({ server: { middlewareMode: true, ws: false, hmr: false, watch: null }, appType: 'custom', logLevel: 'error' });
 try {
-  const { PLAYABLE_MOVES: MOVES } = await server.ssrLoadModule('/src/data/schema.ts');
+  const { PLAYABLE_MOVES: MOVES, MOVES: ALL } = await server.ssrLoadModule('/src/data/schema.ts');
+  const { FIGURE_SCALE } = await server.ssrLoadModule('/src/data/figure-scale.ts');
+  const execution = move => move.throw?.phase === 'attempt' ? ALL[move.throw.execute] : null;
+  const grabPx = Math.round(Math.max(0, ...Object.values(MOVES).map(move => move.throw?.range ?? 0)) * FIGURE_SCALE / 256);
   const controls = JSON.parse(await readFile(new URL('../public/config/controls.json', import.meta.url), 'utf8'));
   const keys = controls.players.map(player => player.keys);
   // P1 starts on the left (forward = right), P2 on the right (forward = left).
@@ -49,11 +56,12 @@ try {
       return buttons;
     };
     const notation = move => move.command.type === 'hold' ? `${move.command.directions.join('/')} + ${move.command.buttons.join(' + ')}` : `${language.stance[move.stance]} · ${move.button}`;
-    const level = move => [...new Set(move.hitGroups.map(group => group.hitLevel ?? move.hitLevel))].join(' / ');
-    const damage = move => move.hitGroups.map(group => group.damage ?? move.damage).join(' + ');
-    const name = move => NAMES[move.id] ?? `${language.stance[move.stance]} ${move.button}`;
-    const rows = Object.values(MOVES).map(move => `| ${name(move)} | \`${move.id}\` | ${notation(move)} | ${input(move, 0)} | ${input(move, 1)} | ${move.startup} / ${move.active} / ${move.recovery} | ${move.duration} | ${damage(move)} | ${level(move)} |`);
-    const table = [START, language.intro(rows.length), '', language.header, '|---|---|---|---|---|---|---:|---|---|', ...rows, END].join('\n');
+    const level = move => execution(move) ? language.unblockable : [...new Set(move.hitGroups.map(group => group.hitLevel ?? move.hitLevel))].join(' / ');
+    const damage = move => execution(move)?.damage ?? move.hitGroups.map(group => group.damage ?? move.damage).join(' + ');
+    const name = move => language.throws[move.id] ?? NAMES[move.id] ?? `${language.stance[move.stance]} ${move.button}`;
+    const frames = move => `${move.startup} / ${move.active} / ${move.recovery}${execution(move) ? ` (${language.whiff})` : ''}`;
+    const rows = Object.values(MOVES).map(move => `| ${name(move)} | \`${move.id}\` | ${notation(move)} | ${input(move, 0)} | ${input(move, 1)} | ${frames(move)} | ${move.duration} | ${damage(move)} | ${level(move)} |`);
+    const table = [START, `${language.intro(rows.length)} ${language.throwIntro(grabPx)}`, '', language.header, '|---|---|---|---|---|---|---:|---|---|', ...rows, END].join('\n');
     const path = new URL(language.file, import.meta.url);
     const readme = await readFile(path, 'utf8');
     const from = readme.indexOf(START), to = readme.indexOf(END);

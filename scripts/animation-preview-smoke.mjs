@@ -20,7 +20,14 @@ try {
   const {default:moves}=await import('/src/data/moves.json');
   return moves.filter(move=>move.command.buttons.length>1).map(move=>({id:move.id,buttons:move.command.buttons,direction:move.command.directions[0]}));
  });
- await expect(combos.locator('li')).toHaveCount(comboCommands.length);
+ // Throws are listed in their own section below the combos.
+ await expect(combos.locator('.combo-list:not(.throw-list) li')).toHaveCount(comboCommands.length);
+ for(const [id,label] of [['throw_forward','Forward (6)'],['throw_back','Back (4)']]) {
+  const row=combos.locator(`.throw-list [data-combo="${id}"]`);
+  await expect(row.locator('.combo-command')).toHaveText(`${label} + THROW`);
+  for(const player of [0,1])await expect(row.locator(`[data-owner="${player}"][data-control="THROW"]`)).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="THROW"]`).innerText());
+ }
+ await expect(combos.locator('.throw-list li')).toHaveCount(2);
  for(const {id,buttons,direction} of comboCommands) {
   const row=combos.locator(`[data-combo="${id}"]`);
   await expect(row.locator('.combo-command')).toHaveText(`${direction===6?'Forward (6)':'Back (4)'} + ${buttons.join(' + ')}`);
@@ -42,7 +49,7 @@ try {
  expect(new Set(options).size).toBe(options.length);
  await expect(select).toHaveValue('Idle');
  expect(await select.locator('optgroup').evaluateAll(groups=>groups.map(group=>group.label))).toEqual([
-  'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Blocks & hit reactions','Rotation demos',
+  'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Throws','Blocks & hit reactions','Rotation demos',
  ]);
  for(const stance of ['standing','crouching','airborne']) {
   expect(options.filter(id=>id.startsWith(`${stance}_`))).toEqual(['lp','mp','hp','lk','lmk','hk','rlk','mk','rhk'].map(button=>`${stance}_${button}`));
