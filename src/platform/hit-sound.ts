@@ -4,7 +4,8 @@ import type { Fighter, GameState } from '../simulation/types';
 
 /* Pure sound selection: no Web Audio access, no simulation RNG, no game-state writes. */
 
-export type HitKind = 'punch' | 'kick' | 'knee';
+/** `throw`: the slam of a throw (no sample role; synth unless a manifest adds one). */
+export type HitKind = 'punch' | 'kick' | 'knee' | 'throw';
 export type HitStrength = 'light' | 'middle' | 'high';
 /** Hand-maintained roles; additional nested roles can be loaded without changing the loader. */
 export interface SoundManifest {
@@ -92,7 +93,7 @@ export const SOUND_DAMAGE_RANGE = { light: 25, heavy: 110 } as const;
 /** Strength label for tests/logging: damage below 45 is light, below 75 middle, otherwise high. */
 export const SOUND_STRENGTH_DAMAGE = { middle: 45, high: 75 } as const;
 /** Whoosh lead before the first active frame, in frames at 60 Hz (light → heavy, spin adds). */
-export const SWING_LEAD_FRAMES = { punch: [3, 5], kick: [5, 8], knee: [4, 5], spin: 2 } as const;
+export const SWING_LEAD_FRAMES = { punch: [3, 5], kick: [5, 8], knee: [4, 5], throw: [6, 10], spin: 2 } as const;
 /** Hitbox onsets closer than this (e.g. knee then foot of one kick) share a single whoosh. */
 export const SWING_MERGE_FRAMES = 8;
 const PAN_WIDTH = 0.55;
@@ -105,6 +106,7 @@ function groupOf(move: CompiledMove, groupId?: string): HitGroup {
   return move.hitGroups.find(group => group.id === groupId) ?? move.hitGroups[0];
 }
 function kindOf(move: CompiledMove, group: HitGroup): HitKind {
+  if (move.throw) return 'throw';
   if (group.id === 'knee') return 'knee';
   // Mixed combos name their groups after the striking limb.
   if (group.id === 'punch') return 'punch';
@@ -183,6 +185,38 @@ export function newContactSounds(game: GameState, previous: GameState): ContactS
     }
   }
   return sounds;
+}
+
+export interface ThrowSounds {
+  /** Grab: short cloth/grip thud when the opponent is seized. */
+  grabs: StrikeSound[];
+  /** Flight: the regular whoosh (sample where available), peaking on the impact. */
+  flights: SwingSound[];
+  /** Impact: heavy slam (kind `throw`), never blocked. */
+  slams: ContactSound[];
+}
+/**
+ * Throw sounds of this step, derived like every other cue from two consecutive
+ * states: the victim entering `Thrown`, the thrower's execute move passing its
+ * release frame, and the victim leaving `Thrown` on the impact.
+ */
+export function newThrowSounds(game: GameState, previous: GameState): ThrowSounds {
+  const result: ThrowSounds = { grabs: [], flights: [], slams: [] };
+  for (const victim of game.fighters) {
+    const old = previous.fighters[victim.id];
+    if (!old) continue;
+    if (victim.state === 'Thrown' && old.state !== 'Thrown' && victim.thrownBy) result.grabs.push(describeStrike(victim.thrownBy, undefined, victim.x));
+    if (old.state === 'Thrown' && victim.state !== 'Thrown' && old.thrownBy)
+      result.slams.push({ ...describeStrike(old.thrownBy, undefined, victim.x), blocked: false, finisher: victim.hp === 0 && old.hp > 0 });
+    const thrower = game.fighters[1 - victim.id], before = previous.fighters[thrower.id];
+    const data = thrower.state === 'Attack' && thrower.moveId ? MOVES[thrower.moveId]?.throw : undefined;
+    if (data?.phase === 'execute' && victim.state === 'Thrown') {
+      const from = before?.moveId === thrower.moveId && before.attackId === thrower.attackId ? before.moveFrame : -1;
+      if (from < data.releaseFrame! && thrower.moveFrame >= data.releaseFrame!)
+        result.flights.push({ ...describeStrike(thrower.moveId!, undefined, victim.x), leadSeconds: (data.impactFrame! - data.releaseFrame!) / rules.hz });
+    }
+  }
+  return result;
 }
 
 interface SwingCue { frame: number; lead: number; groupId: string }

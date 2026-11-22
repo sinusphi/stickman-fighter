@@ -13,6 +13,11 @@ export function segmentWidths(joint: string): readonly [number, number] {
   return widths.shin;
 }
 
+/** Lowest joint, the head as its full circle. Upright figures stand with their
+ * foot joints on the floor; a rotating body (thrown) keeps every joint above it. */
+export function jointBottom(pose: Pose): number {
+  return Math.max(pose.head[1]+FIGURE_STYLE.headRadius,...Object.values(pose).map(point=>point[1]));
+}
 /** Visible floor support, including all capsule radii and the head outline. */
 export function figureBottom(pose: Pose): number {
   return Math.max(pose.head[1]+FIGURE_STYLE.headRadius,...data.skeleton.bones.flatMap(bone=>{

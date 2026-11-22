@@ -9,6 +9,7 @@ import { describeStrike, type HitKind } from '../platform/hit-sound';
 import { t } from '../platform/i18n';
 import { animationTrails, samplePose, sampleYaw } from './skeleton';
 import { STAGE_VIEW } from './stages';
+import { newResourceFills, RESOURCE_NAMES, type ResourceName } from '../platform/resource-ready';
 
 /*
  * Presentation only. Hit sparks, screen shake, dust, speed lines, the KO flash
@@ -35,10 +36,12 @@ export const COMBO_POP_STEPS = 8;
 const ZOOM_HOLD = 24;
 const ZOOM_AMOUNT = 0.07;
 const LEVEL_SCALE: Record<HitLevel, number> = { LOW: 0.85, MID: 1, HIGH: 1.15 };
+/** Height of a fighter's body centre above the feet, in logical pixels. */
+const BODY_CENTRE = 58 * FIGURE_SCALE;
 /** Minimum per-step ground slide of a stunned fighter that kicks up dust (subpixels). */
 const SLIDE_DUST = 2 * rules.unit;
 
-export const ParticleKind = { Ray: 0, Flash: 1, Arc: 2, Dust: 3, Ring: 4 } as const;
+export const ParticleKind = { Ray: 0, Flash: 1, Arc: 2, Dust: 3, Ring: 4, Halo: 5, Aura: 6, Spark: 7, Star: 8 } as const;
 export type ParticleKind = typeof ParticleKind[keyof typeof ParticleKind];
 /** Index into the palette roles used for particles. */
 export const Tint = { Special: 0, Revenge: 1, Muted: 2, Light: 3 } as const;
@@ -78,7 +81,13 @@ export class HitEffects {
   private readonly size = new Float32Array(MAX_PARTICLES);
   private readonly age = new Float32Array(MAX_PARTICLES);
   private readonly life = new Float32Array(MAX_PARTICLES);
+  /** Per-step size factor of rings and halos (1 = constant). */
+  private readonly grow = new Float32Array(MAX_PARTICLES);
   private cursor = 0;
+  /** "Bar full" bursts waiting for their staggered start: steps left, -1 = none. Index fighter * 2 + bar. */
+  private readonly readyDelay = new Int16Array(4).fill(-1);
+  /** Monotonic count of observed "bar full" events per bar (HUD flash trigger). Survives reset(). */
+  private readonly readyEvents = new Uint32Array(4);
   private readonly random = new EffectRandom();
   /** Current shake amplitude and the offset rolled for this step. */
   shake = 0;
@@ -95,6 +104,8 @@ export class HitEffects {
   private readonly comboSince = [0, 0];
   /** -1 while the combo runs, otherwise steps since it ended. */
   private readonly comboEnding = [-1, -1];
+  /** The running counter was opened by a throw: a single throw already shows "1 HIT". */
+  private readonly comboThrow = [false, false];
 
   constructor(settings: EffectSettings = { effects: true, shake: true }) {
     this.settings = settings;
@@ -103,11 +114,11 @@ export class HitEffects {
 
   /** Clears everything and restarts the effect random sequence. */
   reset(): void {
-    this.life.fill(0); this.age.fill(0); this.cursor = 0;
+    this.life.fill(0); this.age.fill(0); this.cursor = 0; this.readyDelay.fill(-1);
     this.random.seed(EFFECT_SEED);
     this.shake = 0; this.offsetX = 0; this.offsetY = 0;
     this.zoom = 0; this.zoomAge = 0; this.flash = 0;
-    this.comboCount.fill(0); this.comboDamage.fill(0); this.comboSince.fill(0); this.comboEnding.fill(-1);
+    this.comboCount.fill(0); this.comboDamage.fill(0); this.comboSince.fill(0); this.comboEnding.fill(-1); this.comboThrow.fill(false);
   }
 
   /**
@@ -117,8 +128,64 @@ export class HitEffects {
   update(game: GameState, previous: GameState, live = true): void {
     if (live) this.tick();
     this.observeContacts(game, previous);
+    this.observeThrows(game, previous);
     for (const f of game.fighters) this.observeFighter(f, previous.fighters[f.id]);
     this.observeCombos(game);
+    this.observeResources(game, previous);
+  }
+
+  // -------------------------------------------------------- bar full -------
+  /** Queues a burst for every bar that just became full and starts the due ones. */
+  private observeResources(game: GameState, previous: GameState): void {
+    for (const fill of newResourceFills(game, previous)) {
+      const index = fill.fighter * 2 + RESOURCE_NAMES.indexOf(fill.resource);
+      this.readyEvents[index]++;
+      this.readyDelay[index] = fill.delay;
+    }
+    for (let index = 0; index < 4; index++) {
+      const delay = this.readyDelay[index];
+      if (delay < 0) continue;
+      if (delay > 0) { this.readyDelay[index] = delay - 1; continue; }
+      this.readyDelay[index] = -1;
+      const fighter = game.fighters[index >> 1];
+      // A bar that was spent again during the stagger no longer celebrates.
+      const resource = RESOURCE_NAMES[index & 1], value = fighter.resources[resource];
+      if (value.current >= value.max) this.spawnReadyBurst(screenX(fighter.x), screenY(fighter.y) - BODY_CENTRE, resource);
+    }
+  }
+
+  /** Number of "bar full" events seen for this bar so far (monotonic, presentation only). */
+  readyEventCount(fighter: number, resource: ResourceName): number {
+    return this.readyEvents[fighter * 2 + RESOURCE_NAMES.indexOf(resource)];
+  }
+
+  /**
+   * One-off burst at a fighter whose bar just became full: expanding ring,
+   * rising sparks and a short aura shimmer. Revenge is red-orange, fast and
+   * jagged; Special is a cooler, calmer ring with twinkling stars. No shake.
+   * With effects switched off nothing is spawned at all.
+   */
+  spawnReadyBurst(x: number, y: number, resource: ResourceName): void {
+    if (!this.settings.effects) return;
+    const r = this.random;
+    if (resource === 'revenge') {
+      this.spawn(ParticleKind.Aura, x, y, 0, 0, 44, 20, Tint.Revenge, 1.012);
+      this.spawn(ParticleKind.Halo, x, y, 0, 0, 16, 16, Tint.Revenge, 1.13);
+      this.spawn(ParticleKind.Halo, x, y, 0, 0, 10, 12, Tint.Light, 1.16);
+      for (let i = 0; i < 14; i++) {
+        const side = i % 2 ? 1 : -1;
+        this.spawn(ParticleKind.Spark, x + side * r.range(4, 20), y + r.range(-30, 52), side * r.range(0.3, 1.8), -r.range(3.6, 6.8),
+          r.range(7, 12), Math.round(r.range(12, 19)), i % 4 === 0 ? Tint.Light : Tint.Revenge, 1);
+      }
+    } else {
+      this.spawn(ParticleKind.Aura, x, y, 0, 0, 46, 32, Tint.Special, 1.004);
+      this.spawn(ParticleKind.Halo, x, y, 0, 0, 22, 30, Tint.Special, 1.055);
+      for (let i = 0; i < 9; i++) {
+        const angle = (i / 9) * Math.PI * 2 + r.range(-0.25, 0.25), radius = r.range(18, 30);
+        this.spawn(ParticleKind.Star, x + Math.cos(angle) * radius, y + Math.sin(angle) * radius * 1.4, Math.cos(angle) * 0.25, -r.range(0.8, 1.9),
+          r.range(3, 5.5), Math.round(r.range(26, 38)), i % 3 === 0 ? Tint.Light : Tint.Special, 1);
+      }
+    }
   }
 
   // ------------------------------------------------------------- events ----
@@ -145,6 +212,35 @@ export class HitEffects {
         if (!blocked) this.countHit(attacker.id, defender, previous.fighters[defender.id]);
       }
     }
+  }
+
+  /**
+   * Throws: a short spark at the grip when the opponent is seized, a heavy
+   * impact (large spark, impact ring, dust, shake by the usual rules) when the
+   * victim hits the floor, and a muted guard spark between both on a clash.
+   */
+  private observeThrows(game: GameState, previous: GameState): void {
+    for (const victim of game.fighters) {
+      const old = previous.fighters[victim.id], thrower = game.fighters[1 - victim.id];
+      if (!old) continue;
+      if (victim.state === 'Thrown' && old.state !== 'Thrown' && victim.thrownBy && MOVES[victim.thrownBy]) {
+        const pose = samplePose(victim.thrownBy, 0, thrower.attackFacing);
+        const x = screenX(thrower.x) + (pose.leftHand[0] + pose.rightHand[0]) / 2 * FIGURE_SCALE;
+        const y = screenY(thrower.y) + (pose.leftHand[1] + pose.rightHand[1]) / 2 * FIGURE_SCALE;
+        this.spawnSparks({ x, y, side: thrower.attackFacing, weight: 0.2, level: 'MID', kind: 'punch', blocked: false, damage: 35 });
+      }
+      if (old.state === 'Thrown' && victim.state !== 'Thrown' && old.thrownBy && MOVES[old.thrownBy]) {
+        const move = MOVES[old.thrownBy], x = screenX(victim.x), feet = screenY(0);
+        this.spawnSparks({ x, y: feet - 16, side: thrower.attackFacing, weight: 1, level: 'HIGH', kind: 'kick', blocked: false, damage: move.damage });
+        this.spawn(ParticleKind.Ring, x, feet, 0, 0, 20, 22, Tint.Revenge);
+        this.spawnDust(x, feet, 8, 1.6, 0);
+        this.addShake(shakeForHit(move.damage, false));
+        this.countHit(thrower.id, victim, old, true);
+      }
+    }
+    const [a, b] = game.fighters, clash = (f: Fighter) => f.state === 'Attack' && MOVES[f.moveId ?? '']?.throw?.phase === 'break' && f.moveFrame === 0;
+    if (clash(a) && clash(b) && !(clash(previous.fighters[0]) && clash(previous.fighters[1])))
+      this.spawnSparks({ x: screenX((a.x + b.x) / 2), y: screenY(0) - 62 * FIGURE_SCALE, side: a.attackFacing, weight: 0.4, level: 'MID', kind: 'punch', blocked: true, damage: 40 });
   }
 
   /** Strike limb tip at the contact, pulled back onto the defender's front. */
@@ -193,9 +289,9 @@ export class HitEffects {
   }
 
   // -------------------------------------------------------------- combos ---
-  private countHit(attacker: number, defender: Fighter, before: Fighter | undefined): void {
+  private countHit(attacker: number, defender: Fighter, before: Fighter | undefined, isThrow = false): void {
     const running = this.comboCount[attacker] > 0 && this.comboEnding[attacker] < 0;
-    if (!running) { this.comboCount[attacker] = 0; this.comboDamage[attacker] = 0; }
+    if (!running) { this.comboCount[attacker] = 0; this.comboDamage[attacker] = 0; this.comboThrow[attacker] = isThrow; }
     this.comboCount[attacker]++;
     this.comboDamage[attacker] += Math.max(0, (before?.hp ?? defender.hp) - defender.hp);
     this.comboSince[attacker] = 0; this.comboEnding[attacker] = -1;
@@ -213,7 +309,7 @@ export class HitEffects {
   /** Counter of one attacker, or null when nothing (or a single hit) is shown. */
   combo(attacker: number): ComboDisplay | null {
     const count = this.comboCount[attacker];
-    if (count < 2) return null;
+    if (count < 2 && !(count === 1 && this.comboThrow[attacker])) return null;
     const ending = this.comboEnding[attacker];
     return { count, damage: this.comboDamage[attacker],
       pop: Math.max(0, 1 - this.comboSince[attacker] / COMBO_POP_STEPS),
@@ -251,12 +347,12 @@ export class HitEffects {
     }
   }
 
-  private spawn(kind: ParticleKind, x: number, y: number, vx: number, vy: number, size: number, life: number, tint: Tint): void {
+  private spawn(kind: ParticleKind, x: number, y: number, vx: number, vy: number, size: number, life: number, tint: Tint, grow = 1): void {
     const i = this.cursor;
     this.cursor = (i + 1) % MAX_PARTICLES;
     this.kind[i] = kind; this.tint[i] = tint;
     this.px[i] = x; this.py[i] = y; this.vx[i] = vx; this.vy[i] = vy;
-    this.size[i] = size; this.age[i] = 0; this.life[i] = life;
+    this.size[i] = size; this.age[i] = 0; this.life[i] = life; this.grow[i] = grow;
   }
 
   addShake(amount: number): void { this.shake = Math.min(MAX_SHAKE, Math.max(this.shake, amount)); }
@@ -271,6 +367,9 @@ export class HitEffects {
       if (kind === ParticleKind.Ray) { this.vx[i] *= 0.82; this.vy[i] = this.vy[i] * 0.82 + 0.12; }
       else if (kind === ParticleKind.Dust) { this.vx[i] *= 0.9; this.vy[i] *= 0.9; this.size[i] *= 1.045; }
       else if (kind === ParticleKind.Ring) this.size[i] *= 1.08;
+      else if (kind === ParticleKind.Halo || kind === ParticleKind.Aura) this.size[i] *= this.grow[i];
+      else if (kind === ParticleKind.Spark) { this.vx[i] *= 0.9; this.vy[i] *= 0.9; }
+      else if (kind === ParticleKind.Star) { this.vx[i] *= 0.96; this.vy[i] *= 0.97; }
     }
     this.shake = this.shake * SHAKE_DECAY < 0.05 ? 0 : this.shake * SHAKE_DECAY;
     this.offsetX = this.shake ? this.shake * this.random.range(-1, 1) : 0;
@@ -280,7 +379,7 @@ export class HitEffects {
     for (let attacker = 0; attacker < 2; attacker++) {
       this.comboSince[attacker]++;
       if (this.comboEnding[attacker] >= 0 && ++this.comboEnding[attacker] > COMBO_FADE_STEPS) {
-        this.comboCount[attacker] = 0; this.comboDamage[attacker] = 0; this.comboEnding[attacker] = -1;
+        this.comboCount[attacker] = 0; this.comboDamage[attacker] = 0; this.comboEnding[attacker] = -1; this.comboThrow[attacker] = false;
       }
     }
   }
@@ -392,6 +491,41 @@ export class HitEffects {
           ctx.strokeStyle = color; ctx.lineWidth = 1.3; ctx.stroke();
           break;
         }
+        case ParticleKind.Halo: {
+          // Expanding ring around the body (bar full).
+          ctx.globalAlpha = 0.9 * fade; ctx.strokeStyle = palette.arena; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.ellipse(x, y, size, size * 1.25, 0, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+          break;
+        }
+        case ParticleKind.Aura: {
+          // Short body-sized shimmer; a slow deterministic flicker, well below 3 Hz.
+          const shimmer = 0.75 + 0.25 * Math.sin((age + alpha) * 0.45);
+          ctx.globalAlpha = 0.2 * fade * shimmer; ctx.fillStyle = color;
+          ctx.beginPath(); ctx.ellipse(x, y, size * 0.5, size * (1 + 0.04 * (age + alpha)), 0, 0, Math.PI * 2); ctx.fill();
+          ctx.globalAlpha = 0.55 * fade * shimmer; ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
+          break;
+        }
+        case ParticleKind.Spark: {
+          // Rising streak along its flight direction.
+          const speed = Math.hypot(this.vx[i], this.vy[i]) || 1, length = size * (0.4 + 0.6 * fade);
+          const tx = x - (this.vx[i] / speed) * length, ty = y - (this.vy[i] / speed) * length;
+          ctx.globalAlpha = fade; ctx.strokeStyle = palette.arena; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(x, y); ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+          break;
+        }
+        case ParticleKind.Star: {
+          // Small twinkling four-point star.
+          const r = size * (0.6 + 0.4 * Math.abs(Math.cos((age + alpha) * 0.3))), w = r * 0.3;
+          ctx.globalAlpha = fade;
+          ctx.beginPath();
+          ctx.moveTo(x, y - r); ctx.lineTo(x + w, y - w); ctx.lineTo(x + r, y); ctx.lineTo(x + w, y + w);
+          ctx.lineTo(x, y + r); ctx.lineTo(x - w, y + w); ctx.lineTo(x - r, y); ctx.lineTo(x - w, y - w); ctx.closePath();
+          ctx.strokeStyle = palette.arena; ctx.lineWidth = 2; ctx.stroke();
+          ctx.fillStyle = color; ctx.fill();
+          break;
+        }
       }
     }
     ctx.restore();
@@ -411,7 +545,7 @@ export class HitEffects {
       if (!combo || combo.alpha <= 0) continue;
       const x = attacker === 0 ? 118 : STAGE_VIEW.width - 118, y = 122, size = 26 * (1 + 0.35 * combo.pop);
       ctx.save(); ctx.globalAlpha = combo.alpha; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
-      const label = t('effects.hits', { count: combo.count });
+      const label = t(combo.count === 1 ? 'effects.hit' : 'effects.hits', { count: combo.count });
       ctx.font = `bold ${size.toFixed(1)}px Arial`;
       ctx.strokeStyle = palette.arena; ctx.lineWidth = 6; ctx.strokeText(label, x, y);
       ctx.fillStyle = attacker === 0 ? palette.p1 : palette.p2; ctx.fillText(label, x, y);

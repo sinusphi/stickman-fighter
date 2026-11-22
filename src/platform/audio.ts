@@ -50,6 +50,13 @@ export const HIT_PRESETS: Record<HitKind, Anchors<ImpactPreset>> = {
     heavy: { gain: 1.0, saturation: 2.3, noise: [n('slap', 'lowpass', 1700, 260, 0.8, 0.17, 0.85), n('crack', 'highpass', 2400, 1900, 0.7, 0.032, 0.5)],
       tones: [o('body', 'sine', 135, 38, 0.25, 1.0), o('accent', 'triangle', 300, 90, 0.05, 0.3), o('sub', 'sine', 50, 42, 0.24, 0.7)] },
   },
+  // Throw slam: a body hitting the floor. Deep, long thump with boom and crunch, little skin slap.
+  throw: {
+    light: { gain: 0.8, saturation: 1.6, noise: [n('slap', 'lowpass', 1300, 220, 0.8, 0.16, 0.9), n('crack', 'highpass', 2200, 1800, 0.7, 0.02, 0.3)],
+      tones: [o('body', 'sine', 120, 40, 0.24, 1.0), o('accent', 'triangle', 240, 80, 0.05, 0.25), o('sub', 'sine', 50, 38, 0.26, 0.6)] },
+    heavy: { gain: 1.0, saturation: 2.4, noise: [n('slap', 'lowpass', 1100, 160, 0.8, 0.22, 0.9), n('crack', 'highpass', 2000, 1600, 0.7, 0.026, 0.4)],
+      tones: [o('body', 'sine', 105, 32, 0.32, 1.0), o('accent', 'triangle', 220, 70, 0.06, 0.28), o('sub', 'sine', 46, 34, 0.34, 0.8)] },
+  },
   // Knee: short, dense, mid-range "thock" without a tail.
   knee: {
     light: { gain: 0.55, saturation: 0.8, noise: [n('slap', 'bandpass', 1100, 480, 1.4, 0.045, 0.9), n('crack', 'highpass', 3000, 2600, 0.7, 0.01, 0.15)],
@@ -67,7 +74,11 @@ export const BLOCK_PRESETS: Anchors<ImpactPreset> = {
     tones: [o('body', 'sine', 160, 75, 0.1, 0.9), o('sub', 'sine', 68, 60, 0.1, 0.15)] },
 };
 /** Kicks and knees on the guard sound lower and a bit longer than punches. */
-export const BLOCK_KIND = { punch: { pitch: 1, duration: 1 }, kick: { pitch: 0.82, duration: 1.15 }, knee: { pitch: 0.9, duration: 0.9 } } as const;
+export const BLOCK_KIND = { punch: { pitch: 1, duration: 1 }, kick: { pitch: 0.82, duration: 1.15 }, knee: { pitch: 0.9, duration: 0.9 }, throw: { pitch: 0.78, duration: 1.2 } } as const;
+/** Throw grab: short muffled cloth rustle plus a soft low thud (synth only). */
+export const GRAB_PRESET: ImpactPreset = { gain: 0.6, saturation: 0,
+  noise: [n('thock', 'bandpass', 1500, 700, 1.1, 0.07, 1.1), n('slap', 'lowpass', 900, 400, 0.8, 0.05, 0.6)],
+  tones: [o('body', 'sine', 150, 70, 0.09, 0.8)] };
 
 interface Modifier { gain?: number; pitch?: number; duration?: number; saturation?: number; roles?: Partial<Record<NoiseRole | ToneRole, number>> }
 /** Head: brighter, more crack. Body: reference. Legs: slappier, less boom. */
@@ -106,6 +117,11 @@ export const SWING_PRESETS: Record<HitKind, Anchors<SwingPreset>> = {
     light: { gain: 0.1, tail: 0.05, layers: [w('bandpass', 700, 1500, 800, 1.2, 1), w('lowpass', 250, 500, 220, 0.7, 0.3)] },
     heavy: { gain: 0.12, tail: 0.06, layers: [w('bandpass', 600, 1300, 700, 1.1, 1), w('lowpass', 220, 450, 200, 0.7, 0.4)] },
   },
+  // A whole body flying: low, broad and long.
+  throw: {
+    light: { gain: 0.24, tail: 0.14, layers: [w('bandpass', 350, 1000, 420, 0.8, 1), w('lowpass', 160, 420, 140, 0.7, 0.8)] },
+    heavy: { gain: 0.32, tail: 0.2, layers: [w('bandpass', 300, 900, 360, 0.7, 1), w('lowpass', 140, 380, 120, 0.7, 0.9)] },
+  },
 };
 /** Spins carry the whoosh longer and lower; uppercuts sweep higher. */
 export const SWING_STYLE = { normal: { pitch: 1, tail: 1, gain: 1 }, spin: { pitch: 0.88, tail: 1.35, gain: 1.15 }, uppercut: { pitch: 1.1, tail: 1, gain: 1.05 } } as const;
@@ -116,7 +132,9 @@ const MIN_SATURATION = 0.3;
 /** Uncorrected output levels in dBFS (loudest 100 ms), at weights 0, .25, .5, .75, 1.
  * Neutral timbre; hybrid includes WAV + synth + saturation, synth covers missing/disabled WAVs.
  * Level correction belongs AFTER saturation: its drive otherwise makes heavy hits much louder.
- * Keep these anchors in sync with the real-waveform checks in audio-loudness-smoke.mjs. */
+ * Keep these anchors in sync with the real-waveform checks in audio-loudness-smoke.mjs.
+ * Throw rows: measured with that smoke; throws only occur at weight 0 (attempt, clash) and 1 (110/130 damage).
+ * The synth-only slam passes the master compressor, so its weight-0 anchors are fitted, not proportional. */
 type SoundRole = 'hit' | 'block' | 'swing' | 'finisher';
 const SOUND_LEVELS: Record<'hybrid' | 'synth', Record<SoundRole, Record<HitKind, number[]>>> = {
   hybrid: {
@@ -124,21 +142,25 @@ const SOUND_LEVELS: Record<'hybrid' | 'synth', Record<SoundRole, Record<HitKind,
       punch: [-22.0, -19.7, -15.6, -12.6, -10.6],
       kick: [-21.5, -18.9, -13.6, -11.2, -9.4],
       knee: [-19.6, -18.0, -16.2, -14.8, -13.7],
+      throw: [-20.6, -18.9, -17.2, -15.5, -13.8],
     },
     block: {
       punch: [-22.7, -21.1, -19.7, -18.6, -17.6],
       kick: [-21.2, -19.6, -18.2, -17.1, -16.1],
       knee: [-22.2, -20.6, -19.3, -18.1, -17.1],
+      throw: [-21.6, -20.3, -18.9, -17.6, -16.2],
     },
     swing: {
       punch: [-27.4, -24.0, -21.4, -19.5, -18.0],
       kick: [-27.0, -23.6, -21.0, -19.1, -17.4],
       knee: [-27.1, -23.7, -21.4, -19.3, -17.7],
+      throw: [-26.6, -24.3, -21.9, -19.6, -17.2],
     },
     finisher: {
       punch: [-19.1, -16.3, -12.5, -10.2, -8.9],
       kick: [-18.6, -15.5, -11.0, -9.1, -7.9],
       knee: [-15.9, -14.2, -12.8, -11.8, -11.0],
+      throw: [-12.4, -11.3, -10.2, -9.0, -7.9],
     },
   },
   synth: {
@@ -146,24 +168,50 @@ const SOUND_LEVELS: Record<'hybrid' | 'synth', Record<SoundRole, Record<HitKind,
       punch: [-43.9, -36.9, -31.0, -25.7, -21.3],
       kick: [-40.7, -33.2, -26.5, -21.0, -16.9],
       knee: [-37.3, -35.3, -33.4, -31.7, -30.1],
+      throw: [-20.6, -18.9, -17.2, -15.5, -13.8],
     },
     block: {
       punch: [-41.7, -38.7, -35.9, -33.4, -31.0],
       kick: [-41.2, -38.1, -35.2, -32.6, -30.0],
       knee: [-42.5, -39.6, -36.8, -34.4, -32.1],
+      throw: [-41.6, -38.6, -35.7, -32.7, -29.8],
     },
     swing: {
       punch: [-46.5, -44.0, -41.9, -40.2, -38.6],
       kick: [-46.7, -43.6, -41.3, -39.3, -37.7],
       knee: [-49.8, -49.4, -49.0, -48.7, -48.3],
+      throw: [-40.5, -39.4, -38.4, -37.3, -36.3],
     },
     finisher: {
       punch: [-36.9, -29.2, -22.8, -18.1, -14.6],
       kick: [-33.1, -24.9, -18.3, -14.2, -11.2],
       knee: [-29.4, -27.5, -25.7, -24.1, -22.7],
+      throw: [-12.4, -11.3, -10.2, -9.0, -7.9],
     },
   },
 };
+
+/** "Bar full" cue: a short, quiet chiptune arpeggio with a soft echo (synth only, no sample).
+ * Revenge is a low square-wave minor arpeggio; Special a brighter triangle major arpeggio
+ * that ends on an octave. Each note passes a lowpass so the pulse wave stays soft, then the
+ * whole figure repeats as quieter, darker echoes. Attack ≥ 15 ms and an exponential fade to
+ * silence before every stop keep repeated triggers free of clicks. */
+interface ReadyPreset {
+  wave: OscillatorType; notes: number[]; spacing: number; duration: number; gain: number; cutoff: number;
+  /** Echo taps: delay (s) after the dry figure and relative level. */
+  echoes: { delay: number; level: number }[];
+}
+export const READY_PRESETS: Record<'revenge' | 'special', ReadyPreset> = {
+  revenge: { wave: 'square', notes: [220, 261.63, 329.63], spacing: 0.07, duration: 0.1, gain: 0.4, cutoff: 1800,
+    echoes: [{ delay: 0.16, level: 0.4 }, { delay: 0.32, level: 0.16 }] },
+  special: { wave: 'triangle', notes: [523.25, 659.25, 783.99, 1046.5], spacing: 0.06, duration: 0.1, gain: 0.55, cutoff: 5000,
+    echoes: [{ delay: 0.15, level: 0.4 }, { delay: 0.3, level: 0.16 }] },
+};
+const READY_ATTACK = 0.018;
+/** The bar fills on a hit; start the cue after that impact's transient so it is not masked. */
+export const READY_OFFSET = 0.12;
+/** Grab thud level: a little below a light hit. */
+const GRAB_LEVEL = 0.9;
 
 const MASTER_GAIN = 0.5, MAX_VOICES = 12, NOISE_SECONDS = 0.6, ATTACK_SECONDS = 0.002, SILENCE = 0.0001;
 export const AUDIO_MUTED_STORAGE_KEY = 'stickman.audio.muted';
@@ -277,9 +325,27 @@ export class HitAudio {
     if (context) this.playImpact(context, sound, true);
   }
 
+  /** Throw grab: cloth/grip thud (synth only). */
+  playGrab(sound: StrikeSound): void {
+    const context = this.ready(2);
+    if (!context) return;
+    const pitch = 1 + sound.signature * SIGNATURE_PITCH;
+    this.impact(context, { ...GRAB_PRESET, pitch, filter: 1, duration: 1 }, sound.pan, GRAB_LEVEL);
+  }
+
   playSwing(sound: SwingSound): void {
     const context = this.ready(1);
     if (context) this.swing(context, sound);
+  }
+
+  /**
+   * Charge-up cue when a Revenge or Special bar becomes full. `delay` (seconds)
+   * staggers two bars filling in the same step. Respects mute and the autoplay
+   * unlock like every other sound; never throws.
+   */
+  playResourceReady(resource: 'revenge' | 'special', pan = 0, delay = 0): void {
+    const context = this.ready(2);
+    if (context) this.charge(context, READY_PRESETS[resource], pan, READY_OFFSET + Math.max(0, delay));
   }
 
   /** Running context with a free (or stolen) voice slot, otherwise null. */
@@ -480,6 +546,30 @@ export class HitAudio {
         envelope(source, source, layer.gain, seconds);
       }
       if (sample) schedule.push(this.sampleSource(context, voice, output, track, sample, gain, time));
+      return schedule;
+    });
+  }
+
+  private charge(context: AudioContext, preset: ReadyPreset, pan: number, delay: number): void {
+    const start = context.currentTime + delay;
+    this.voice(context, 2, preset.gain, 0, pan, 1, (voice, output, track) => {
+      const schedule: Schedule[] = [];
+      const note = (frequency: number, at: number, level: number, cutoff: number) => {
+        const source = track(context.createOscillator()), amp = track(context.createGain()), biquad = track(context.createBiquadFilter());
+        voice.sources.push(source);
+        source.type = preset.wave;
+        source.frequency.setValueAtTime(frequency, at);
+        biquad.type = 'lowpass'; biquad.Q.value = 0.5; biquad.frequency.setValueAtTime(cutoff, at);
+        const end = at + preset.duration;
+        amp.gain.setValueAtTime(SILENCE, at);
+        amp.gain.exponentialRampToValueAtTime(level, at + READY_ATTACK);
+        amp.gain.exponentialRampToValueAtTime(SILENCE, end);
+        source.connect(biquad); biquad.connect(amp); amp.connect(output);
+        schedule.push({ source, start: at, end: end + 0.005 });
+      };
+      const taps = [{ delay: 0, level: 1 }, ...preset.echoes];
+      for (const tap of taps) preset.notes.forEach((frequency, i) =>
+        note(frequency, start + tap.delay + i * preset.spacing, tap.level, preset.cutoff * (tap.delay ? 0.6 : 1)));
       return schedule;
     });
   }

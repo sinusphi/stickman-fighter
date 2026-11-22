@@ -18,6 +18,8 @@ export interface HudContext {
   replayFrames: number;
   show: { boxes: boolean; inputs: boolean; states: boolean };
   stageCaption: string;
+  /** "Bar full" presentation: effects switch and the monotonic event count per bar (see HitEffects). */
+  ready?: { effects: boolean; events: (fighter: number, resource: 'revenge' | 'special') => number };
 }
 
 export interface HudModes { trainingCpu: boolean; cpuActive: boolean; demoActive: boolean; cpuPresent: boolean }
@@ -68,6 +70,8 @@ export function hudLabels(c: HudContext) {
 export class Hud {
   private cache = new Map<string, string>();
   private elements = new Map<string, HTMLElement>();
+  /** Last seen "bar full" event count per bar; the first sighting never flashes. */
+  private readySeen = new Map<string, number>();
   constructor(private readonly document: Document) {}
 
   invalidate(): void { this.cache.clear(); }
@@ -86,6 +90,17 @@ export class Hud {
   attr(id: string, name: string, value: string): void { if (this.changed(`${id}|@${name}`, value)) this.el(id).setAttribute(name, value); }
   flag(id: string, name: 'disabled' | 'hidden', value: boolean): void {
     if (this.changed(`${id}|${name}`, String(value))) (this.el(id) as HTMLButtonElement)[name] = value;
+  }
+  toggle(id: string, name: string, on: boolean): void {
+    if (this.changed(`${id}|.${name}`, String(on))) this.el(id).classList.toggle(name, on);
+  }
+  /** Restarts the one-off flash animation of a bar that just became full. */
+  private flash(id: string): void {
+    const element = this.el(id);
+    element.classList.remove('resource-flash');
+    void element.offsetWidth;
+    element.classList.add('resource-flash');
+    this.cache.set(`${id}|.resource-flash`, 'true');
   }
   width(id: string, percent: number, child = false): void {
     const value = `${percent}%`;
@@ -138,6 +153,15 @@ export class Hud {
         this.attr(track, 'aria-valuenow', String(resource.current));
         this.attr(track, 'aria-valuemax', String(resource.max));
         this.width(track, resource.current / resource.max * 100, true);
+        // Bar full: static highlight and READY label; flash and pulse follow the effects switch.
+        const full = resource.current >= resource.max, effects = c.ready?.effects ?? true;
+        const events = c.ready?.events(f.id, name), seen = this.readySeen.get(track);
+        if (events !== undefined) this.readySeen.set(track, events);
+        this.toggle(track, 'is-full', full);
+        this.toggle(`resource-ready-${f.id}-${name}`, 'is-visible', full);
+        this.toggle(track, 'is-pulsing', full && effects);
+        if (full && effects && events !== undefined && seen !== undefined && events > seen) this.flash(track);
+        else if (!full || !effects) this.toggle(track, 'resource-flash', false);
       }
       this.text(`hp-${f.id}`, `${f.hp} / ${rules.maxHealth}`);
       this.width(`health-${f.id}`, f.hp / rules.maxHealth * 100);

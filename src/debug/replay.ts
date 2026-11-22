@@ -16,7 +16,7 @@ import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/t
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.9.0';
+export const ENGINE_VERSION = '1.10.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }
@@ -63,13 +63,16 @@ function checkSnapshot(value: unknown): asserts value is GameState {
   assert(state.training && typeof state.training.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(state.training.dummy),'Trainingszustand.');
   assert(state.round && ['fighting','roundOver','matchOver'].includes(state.round.phase) && int(state.round.timer,0,rules.hz*rules.roundSeconds) && int(state.round.number,1) && int(state.round.transition,0,rules.roundTransition) && state.round.wins?.length===2 && state.round.wins.every(n=>int(n,0,2)) && [null,0,1].includes(state.round.winner) && [null,'KO','TIME OVER','DOUBLE KO','DRAW'].includes(state.round.reason), 'Rundenzustand.');
   assert(state.fighters?.length===2,'Zwei Figuren erforderlich.');
-  const states = ['Idle','Walk','Crouch','CrouchWalk','JumpSquat','Airborne','Landing','Attack','Hitstun','Blockstun','Knockdown','KO'];
+  const states = ['Idle','Walk','Crouch','CrouchWalk','JumpSquat','Airborne','Landing','Attack','Hitstun','Blockstun','Knockdown','KO','Thrown'];
   for (const [index,f] of state.fighters.entries()) {
     validateResources(f.resources);
     assert(f.id===index && states.includes(f.state) && [-1,1].includes(f.facing) && [-1,1].includes(f.attackFacing),'Figurenzustand oder Blickrichtung.');
     assert([f.x,f.y,f.vx,f.vy,f.jumpX].every(n=>int(n,-rules.stageWidth,rules.stageWidth)) && int(f.hp,0,rules.maxHealth),'Position, Geschwindigkeit oder HP.');
     assert([f.remaining,f.stateFrame,f.moveFrame,f.attackId,f.landingRecovery,f.comboCount,f.damageScalePermille,f.juggleState].every(n=>int(n)) && typeof f.airAttackUsed==='boolean' && typeof f.crouching==='boolean','Figurenzähler.');
     assert(f.hitReaction===undefined || f.hitReaction==='middlePunch' && f.state==='Hitstun','Trefferreaktion.');
+    // A thrown fighter is held by the other fighter's running throw execution, and only then.
+    const thrower=state.fighters[1-index];
+    assert(f.state==='Thrown' ? typeof f.thrownBy==='string' && MOVES[f.thrownBy]?.throw?.phase==='execute' && thrower?.state==='Attack' && thrower.moveId===f.thrownBy && f.y<=0 : f.thrownBy===undefined,'Wurfzustand.');
     assert(validMove(f.state,f.moveId,f.moveFrame),'Move oder Move-Frame.');
     assert(Array.isArray(f.hitTargets) && f.hitTargets.every(id=>typeof id==='string') && (f.advantage==='pending' || f.advantage==='n/a' || int(f.advantage,-10000,10000)),'Kontaktzustand.');
     const input=f.input;

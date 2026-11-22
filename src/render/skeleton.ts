@@ -1,5 +1,5 @@
 import data from '../data/poses.json';
-import { figureBottom } from './figure-geometry';
+import { figureBottom, jointBottom } from './figure-geometry';
 import { facePose } from './facing';
 import type { Fighter } from '../simulation/types';
 import type { HitLevel } from '../data/schema';
@@ -189,7 +189,7 @@ function sampleViewTrack(id: string, time: number, track: 'turn'|'yaw'|'headYaw'
   if(a[track]===undefined && b[track]===undefined)return undefined;
   return (a[track]??0)+((b[track]??0)-(a[track]??0))*t;
 }
-export function buildPose(pose: AnglePose, grounded = false, facing = 1, lying = false, clampFloor = false): Pose {
+export function buildPose(pose: AnglePose, grounded = false, facing = 1, lying = false, clampFloor = false, clampBody = false): Pose {
   const points:Pose={[data.skeleton.rootJoint]:[...pose.root]}, angles:Record<string,number>={[data.skeleton.rootJoint]:0};
   for(const bone of data.skeleton.bones) {
     const angle=angles[bone.parent]+pose.angles[bone.joint]; angles[bone.joint]=angle;
@@ -199,13 +199,21 @@ export function buildPose(pose: AnglePose, grounded = false, facing = 1, lying =
   const rotated=rotatePose(points,pose.rotations??[]);
   Object.assign(points,rotated);
   // Translate the entire rig; never project individual feet or scale limbs.
-  const floor=grounded?(lying?figureBottom(points):Math.max(points.leftFoot[1],points.rightFoot[1])):clampFloor?Math.max(0,points.leftFoot[1],points.rightFoot[1]):0;
+  const floor=grounded?(lying?figureBottom(points):Math.max(points.leftFoot[1],points.rightFoot[1])):clampBody?Math.max(0,jointBottom(points)):clampFloor?Math.max(0,points.leftFoot[1],points.rightFoot[1]):0;
   return facePose(Object.fromEntries(Object.entries(points).map(([joint,p])=>[joint,[p[0],p[1]-floor]])),facing);
 }
 export function samplePose(id: string, time: number, facing = 1): Pose {
-  return buildPose(sampleAngles(id,time),(animations[id]??animations.Idle).grounded,facing,id==='KO',animations[id]?.clampFloor);
+  return buildPose(sampleAngles(id,time),(animations[id]??animations.Idle).grounded,facing,id==='KO',animations[id]?.clampFloor,animations[id]?.clampBody);
+}
+/** Clip of a thrown fighter, keyed by the thrower's execute move (moves.json `throw.victimAnimation`). */
+const thrownAnimations = new Map((moveData as {id:string;throw?:{victimAnimation?:string}}[])
+  .filter(move=>move.throw?.victimAnimation).map(move=>[move.id,move.throw!.victimAnimation!]));
+export function thrownAnimation(executeId: string | undefined): string {
+  const id=executeId?thrownAnimations.get(executeId):undefined;
+  return id && animations[id]?id:'Knockdown';
 }
 export function animationId(f: Fighter, hitLevel?: HitLevel): string {
+  if(f.state==='Thrown')return thrownAnimation(f.thrownBy);
   if(f.state==='Walk' && f.vx*f.facing<0)return 'WalkBackward';
   if(f.state==='Hitstun' && f.hitReaction==='middlePunch')return 'HitMiddlePunch';
   if(f.state==='Hitstun' && hitLevel)return `Hit${hitLevel}`;
@@ -261,9 +269,9 @@ export function fighterPose(f: Fighter, previous: Fighter, alpha: number, frozen
   const time=f.state==='Attack'?f.moveFrame:f.stateFrame;
   const lying=id==='KO'||(id==='Knockdown'&&f.y===0);
   const grounded=animations[id].grounded||lying;
-  if(frozen || id===oldId || f.state==='Attack' || f.state==='Blockstun' || f.state==='Hitstun' || f.state==='Landing')return buildPose(relaxArms(sampleAngles(id,time+(frozen?0:alpha)),relax),grounded,1,lying,animations[id].clampFloor);
+  if(frozen || id===oldId || f.state==='Attack' || f.state==='Blockstun' || f.state==='Hitstun' || f.state==='Landing')return buildPose(relaxArms(sampleAngles(id,time+(frozen?0:alpha)),relax),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
   const oldTime=previous.state==='Attack'?previous.moveFrame:previous.stateFrame;
-  return buildPose(relaxArms(blendAngles(sampleAngles(oldId,oldTime),sampleAngles(id,time),ease(alpha,'smoothstep')),relax),grounded,1,lying,animations[id].clampFloor);
+  return buildPose(relaxArms(blendAngles(sampleAngles(oldId,oldTime),sampleAngles(id,time),ease(alpha,'smoothstep')),relax),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
 }
 
 function sameTrack(a: Rotation, b: Rotation): boolean {

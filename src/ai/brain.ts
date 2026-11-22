@@ -1,6 +1,6 @@
 import { requiresCrouchGuard } from '../simulation/guard';
 import rules from '../data/rules.json';
-import { KNOWLEDGE, MOVE_INFO, nextHitLevel, reaches } from './knowledge';
+import { KNOWLEDGE, MOVE_INFO, nextHitLevel, reaches, throwable } from './knowledge';
 import type { View } from './observation';
 import type { CpuProfile } from './profiles';
 import { Rng } from './rng';
@@ -28,6 +28,8 @@ const EFFECTIVE = Math.max(...KNOWLEDGE.filter(m=>m.stance==='standing' && m.com
 /** Preferred footsie distance: just outside the opponent's longest normal. */
 export const SWEET_SPOT = EFFECTIVE + 18*U;
 const MIN_BACK_ROOM = 95*U;
+/** Minimum frames between two CPU throws. */
+export const THROW_COOLDOWN = 240;
 export class UtilityBrain implements CpuBrain {
   private recent: string[] = [];
   private lastState = '';
@@ -41,7 +43,13 @@ export class UtilityBrain implements CpuBrain {
   private attackPending = false;
   private lastHp = -1;
   private lastOpponentHp = -1;
-  constructor(private profile: CpuProfile, private rng: Rng) {}
+  /** Separate stream for throws, so adding them leaves every other decision's sequence intact. */
+  private throwRng: Rng;
+  private lastThrow = -Infinity;
+  constructor(private profile: CpuProfile, private rng: Rng) {
+    // Derived from the first draw of a copy: same seed → same throws, main stream untouched.
+    this.throwRng = new Rng(Math.floor(new Rng(Math.floor(rng.peekSeed())).next() * 2 ** 31) ^ 0x5bd1e995);
+  }
   get currentTactic(): Tactic { return this.tactic; }
   /** Deterministic override for tests and the training overlay. */
   setTactic(tactic: Tactic, frame: number, min = 60, max = min): void {
@@ -95,6 +103,24 @@ export class UtilityBrain implements CpuBrain {
     if (this.tactic!=='backoff' && distance>SWEET_SPOT+30*U && this.rng.next()<.5)
       return { kind:'approach', score:.5, reason:'Denkpause: aufrücken' };
     return { kind:'wait', score:0, reason:'Denkpause' };
+  }
+  /**
+   * Simple throw heuristic: the opponent stands or crouches still, or walks
+   * back (blocking), within grab range. Frequency follows the profile. A back
+   * throw is preferred with the own back to the wall, so the opponent lands
+   * in the corner instead.
+   */
+  private throwIntent(v: View): Intent | null {
+    const { self:s, opponent:o } = v, p = this.profile;
+    // At most one throw every THROW_COOLDOWN frames: throws mix up, they never loop.
+    if (!o || !p.throwChance || v.frame-this.lastThrow<THROW_COOLDOWN || !throwable(s, o, 6*U)) return null;
+    const away = Math.sign(o.x-s.x) || s.facing;
+    const blocking = o.state==='Walk' && o.vx*away>0, passive = o.state==='Idle' || o.state==='Crouch';
+    if (!blocking && !passive) return null;
+    if (this.throwRng.next() >= p.throwChance) return null;
+    this.lastThrow = v.frame;
+    const back = this.backRoom(v) < 110*U || this.throwRng.next() < .4;
+    return { kind:'attack', moveId:back ? 'throw_back' : 'throw_forward', score:1.1, reason:blocking ? 'throw (guard)' : 'throw' };
   }
   decide(v: View): Intent {
     const { self:s, opponent:o } = v, p = this.profile;
@@ -208,6 +234,9 @@ export class UtilityBrain implements CpuBrain {
         }
       }
     }
+    // Throws: a passive or blocking opponent standing in grab range.
+    const grab = !danger && !aerial && result.kind!=='block' && result.reason!=='punish' ? this.throwIntent(v) : null;
+    if (grab) result = grab;
     if (result.kind==='attack') {
       if (executionError && result.reason!=='kick combo' && result.moveId!==uppercut?.id) {
         if (this.rng.next()<.5) result={kind:'wait',score:result.score,reason:'late execution'};

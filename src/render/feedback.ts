@@ -2,6 +2,8 @@ import { MOVES, type HitLevel } from '../data/schema';
 import { animations } from './skeleton';
 import type { GameState } from '../simulation/types';
 
+/** A knockout by a throw starts the KO clip lying (its floor-contact key), not standing. */
+export const THROW_KO_FRAME = animations.KO.keyframes.find(key=>key.pose==='koContact')?.frame ?? 0;
 /** Frames the winner takes to lower his arms after a knockout. */
 export const RELAX_FRAMES = Math.round(animations.KO.durationFrames*1.5);
 
@@ -25,7 +27,7 @@ export class HitFeedback {
     for(const f of game.fighters) {
       // Rounds freeze fighter stateFrame; advance only presentation on game steps.
       const old=previous.fighters[f.id];
-      this.koFrames[f.id]=f.state!=='KO'||old.state!=='KO'?0:
+      this.koFrames[f.id]=f.state!=='KO'?0:old.state==='Thrown'?THROW_KO_FRAME:old.state!=='KO'?0:
         Math.min(animations.KO.durationFrames-1,this.koFrames[f.id]+(previous.hitstop?0:1));
       // The winner keeps his guard up until he stands still, then lets the arms sink.
       const opponent=game.fighters[1-f.id];

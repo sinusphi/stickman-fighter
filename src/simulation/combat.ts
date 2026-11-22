@@ -13,6 +13,8 @@ import { hasPoseContact, usesPoseContact } from './pose-contact';
 
 export function localBoxes(f: Fighter): FrameBoxes {
   if (f.state === 'Attack' && f.moveId) return MOVES[f.moveId].frames[f.moveFrame];
+  // Thrown fighters are invulnerable until the knockdown after the impact.
+  if (f.state === 'Thrown') return { ...bodies[stance(f)], hurtboxes: [], hitboxes: [] };
   return { ...bodies[stance(f)], hitboxes: [] };
 }
 export function advanceAttack(f: Fighter): void {
@@ -119,9 +121,16 @@ export function canBlock(f: Fighter, level: HitLevel, autoBlock = false, attackS
 }
 
 interface Contact { attacker: Fighter; defender: Fighter; move: CompiledMove; hitGroup: HitGroup; group: string; blocked: boolean; side: number }
-function addHitResource(fighter: Fighter, name: 'revenge' | 'special', damage: number): void {
+export function addHitResource(fighter: Fighter, name: 'revenge' | 'special', damage: number): void {
   const resource = fighter.resources[name];
   const gain = Math.round(damage * resource.gainPerHit / 100);
+  resource.current = Math.min(resource.max, resource.current + gain);
+}
+// Blocked hits feed only a trickle (at least 1) so both meters never fill in lockstep.
+export function addBlockResource(fighter: Fighter, name: 'revenge' | 'special', damage: number): void {
+  const resource = fighter.resources[name];
+  if (resource.gainPerBlock <= 0) return;
+  const gain = Math.max(1, Math.round(damage * resource.gainPerBlock / 100));
   resource.current = Math.min(resource.max, resource.current + gain);
 }
 export function collectContacts(game: GameState): Contact[] {
@@ -129,7 +138,7 @@ export function collectContacts(game: GameState): Contact[] {
   for (const attacker of game.fighters) {
     if (attacker.state !== 'Attack' || !attacker.moveId) continue;
     const defender = game.fighters[1-attacker.id];
-    if (defender.state === 'KO' || defender.state === 'Knockdown') continue;
+    if (defender.state === 'KO' || defender.state === 'Knockdown' || defender.state === 'Thrown') continue;
     const move = MOVES[attacker.moveId];
     for (const hitbox of localBoxes(attacker).hitboxes) {
       const group = `${hitbox.hitGroup}:${defender.id}`;
@@ -168,6 +177,7 @@ export function resolveCombat(game: GameState): void {
     defender.vx = 0;
     if (blocked) {
       defender.crouching = defender.input.current.direction <= 3;
+      addBlockResource(attacker, 'special', hitGroup.damage ?? move.damage);
       const fullDamage = Math.trunc((hitGroup.damage ?? move.damage) * attacker.damageScalePermille / rules.damageScaleUnit);
       if (!game.training.enabled) defender.hp = Math.max(0, defender.hp - Math.round(fullDamage * .08));
       if (!game.training.enabled && defender.hp === 0) { transition(defender,'KO'); defender.input.pending = null; }

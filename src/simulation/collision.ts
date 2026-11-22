@@ -24,6 +24,8 @@ export function clampToStage(f: Fighter): void {
 export function resolvePushboxes(fighters: [Fighter, Fighter]): void {
   fighters.forEach(clampToStage);
   const [a, b] = fighters;
+  // A throw holds both bodies together; simulation/throws keeps them apart and on stage.
+  if (a.state === 'Thrown' || b.state === 'Thrown') return;
   if (!overlaps(pushbox(a), pushbox(b))) return;
   const [left, right] = a.x <= b.x ? [a, b] : [b, a];
   const l = pushbox(left), r = pushbox(right);

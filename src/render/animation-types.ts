@@ -17,6 +17,9 @@ export interface Animation {
   fixedLegDepth?: boolean;
   /** Preserve authored hops while preventing interpolation below the floor. */
   clampFloor?: boolean;
+  /** Like clampFloor, but for every joint and the head of a rotating body,
+   * e.g. a thrown fighter: no part of the skeleton sinks below the floor. */
+  clampBody?: boolean;
   /** `footIK`: crouching kicks follow foot paths with a planted support and
    * fixed bones. `plantedSupport`: standing rear-leg kicks keep the guard's
    * front foot planted while the kicking leg stays as authored. `plantedPivot`:

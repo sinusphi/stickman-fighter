@@ -10,10 +10,12 @@ export const DEFAULT_CONTROLS = defaults as Controls;
 /** Smallest accepted analog button threshold; resting buttons report exactly 0. */
 export const MIN_TRIGGER_THRESHOLD = 0.05;
 const STORAGE_KEY = 'stickman.controls';
+/** Free-key search order for the THROW migration after the per-player default. */
+const THROW_FALLBACK_KEYS = [...['C','X','Z','Q','E','U','I','O','J','K','L','M'].map(k=>'Key'+k),'Numpad0','NumpadDecimal','NumpadEnter',...Array.from({length:10},(_,n)=>'Digit'+n)];
 
 export function validateControls(value: unknown): Controls {
   const c = structuredClone(value) as Controls;
-  if (!c || ![1,2].includes(c.schemaVersion) || c.players?.length !== 2) throw Error('Ungültige Konfigurationsversion oder Spielerzahl.');
+  if (!c || ![1,2,3].includes(c.schemaVersion) || c.players?.length !== 2) throw Error('Ungültige Konfigurationsversion oder Spielerzahl.');
   if(c.schemaVersion===1) {
     const used=new Set(c.players.flatMap(p=>Object.values(p.keys??{})));
     c.players.forEach((p,i)=>{
@@ -28,6 +30,22 @@ export function validateControls(value: unknown): Controls {
       }
     });
     c.schemaVersion=2;
+  }
+  if(c.schemaVersion===2) {
+    // v3 adds the THROW button. Existing bindings stay untouched; THROW takes its
+    // default key unless another action already uses it, then the first free key.
+    const used=new Set(c.players.flatMap(p=>Object.values(p.keys??{})));
+    c.players.forEach((p,i)=>{
+      if(!p.keys||!p.padButtons)throw Error('Unvollständige Belegung.');
+      if(typeof p.keys.THROW!=='string') {
+        const candidates=[DEFAULT_CONTROLS.players[i].keys.THROW,...THROW_FALLBACK_KEYS];
+        const key=candidates.find(k=>!used.has(k));
+        if(!key)throw Error('Keine freie Taste für den Wurf.');
+        p.keys.THROW=key;used.add(key);
+      }
+      if(!Number.isInteger(p.padButtons.THROW))p.padButtons.THROW=DEFAULT_CONTROLS.players[i].padButtons.THROW;
+    });
+    c.schemaVersion=3;
   }
   const modes = ['neutral', 'positive', 'lastInputWins'];
   if (!modes.includes(c.socd?.horizontal) || !modes.includes(c.socd?.vertical)) throw Error('Ungültige SOCD-Regel.');

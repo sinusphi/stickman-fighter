@@ -8,7 +8,8 @@ import { drawFigure, drawTrail } from './figure';
 import { fighterDepths } from './depth';
 import { facePoint } from './facing';
 import { drawKneeImpact, drawKneeSwoosh, kneeImpact } from './impact';
-import type { HitLevel } from '../data/schema';
+import { MOVES, throwData, type HitLevel } from '../data/schema';
+import { localGrabBox } from '../simulation/throws';
 import type { Palette } from '../platform/theme';
 import { RELAX_FRAMES } from './feedback';
 import type { HitEffects } from './effects';
@@ -17,6 +18,16 @@ import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type
 export { samplePose } from './skeleton';
 
 const ground = STAGE_VIEW.ground;
+
+/** Victim offset (subpixels) relative to the thrower's drawn position at `moveFrame + alpha`, or null. */
+export function thrownOffset(game: GameState, f: GameState['fighters'][number], alpha: number): [number,number] | null {
+  const thrower=game.fighters[1-f.id],data=f.state==='Thrown'?throwData(thrower.moveId):undefined;
+  if(!data?.path || thrower.state!=='Attack')return null;
+  const last=data.impactFrame!,time=Math.min(last,thrower.moveFrame+alpha),i=Math.min(last,Math.floor(time)),j=Math.min(last,i+1),t=time-i;
+  // Integer frames reproduce the simulation exactly, including a wall shift.
+  const base=f.x-thrower.x-thrower.attackFacing*data.path[i][0];
+  return [base+thrower.attackFacing*(data.path[i][0]+(data.path[j][0]-data.path[i][0])*t),data.path[i][1]+(data.path[j][1]-data.path[i][1])*t];
+}
 
 export function render(canvas: HTMLCanvasElement, game: GameState, previous: GameState, alpha: number, paused: boolean, boxes: boolean, palette: Palette, hitLevels: (HitLevel | undefined)[] = [], koFrames?: number[], stage: StageId = DEFAULT_STAGE, demo = false, relaxFrames?: number[], effects?: HitEffects): void {
   const ctx = canvas.getContext('2d')!;
@@ -39,16 +50,21 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
   const turnFor=(f: GameState['fighters'][number])=>sampleTurn(animationId(f,poseLevels[f.id]),(f.state==='Attack'?f.moveFrame:f.stateFrame)+(game.hitstop||paused?0:alpha));
   const drawOrder=[...displayFighters].sort((a,b)=>Number(turnFor(a)>=.5)-Number(turnFor(b)>=.5)).map(f=>{
     const old = impact?f:previous.fighters[f.id];
-    const x = screenX(f);
+    let x = screenX(f);
     const koTime=f.state==='KO'?(koFrames?.[f.id]??f.stateFrame)+(game.hitstop||paused?0:alpha):undefined;
     // A round-ending aerial KO must settle visually even while combat is frozen.
     const fall=koTime===undefined?1:Math.max(0,1-koTime/23);
-    const y = ground + (old.y + (f.y - old.y) * alpha) / rules.unit*fall;
+    let y = ground + (old.y + (f.y - old.y) * alpha) / rules.unit*fall;
+    // A thrown fighter hangs on the thrower's hands: take its sub-frame position
+    // from the throw table at the same time the thrower's pose is sampled.
+    const held=thrownOffset(game,f,game.hitstop||paused?0:alpha);
+    if(held){x=screenX(displayFighters[1-f.id])+held[0]/rules.unit;y=ground+held[1]/rules.unit;}
     // The winner lowers his arms while the loser's fall plays out.
     const relaxed = relaxFrames?.[f.id] ?? 0;
     const relax = koTime===undefined && relaxed>0 ? Math.min(1,(relaxed+(game.hitstop||paused?0:alpha))/RELAX_FRAMES) : 0;
     const pose = fighterPose(f,old,alpha,Boolean(game.hitstop || paused),poseLevels[f.id],koTime,relax);
-    const facing=f.state==='Attack'?f.attackFacing:f.facing;
+    // Attackers keep their attack facing; a thrown fighter keeps facing the thrower.
+    const facing=f.state==='Attack'||f.state==='Thrown'?f.attackFacing:f.facing;
     return {f,x,y,koTime,pose,facing};
   });
   effects?.drawBehind(ctx,game,previous,effectAlpha,palette);
@@ -112,6 +128,9 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     body.hurtboxes.forEach(b => paint(b,palette.hurt,'HURT'));
     paint(body.pushbox,palette.push,'PUSH');
     body.hitboxes.forEach(b => paint(b,palette.hit,'HIT'));
+    // Throw attempts: the grab range up to and including the grab frame.
+    const attempt=f.state==='Attack' && f.moveId?MOVES[f.moveId]:undefined;
+    if(attempt?.throw?.phase==='attempt' && f.moveFrame<=attempt.startup)paint(localGrabBox(attempt),palette.hit,f.moveFrame===attempt.startup?'GRAB!':'GRAB');
   }
   if(camera)ctx.restore();
   effects?.drawOverlay(ctx,palette);

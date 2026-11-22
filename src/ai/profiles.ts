@@ -6,6 +6,8 @@ export interface CpuProfile {
   blockChance: number; correctBlockChance: number; punishChance: number;
   antiAirChance: number; executionError: number; aggression: number;
   holdChance: number; comboChance: number; adaptation: number;
+  /** Chance per decision to throw a passive or blocking opponent in grab range. */
+  throwChance: number;
 }
 export function validateProfiles(value: unknown): Record<Difficulty, CpuProfile> {
   const profiles = value as Record<Difficulty, CpuProfile>;
@@ -15,7 +17,7 @@ export function validateProfiles(value: unknown): Record<Difficulty, CpuProfile>
       !Number.isSafeInteger(p.reactionFrames) || p.reactionFrames < 8 || p.reactionFrames > 120 ||
       !Number.isSafeInteger(p.decisionFrames) || p.decisionFrames < 1 || p.decisionFrames > 60 ||
       !Number.isSafeInteger(p.attackPauseFrames) || p.attackPauseFrames < 0 || p.attackPauseFrames > 180 ||
-      !(['blockChance', 'correctBlockChance', 'punishChance', 'antiAirChance', 'executionError', 'aggression', 'holdChance', 'comboChance', 'adaptation'] as const)
+      !(['blockChance', 'correctBlockChance', 'punishChance', 'antiAirChance', 'executionError', 'aggression', 'holdChance', 'comboChance', 'adaptation', 'throwChance'] as const)
         .every(key => Number.isFinite(p[key]) && p[key] >= 0 && p[key] <= 1) ||
       p.blockChance >= 1 || p.executionError <= 0) throw Error(`Ungültiges CPU-Profil: ${level}`);
   }

@@ -6,7 +6,7 @@ const groundActionable: FighterState[] = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'
 export function isGroundActionable(f: Fighter): boolean { return groundActionable.includes(f.state); }
 export function isActionable(f: Fighter): boolean { return isGroundActionable(f) || (f.state === 'Airborne' && !f.airAttackUsed); }
 export function transition(f: Fighter, state: FighterState, remaining = 0): void {
-  delete f.hitReaction;
+  delete f.hitReaction; delete f.thrownBy;
   f.state = state; f.stateFrame = 0; f.remaining = remaining;
 }
 export function recoverGround(f: Fighter): void {
@@ -16,6 +16,8 @@ export function recoverGround(f: Fighter): void {
 }
 export function moveFighter(f: Fighter, stationary = false): boolean {
   f.stateFrame++;
+  // A thrown fighter follows the thrower's table (simulation/throws), no own physics.
+  if (f.state === 'Thrown') return false;
   if(f.state==='Attack' && f.moveId && f.y===0) {
     const advance=MOVES[f.moveId].advance;
     if(advance) f.x+=f.attackFacing*(advanceAt(advance,f.moveFrame)-advanceAt(advance,f.moveFrame-1));

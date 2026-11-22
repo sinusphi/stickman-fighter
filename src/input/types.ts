@@ -1,4 +1,5 @@
-export const BUTTONS = ['LP', 'MP', 'HP', 'LK', 'MK', 'HK', 'RLK', 'LMK', 'RHK'] as const;
+/** THROW stays last: replays and stored bindings index buttons by position. */
+export const BUTTONS = ['LP', 'MP', 'HP', 'LK', 'MK', 'HK', 'RLK', 'LMK', 'RHK', 'THROW'] as const;
 export const BUTTON_MASK = (1 << BUTTONS.length) - 1;
 export type Button = typeof BUTTONS[number];
 export const buttonBit = (button: Button): number => 1 << BUTTONS.indexOf(button);

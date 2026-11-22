@@ -10,7 +10,8 @@ import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
-import { newContactSounds, newSwingSounds } from './platform/hit-sound';
+import { newContactSounds, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
+import { newResourceFills } from './platform/resource-ready';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
 import { Devices, saveJson, type Action } from './platform/devices';
@@ -68,6 +69,11 @@ async function main(): Promise<void> {
   const playContactSound = () => {
     for (const swing of newSwingSounds(game, previous)) audio.playSwing(swing);
     for (const contact of newContactSounds(game, previous)) audio.playContact(contact);
+    const throws = newThrowSounds(game, previous);
+    for (const grab of throws.grabs) audio.playGrab(grab);
+    for (const flight of throws.flights) audio.playSwing(flight);
+    for (const slam of throws.slams) audio.playContact(slam);
+    for (const fill of newResourceFills(game, previous)) audio.playResourceReady(fill.resource, panOf(game.fighters[fill.fighter].x), fill.delay / rules.hz);
   };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
@@ -231,6 +237,7 @@ async function main(): Promise<void> {
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
       show:{boxes:showBoxes,inputs:showInputs,states:showStates}, stageCaption:STAGES[stage].caption,
+      ready:{effects:effects.settings.effects,events:(fighter,resource)=>effects.readyEventCount(fighter,resource)},
     });
   }
   onLanguageChange(()=>{translateDocument();hud.invalidate();updateUI();});

@@ -13,7 +13,9 @@ export function stateLine(f: Fighter): string {
   const move=f.moveId?MOVES[f.moveId]:null;
   // A secondary strike window (the knee before a kick) is shown by its group name.
   const early=move?.hitGroups.find(g=>g.activeFrames && f.moveFrame>=g.activeFrames[0] && f.moveFrame<=g.activeFrames[1]);
-  const phase=move?(early?`ACTIVE ${early.id.toUpperCase()}`:f.moveFrame<move.startup?'STARTUP':f.moveFrame<move.startup+move.active?'ACTIVE':'RECOVERY'):'—';
+  const throwPhase=move?.throw?.phase;
+  const phase=!move?(f.state==='Thrown'?`THROWN · ${f.thrownBy}`:'—'):throwPhase==='execute'?(f.moveFrame<=move.throw!.impactFrame!?'THROW':'RECOVERY'):throwPhase==='break'?'THROW BREAK':
+    early?`ACTIVE ${early.id.toUpperCase()}`:f.moveFrame<move.startup?'STARTUP':f.moveFrame<move.startup+move.active?(throwPhase==='attempt'?'GRAB':'ACTIVE'):'RECOVERY';
   const advantage=typeof f.advantage==='number'?`${f.advantage>=0?'+':''}${f.advantage}f`:f.advantage;
   return `P${f.id+1}  ${f.state} / ${phase}\nState ${f.stateFrame}f · Move ${move?`${f.moveFrame}/${move.duration-1}f`:'—'} · Stun ${f.remaining}f\n${f.moveId??'—'} · ${t('state.advantage')} ${advantage}\n${t('state.direction')} ${f.input.current.direction} · HP ${f.hp} · ${f.input.motions.join(' ')}`;
 }

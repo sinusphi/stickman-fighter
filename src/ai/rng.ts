@@ -1,6 +1,8 @@
 /** Mulberry32: all gameplay choices come from this private, reproducible stream. */
 export class Rng {
   constructor(private seed: number) {}
+  /** Current internal state, e.g. to derive an independent stream. */
+  peekSeed(): number { return this.seed >>> 0; }
   next(): number {
     this.seed = (this.seed + 0x6d2b79f5) | 0;
     let t = this.seed;

@@ -42,7 +42,7 @@ export class CpuPlayer {
       this.controller.clear();
       this.event='';this.lastDecision=-Infinity;
     }
-    if((game.training.enabled && game.training.dummy !== 'cpu') || v.round.phase!=='fighting' || v.hitstop>0 || ['Hitstun','Blockstun','Knockdown','KO','Landing'].includes(s.state)) {
+    if((game.training.enabled && game.training.dummy !== 'cpu') || v.round.phase!=='fighting' || v.hitstop>0 || ['Hitstun','Blockstun','Knockdown','KO','Landing','Thrown'].includes(s.state)) {
       this.controller.clear();this.lastDecision=-Infinity;
       this.debug={kind:'wait',score:0,reason:v.hitstop?'hitstop':v.round.phase!=='fighting'?v.round.phase:s.state};
       return neutralInput();

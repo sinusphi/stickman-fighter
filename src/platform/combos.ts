@@ -19,6 +19,10 @@ export function comboLabel(id: string): string {
   return comboLabelKeys[id]?t(comboLabelKeys[id]):id;
 }
 const tx=(key: TranslationKey)=>`data-i18n="${key}">${t(key)}`;
+/** Throws (6/4 + THROW) for the move list; inputs come from the move data. */
+export const throwLabelKeys: Record<string, TranslationKey> = { throw_forward: 'throw.forward', throw_back: 'throw.back' };
+export const throwMoves = moves.filter(move=>(move as { throw?: { phase: string } }).throw?.phase==='attempt')
+  .sort((a,b)=>b.command.directions[0]-a.command.directions[0]);
 
 export const comboMarkup = `
 <details id="combo-list">
@@ -29,6 +33,15 @@ export const comboMarkup = `
       <strong ${comboLabelKeys[move.id]?tx(comboLabelKeys[move.id]):`>${move.id}`}</strong>
       <div class="combo-command"><span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span> + <span class="mono">${move.command.buttons.join(' + ')}</span></div>
       <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: ${move.command.buttons.map(button=>`<kbd data-owner="${player}" data-control="${button}">${button}</kbd>`).join(' + ')}</span>`).join('')}</div>
+    </li>`).join('')}
+  </ul>
+  <strong class="combo-section" ${tx('combo.throws')}</strong>
+  <p class="hint" ${tx('combo.throwsHelp')}</p>
+  <ul class="combo-list throw-list">
+    ${throwMoves.map(move=>`<li data-combo="${move.id}">
+      <strong ${throwLabelKeys[move.id]?tx(throwLabelKeys[move.id]):`>${move.id}`}</strong>
+      <div class="combo-command"><span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span> + <span class="mono">THROW</span></div>
+      <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: <kbd data-owner="${player}" data-control="THROW">THROW</kbd></span>`).join('')}</div>
     </li>`).join('')}
   </ul>
 </details>`;

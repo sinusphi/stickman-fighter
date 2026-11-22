@@ -8,6 +8,7 @@ import { advanceRound, resolveRound } from './rounds';
 import { createFighter, createGame } from './factory';
 import { dummyInput } from '../debug/training';
 import { applyEvents, type ControlEvent } from './events';
+import { advanceThrows, resolveThrows } from './throws';
 
 // Factories live in ./factory so events and rounds can use them without an import cycle.
 export { createFighter, createGame };
@@ -38,9 +39,11 @@ export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInp
   if (game.hitstop > 0) { game.hitstop--; return; }
   const holdEligible = game.fighters.map(standingHoldEligible);
   const available = game.fighters.map(fighter => { advanceAttack(fighter); return moveFighter(fighter, fixedDummy && fighter.id === 1); });
+  advanceThrows(game);
   measureAdvantage(game, available);
   for (const fighter of game.fighters) startAttack(fighter, game.combatFrame, holdEligible[fighter.id]);
   resolvePushboxes(game.fighters);
+  resolveThrows(game);
   resolveCombat(game);
   if (!game.training.enabled) resolveRound(game);
   game.combatFrame++;
@@ -63,6 +66,8 @@ export function settleFighters(game: GameState): void {
     const other = game.fighters[1 - f.id];
     if (f.state !== 'Attack' && f.x !== other.x) f.facing = f.x < other.x ? 1 : -1;
   }
+  // A throw in progress still lands, without damage once the round is decided.
+  advanceThrows(game, false);
   resolvePushboxes(game.fighters);
 }
 

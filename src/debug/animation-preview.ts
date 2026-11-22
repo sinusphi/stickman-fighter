@@ -1,5 +1,5 @@
 import { FIGURE_SCALE } from '../data/figure-scale';
-import { advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS } from '../render/skeleton';
+import { buildPose, advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS } from '../render/skeleton';
 import { drawFigure, drawTrail } from '../render/figure';
 import { sampleDepths } from '../render/depth';
 import { facePoint } from '../render/facing';
@@ -26,10 +26,22 @@ const specialNames: Record<string, string> = {
   tornado_mk:'Tornado', forward_spin_hk:'Spin', dwit_chagi:'Dwit Chagi', left_turn_kick:'Left Turn Kick',
 };
 const specialSides: Record<string, 'left' | 'right'> = { forward_spin_hk:'left', jumping_uppercut:'right', tornado_mk:'right' };
-const specialMoves = Object.values(MOVES).filter(move=>move.command.type==='hold' && move.command.buttons.length===1);
+const specialMoves = Object.values(MOVES).filter(move=>move.command.type==='hold' && move.command.buttons.length===1 && !move.throw);
+/** Throw clips: attempts, executions with their thrown fighter, and the clash. */
+const throwClips = Object.values(MOVES).filter(move=>move.throw).flatMap(move=>[move.animation,...(move.throw?.victimAnimation?[move.throw.victimAnimation]:[])]);
+function throwLabel(id: string): string | undefined {
+  const base=Object.values(MOVES).find(move=>move.throw && (move.animation===id || move.throw.victimAnimation===id));
+  if(!base?.throw)return undefined;
+  if(base.throw.phase==='break')return t('throw.break');
+  const name=t(base.command.directions[0]===6?'throw.forward':'throw.back');
+  const role=base.throw.phase==='attempt'?'preview.throwAttempt':base.throw.victimAnimation===id?'preview.throwVictim':'preview.throwExecute';
+  return `${name} · ${t(role)} · ${base.command.directions[0]}+THROW`;
+}
 const commandText = (command: CompiledMove['command']) => `${command.directions.join('/')}+${command.buttons.join('+')}`;
 function animationLabel(id: string): string {
   if(previewKeys[id])return t(previewKeys[id]);
+  const thrown=throwLabel(id);
+  if(thrown)return thrown;
   const combo=comboMoves.find(move=>move.animation===id);
   if(combo)return `${comboLabel(combo.id)} · ${commandText(combo.command as CompiledMove['command'])}`;
   const special=specialMoves.find(move=>move.animation===id);
@@ -51,6 +63,7 @@ const previewGroups: {key: Parameters<typeof t>[0]; ids: string[]}[] = [
   ...(['standing','crouching','airborne'] as const).map(stance=>({key:`preview.${stance}` as Parameters<typeof t>[0],ids:previewButtonOrder.map(button=>`${stance}_${button}`)})),
   {key:'preview.groupSpecials',ids:[...new Set(['jumping_uppercut','left_turn_kick','dwit_chagi','spin_mk','forward_spin_hk','spin_hk','tornado_mk',...specialMoves.map(move=>move.animation)])]},
   {key:'combo.summary',ids:comboMoves.map(move=>move.animation)},
+  {key:'preview.groupThrows',ids:throwClips},
   {key:'preview.groupReactions',ids:['Blockstun','CrouchBlock','Hitstun','HitMiddlePunch','HitLOW','HitMID','HitHIGH','Knockdown','KO']},
   {key:'preview.groupDemos',ids:Object.keys(animations).filter(id=>id.startsWith('Demo'))},
 ];
@@ -135,6 +148,19 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
     drawTrail(ctx,sampleRotationTrail(id,time),palette.revenge,.72,true,facing,palette.special);
     drawFigure(ctx,pose,palette.p1,palette,facing,0,sampleDepths(id,time),sampleTurn(id,time),sampleHeadYaw(id,time),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
     drawKneeSwoosh(ctx,id,time,facing,palette.p1,palette);
+    // A throw execution shows its thrown fighter on the table position (simulation units → rig units).
+    const execute=MOVES[id]?.throw?.phase==='execute'?MOVES[id].throw:undefined;
+    if(execute?.path && execute.victimAnimation) {
+      const last=execute.impactFrame!,at=Math.min(last,time),i=Math.floor(at),j=Math.min(last,i+1),u=at-i;
+      const point=[0,1].map(k=>execute.path![i][k]+(execute.path![j][k]-execute.path![i][k])*u);
+      const landed=time>last,victimId=landed?'Knockdown':execute.victimAnimation;
+      // After the impact the victim lies in the knockdown pose facing the thrower again.
+      const victimFacing=landed && point[0]<0?facing:-facing;
+      ctx.save();ctx.translate(point[0]*facing/256/FIGURE_SCALE,point[1]/256/FIGURE_SCALE);
+      const victimPose=landed?buildPose(sampleAngles('Knockdown',0),true,1,true):samplePose(victimId,at);
+      drawFigure(ctx,victimPose,palette.p2,palette,victimFacing,0,sampleDepths(victimId,at));
+      ctx.restore();
+    }
     for(const trail of trails)if(!isKneeTrail(trail) && time>=trail.fromFrame && time<=trail.toFrame) {
       const anchor=facePoint(pose[trail.joint],facing);ctx.fillStyle=trail.directional?palette.special:palette.p1;ctx.beginPath();ctx.arc(anchor[0],anchor[1],4.2,0,Math.PI*2);ctx.fill();
     }

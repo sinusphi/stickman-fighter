@@ -22,6 +22,25 @@ export function groupValue(move: Move, group: HitGroup, key: typeof GROUP_FRAME_
 }
 export interface Hitbox extends Box { hitGroup: string }
 export interface FrameBoxes { hitboxes: Hitbox[]; hurtboxes: Box[]; pushbox: Box }
+/**
+ * Throws (button THROW, standing hold commands 6/4 only). Three phases:
+ *  - attempt: the playable move. Its first active frame (`startup`) is the grab
+ *    check; `recovery` is the whiff recovery. `range` reaches from the front edge
+ *    of the standing pushbox (unscaled subpixels, like boxes). `hitstop` freezes the grab.
+ *  - execute: the success branch the attempt turns into. `path` is the thrown
+ *    fighter's anchor per frame 0 … `impactFrame` relative to the thrower
+ *    ([x along the thrower's facing, y], scaled subpixels, y ≤ 0). Up to
+ *    `releaseFrame` the victim hangs at the thrower's hands. `damage` and
+ *    `hitstop` apply on impact, followed by a knockdown.
+ *  - break: both fighters threw in the same step (throw clash). `pushbackHit`
+ *    separates both, `recovery` is the short shared recovery.
+ * None of them has hitboxes; throws are unblockable.
+ */
+export interface ThrowData {
+  phase: 'attempt' | 'execute' | 'break';
+  range?: number; execute?: string;
+  path?: number[][]; impactFrame?: number; releaseFrame?: number; victimAnimation?: string;
+}
 export interface CancelWindow { fromFrame: number; toFrame: number; on: ('hit' | 'block' | 'whiff')[]; type: 'chain' | 'target' | 'special' | 'super'; targetMoveIds: string[] }
 export interface Move {
   schemaVersion: number; id: string; stance: Stance; button: Button;
@@ -32,12 +51,15 @@ export interface Move {
   groundHitReaction?: 'middlePunch'; slideSpeed?: number;
   airHitReaction: 'knockdown'; multiHit: boolean; hitGroups: HitGroup[];
   cancelWindows: CancelWindow[]; combo: { scalingPermille: number; juggleCost: number; juggleLimit: number };
+  throw?: ThrowData;
   frameRanges: (FrameBoxes & { from: number; to: number })[];
 }
 export type CompiledMove = Move & { frames: FrameBoxes[]; duration: number };
 
 /** Buttons that still attack from the crouch; the other kicks do nothing there. */
 export const CROUCH_BUTTONS: readonly Button[] = ['LP', 'MP', 'HP', 'LK', 'RLK'];
+/** The throw button only exists as standing direction commands; it needs no normal move. */
+export const THROW_BUTTON: Button = 'THROW';
 /** Order in which simultaneously pressed buttons become the buffered command. */
 export const NORMAL_PRIORITY = rules.normalPriority as Button[];
 /** Ground travel after `frame` frames of a move's `advance` (smoothstep, integer subpixels).
@@ -75,6 +97,7 @@ export function validatePoses(value: unknown): void {
   for(const [id,animation] of Object.entries(data.animations as Record<string,Animation & {interpolation:string}>)) {
     assert(integer(animation.durationFrames,1) && animation.keyframes.length>0 && typeof animation.loop==='boolean' && animation.interpolation==='angles' && typeof animation.grounded==='boolean',`${id}: Animationsdauer oder Interpolation.`);
     assert(animation.clampFloor===undefined || typeof animation.clampFloor==='boolean',`${id}: Bodenbegrenzung.`);
+    assert(animation.clampBody===undefined || typeof animation.clampBody==='boolean',`${id}: Körper-Bodenbegrenzung.`);
     assert(animation.fixedLegDepth===undefined || typeof animation.fixedLegDepth==='boolean',`${id}: feste Beintiefe.`);
     assert(animation.legInterpolation===undefined || ['footIK','plantedSupport','plantedStraight','plantedPivot'].includes(animation.legInterpolation) && animation.grounded && ['leftFoot','rightFoot'].includes(animation.trail?.joint??''),`${id}: Beininterpolation benötigt einen geerdeten Tritt mit Fußspur.`);
     const topology=(r:Rotation)=>JSON.stringify({pivot:typeof r.pivot==='string'?r.pivot:'xy',branches:r.branches});
@@ -151,10 +174,13 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
       for (let frame = range.from; frame <= range.to; frame++) frames.push(range);
     }
     assert(frames.length === duration, `${move.id}: unvollständige Frame-Abdeckung.`);
+    validateThrowShape(move, duration);
     result[move.id] = { ...move, frames, duration };
   }
-  for (const stance of ['standing','crouching','airborne']) for (const button of BUTTONS)
+  // Every button except THROW needs a normal move in every stance; THROW has none at all.
+  for (const stance of ['standing','crouching','airborne']) for (const button of BUTTONS.filter(b => b !== THROW_BUTTON))
     assert(Object.values(result).some(m => m.stance === stance && m.button === button && m.command.type === 'normal'), `${stance}/${button} fehlt.`);
+  for (const move of Object.values(result)) if (move.throw) validateThrowLinks(move, result);
   for (const move of Object.values(result)) for (const cancel of move.cancelWindows) {
     assert(integer(cancel.fromFrame) && integer(cancel.toFrame) && cancel.fromFrame <= cancel.toFrame && cancel.toFrame < move.duration && cancel.targetMoveIds.every(id=>id in result), `${move.id}: Cancel-Ziel oder Fenster.`);
     assert(['chain','target','special','super'].includes(cancel.type) && Array.isArray(cancel.on) && cancel.on.every(condition=>['hit','block','whiff'].includes(condition)),`${move.id}: Cancel-Art oder Bedingung.`);
@@ -162,11 +188,38 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
   return result;
 }
 
+function validateThrowShape(move: Move, duration: number): void {
+  const data = move.throw;
+  // The THROW button and throw data belong together.
+  assert((move.button === THROW_BUTTON) === (data !== undefined), `${move.id}: THROW-Moves brauchen Wurfdaten und umgekehrt.`);
+  if (!data) return;
+  assert(['attempt','execute','break'].includes(data.phase), `${move.id}: Wurfphase.`);
+  assert(move.stance === 'standing' && move.command.type === 'hold' && move.command.buttons.length === 1 && move.command.buttons[0] === THROW_BUTTON && move.hitGroups.length === 1 && !move.multiHit && move.cancelWindows.length === 0 && move.advance === undefined,
+    `${move.id}: Würfe sind Hold-Commands 6/4 + THROW im Stand, ohne Vorwärtsschritt und Cancels.`);
+  assert(move.frameRanges.every(range => range.hitboxes.length === 0), `${move.id}: Würfe haben keine Hitboxen.`);
+  if (data.phase === 'attempt') {
+    assert(integer(data.range ?? -1, 1) && typeof data.execute === 'string' && move.active === 1 && move.startup >= 1, `${move.id}: Wurfversuch braucht Reichweite, Ausführung und genau einen Greif-Frame.`);
+  }
+  if (data.phase === 'execute') {
+    const path = data.path, impact = data.impactFrame ?? -1, release = data.releaseFrame ?? -1;
+    assert(integer(impact, 1) && impact < duration && integer(release) && release < impact && Array.isArray(path) && path.length === impact + 1, `${move.id}: Wurfbahn und Aufprall-Frame.`);
+    assert(path.every(point => Array.isArray(point) && point.length === 2 && Number.isSafeInteger(point[0]) && Number.isSafeInteger(point[1]) && point[1] <= 0) && path[impact][1] === 0, `${move.id}: Bahnpunkte ganzzahlig, nie unter dem Boden, Aufprall am Boden.`);
+    assert(typeof data.victimAnimation === 'string' && (poses.animations as Record<string, { durationFrames: number }>)[data.victimAnimation]?.durationFrames === impact + 1, `${move.id}: Animation des Geworfenen fehlt oder passt nicht zur Bahn.`);
+    assert(move.damage > 0, `${move.id}: Wurfschaden.`);
+  }
+}
+function validateThrowLinks(move: CompiledMove, moves: Record<string, CompiledMove>): void {
+  if (move.throw?.phase !== 'attempt') return;
+  const target = moves[move.throw.execute ?? ''];
+  assert(target?.throw?.phase === 'execute' && target.command.directions[0] === move.command.directions[0], `${move.id}: Ausführung ${move.throw.execute} fehlt.`);
+  assert(Object.values(moves).some(m => m.throw?.phase === 'break'), 'Wurf-Clash-Move fehlt.');
+}
+
 export function validateResources(value: unknown): asserts value is Resources {
   const resources=value as Resources;
   for(const name of ['revenge','special'] as const) {
     const r=resources?.[name];
-    assert(r && integer(r.max,1) && integer(r.current) && r.current<=r.max && integer(r.gainPerHit),`Ressource ${name}.`);
+    assert(r && integer(r.max,1) && integer(r.current) && r.current<=r.max && integer(r.gainPerHit) && integer(r.gainPerBlock),`Ressource ${name}.`);
   }
 }
 validateResources(rules.resources);
@@ -175,6 +228,12 @@ validatePoses(poses);
 export const MOVES = validateMoves(rawMoves);
 /** Authored legacy clips remain available for rendering; only these moves can be played. */
 export function isPlayableMove(move: CompiledMove): boolean {
+  // Throw execution and clash moves are only entered by the simulation itself.
+  if (move.throw && move.throw.phase !== 'attempt') return false;
   return move.stance !== 'crouching' || CROUCH_BUTTONS.includes(move.button);
+}
+/** Throw data of a move id, if it is a throw (any phase). */
+export function throwData(moveId: string | null | undefined): ThrowData | undefined {
+  return moveId ? MOVES[moveId]?.throw : undefined;
 }
 export const PLAYABLE_MOVES = Object.fromEntries(Object.entries(MOVES).filter(([, move]) => isPlayableMove(move)));
