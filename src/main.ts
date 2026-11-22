@@ -27,6 +27,10 @@ import { CpuPlayer } from './ai';
 import { loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles';
 import { neutralInput } from './input/types';
 import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
+import { SurvivalSession, loadBest, saveBest } from './survival/session';
+import { formatSurvival, snapshotSurvival, type SurvivalState } from './survival/state';
+import { survivalHudGame, survivalViews, type SurvivalView } from './survival/views';
+import { renderSurvival } from './render/survival';
 
 /** Upper bound for replay files read into memory (see message.replayTooLarge). */
 const MAX_REPLAY_FILE_BYTES = 64 * 1024 * 1024;
@@ -58,6 +62,10 @@ async function main(): Promise<void> {
   const cpuLevel = element<HTMLSelectElement>('cpu-level');
   cpuLevelOne.value = cpuSettings.playerOneDifficulty;
   cpuLevel.value = cpuSettings.difficulty;
+  // Survival mode (F10): its own session; versus state stays untouched meanwhile.
+  let survival: SurvivalSession | null = null;
+  let survivalPrevious: SurvivalState | null = null;
+  let survivalBest = loadBest(storage);
   const feedback = new HitFeedback();
   // Presentation only: sparks, shake, dust and the combo counter follow the game states.
   const effects = new HitEffects(loadEffectSettings());
@@ -99,13 +107,54 @@ async function main(): Promise<void> {
   keyboard?.getLayoutMap().then(map=>{layout=map;refreshBindings();}).catch(()=>{});
   refreshBindings();
 
-  function setPaused(paused: boolean): void { loop.paused = paused; loop.reset(); previous = snapshot(game); }
+  function setPaused(paused: boolean): void { loop.paused = paused; loop.reset(); previous = snapshot(game); if (survival) survivalPrevious = snapshotSurvival(survival.state); }
+  const views = (state: SurvivalState): SurvivalView[] => survivalViews(state);
+  function runSurvivalFrame(session: SurvivalSession): void {
+    const before = snapshotSurvival(session.state);
+    survivalPrevious = before;
+    const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
+    for (const event of events) if (event.type === 'inputConfig') { game.inputConfig = structuredClone(event.config); session.setInputConfig(event.config); }
+    if (events.some(e => e.type === 'reset')) {
+      session.reset(matchSeed(), game.inputConfig); survivalPrevious = snapshotSurvival(session.state); effects.reset(); return;
+    }
+    const wasOver = session.state.over;
+    session.step(inputs[0]);
+    const now = views(session.state), then = views(before);
+    effects.updateCrowd(now, then, !loop.paused);
+    // Sounds per [player, enemy] view; the player's own swings only once.
+    now.forEach((view, index) => {
+      const old = then.find(v => v.uid === view.uid)?.game;
+      if (!old) return;
+      const swingView = index === 0 ? view.game : { ...view.game, fighters: [old.fighters[0], view.game.fighters[1]] as GameState['fighters'] };
+      for (const swing of newSwingSounds(swingView, old)) audio.playSwing(swing);
+      for (const contact of newContactSounds(view.game, old)) audio.playContact(contact);
+    });
+    if (!wasOver && session.state.over && session.state.survivedFrames > survivalBest) {
+      survivalBest = session.state.survivedFrames; saveBest(storage, survivalBest);
+    }
+    loop.timeScale = 1;
+  }
+  function toggleSurvival(): void {
+    if (playback || game.training.enabled) return;
+    if (recording) { lastReplay = recording; recording = null; }
+    devices.clear(); effects.reset(); loop.timeScale = 1;
+    if (survival) {
+      survival = null; survivalPrevious = null;
+      queue({ type: 'reset' }); message(t('message.survivalLeft'));
+    } else {
+      survival = new SurvivalSession(matchSeed(), game.inputConfig);
+      survivalPrevious = snapshotSurvival(survival.state);
+      message(t('message.survivalStarted'));
+    }
+    loop.reset();
+  }
   function stopPlayback(): void {
     if (!playback) return;
     game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); effects.reset(); loop.timeScale=1;
     devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
+    if (survival) { runSurvivalFrame(survival); return; }
     previous = snapshot(game);
     if (playback) {
       const entry = playback.replay.frames[playback.index];
@@ -193,10 +242,13 @@ async function main(): Promise<void> {
     pause:togglePause, step:singleStep, reset,
     boxes:()=>showBoxes=!showBoxes, inputs:()=>showInputs=!showInputs, states:()=>showStates=!showStates,
     training:toggleTraining, dummy:changeDummy, record:toggleRecord, play:toggleReplay,
-    cpu:toggleCpu, demo:toggleDemo,
+    cpu:toggleCpu, demo:toggleDemo, survival:toggleSurvival,
     sound:()=>{audio.setMuted(!audio.isMuted());audio.unlock();},
   };
-  for (const [id,action] of Object.entries(actions)) button(id).onclick=()=>{ action(); updateUI(); };
+  // Versus-only tools stay inactive during a survival run.
+  const versusOnly = new Set(['training','dummy','record','play','cpu','demo']);
+  const run = (id: string) => { if (survival && versusOnly.has(id)) return; actions[id](); updateUI(); };
+  for (const id of Object.keys(actions)) button(id).onclick=()=>run(id);
   button('export-replay').onclick=()=>{ const replay=recording??lastReplay; if(replay)saveJson('stickman-replay.json',replay); };
   button('import-replay').onclick=()=>{ setPaused(true); element<HTMLInputElement>('replay-file').click(); };
   // Each selection gets a ticket; a slower earlier read that finishes later is discarded.
@@ -219,12 +271,12 @@ async function main(): Promise<void> {
   const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message,effects.settings);
   element('settings-details').addEventListener('toggle',event=>{ if((event.target as HTMLDetailsElement).open)setPaused(true); });
   document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button'))(document.activeElement as HTMLElement)?.blur(); });
-  const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo' };
+  const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo',F10:'survival' };
   window.addEventListener('keydown',event=>{
     if((event.target as HTMLElement).closest('#animation-preview'))return;
     if(event.repeat || devices.capture || (event.target as HTMLElement).matches('input,select,textarea'))return;
     if(devices.config.players.some(p=>Object.values(p.keys).includes(event.code)))return;
-    const action=hotkeys[event.code];if(action){event.preventDefault();actions[action]();updateUI();}
+    const action=hotkeys[event.code];if(action){event.preventDefault();run(action);}
   });
   window.addEventListener('blur',()=>{devices.clear();setPaused(true);message(t('message.focusLost'));});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){devices.clear();setPaused(true);}});
@@ -232,8 +284,11 @@ async function main(): Promise<void> {
 
   const hud = new Hud(document);
   function updateUI(): void {
+    const s = survival?.state;
     hud.update({
-      game, paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
+      game: s ? survivalHudGame(s) : game,
+      survival: s ? { time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: s.config.enemies.hp } : undefined,
+      paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
       show:{boxes:showBoxes,inputs:showInputs,states:showStates}, stageCaption:STAGES[stage].caption,
@@ -241,12 +296,19 @@ async function main(): Promise<void> {
     });
   }
   onLanguageChange(()=>{translateDocument();hud.invalidate();updateUI();});
+  /** Smoke tests read the survival run from the canvas (presentation only). */
+  function exposeSurvival(): void {
+    const s = survival?.state, data = canvas.dataset;
+    if (!s) { delete data.survival; return; }
+    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}`;
+  }
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
     fitCanvas(canvas);
-    render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
+    if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest);
+    else render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
     preview(time,palette);
-    pollSettings();updateUI();requestAnimationFrame(frame);
+    pollSettings();updateUI();exposeSurvival();requestAnimationFrame(frame);
   }
   updateUI();requestAnimationFrame(frame);
 }

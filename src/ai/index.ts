@@ -20,6 +20,11 @@ export class CpuPlayer {
   private committed: Intent | null = null;
   private profile: CpuProfile;
   debug: Intent = {kind:'wait',score:0,reason:'observe'};
+  /**
+   * Optional veto from outside (survival director): called for every attack the
+   * brain chooses; false turns it into a wait. Unset in versus, demo and training.
+   */
+  gate?: (moveId: string, frame: number) => boolean;
   constructor(readonly difficulty: Difficulty = 'medium', private player: 0 | 1 = 1,
     private factory: BrainFactory = (p,rng)=>new UtilityBrain(p,rng)) {
     this.profile=PROFILES[difficulty]; this.perception=new Perception(this.profile.reactionFrames); this.reset(1);
@@ -29,6 +34,8 @@ export class CpuPlayer {
     this.lastFrame=-1;this.lastRound=0;this.lastDecision=-Infinity;this.pauseUntil=-Infinity;this.wasAttacking=false;this.event='';
     this.committed=null;this.debug={kind:'wait',score:0,reason:'observe'};
   }
+  /** Drops a queued input sequence, e.g. when an outside director takes control away. */
+  interrupt(): void { this.controller.clear(); this.lastDecision=-Infinity; this.event=''; }
   next(game: GameState): RawInput {
     if(game.frame<=this.lastFrame || game.round.number!==this.lastRound) {
       this.perception.reset();this.controller.clear();this.lastDecision=-Infinity;this.event='';
@@ -69,7 +76,9 @@ export class CpuPlayer {
     const move=o?.moveId ? MOVE_INFO[o.moveId] : undefined;
     const event=o ? `${o.state}/${o.moveId}/${move && o.moveFrame>move.lastActive}/${v.lastContact?.frame}` : '';
     if(o && (event!==this.event || v.frame-this.lastDecision>=this.profile.decisionFrames)) {
-      this.debug=this.brain.decide(v);this.committed=this.debug;this.controller.set(this.debug,s);
+      this.debug=this.brain.decide(v);
+      if(this.debug.kind==='attack' && this.gate && !this.gate(this.debug.moveId,v.frame))this.debug={kind:'wait',score:0,reason:'director'};
+      this.committed=this.debug;this.controller.set(this.debug,s);
       this.lastDecision=v.frame;this.event=event;
     }
     return this.controller.next(s);

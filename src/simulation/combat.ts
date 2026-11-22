@@ -120,6 +120,18 @@ export function canBlock(f: Fighter, level: HitLevel, autoBlock = false, attackS
   return (autoBlock && automatic) || direction === 1 || direction === 4;
 }
 
+/**
+ * Strength of one hit group: an explicit entry in rules.hitStrength.overrides
+ * (`moveId:groupId`), otherwise its damage. Light hits only cause hitstun; a
+ * grounded hit whose strength reaches the defender's stability knocks down.
+ */
+export function hitStrength(move: CompiledMove, group: HitGroup): number {
+  const overrides: Record<string, number> = rules.hitStrength.overrides;
+  return overrides[`${move.id}:${group.id}`] ?? group.damage ?? move.damage;
+}
+export function knocksDown(move: CompiledMove, group: HitGroup, defender: Fighter): boolean {
+  return hitStrength(move, group) >= (defender.stability ?? rules.hitStrength.defaultStability);
+}
 interface Contact { attacker: Fighter; defender: Fighter; move: CompiledMove; hitGroup: HitGroup; group: string; blocked: boolean; side: number }
 export function addHitResource(fighter: Fighter, name: 'revenge' | 'special', damage: number): void {
   const resource = fighter.resources[name];
@@ -150,7 +162,10 @@ export function collectContacts(game: GameState): Contact[] {
       if (usesPoseContact(move.id)) {
         if (!hasPoseContact(attacker,defender,hitbox.hitGroup,game.lastContact?.defender===defender.id?game.lastContact.hitLevel:undefined)) continue;
       }
-      contacts.push({ attacker, defender, move, hitGroup, group, blocked: canBlock(defender,hitGroup.hitLevel??move.hitLevel,game.inputConfig.autoBlock?.[defender.id],move.stance,attacker.y<0), side: defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1 });
+      const side = defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1;
+      // Survival: no guard against an attacker in the back (the defender faces away).
+      const guardable = !game.noRearGuard || defender.facing !== side;
+      contacts.push({ attacker, defender, move, hitGroup, group, blocked: guardable && canBlock(defender,hitGroup.hitLevel??move.hitLevel,game.inputConfig.autoBlock?.[defender.id],move.stance,attacker.y<0), side });
     }
   }
   return contacts;
@@ -191,6 +206,12 @@ export function resolveCombat(game: GameState): void {
         defender.hp = Math.max(0, defender.hp - Math.trunc(baseDamage * attacker.damageScalePermille / rules.damageScaleUnit));
       if (!game.training.enabled && defender.hp === 0) { transition(defender,'KO'); defender.input.pending = null; }
       else if (defender.y < 0) { transition(defender,'Knockdown',rules.knockdownFrames); defender.vy = rules.airHitVelocity; defender.airAttackUsed = true; }
+      else if (knocksDown(move, hitGroup, defender)) {
+        // Heavy grounded hit: a short hop backwards, then the regular knockdown and stand-up.
+        transition(defender,'Knockdown',rules.knockdownFrames);
+        defender.vy = rules.hitStrength.groundKnockdownVelocity; defender.vx = side * rules.hitStrength.groundKnockdownSpeed;
+        defender.airAttackUsed = true;
+      }
       else {
         transition(defender,'Hitstun',groupValue(move,hitGroup,'hitstun'));
         if(move.groundHitReaction==='middlePunch') {

@@ -134,6 +134,30 @@ export class HitEffects {
     this.observeResources(game, previous);
   }
 
+  /**
+   * Survival: one player (index 0 of every view) against several opponents,
+   * each observed through its own two-fighter view (see survival/views). Ages
+   * the scene once, observes the player once and every opponent; only the
+   * player's knockout gets the dramatic flash and zoom. A combo ends once
+   * nobody is held in stun any more. `previous` views are matched by `uid`.
+   */
+  updateCrowd(views: readonly { uid: number; game: GameState }[], previous: readonly { uid: number; game: GameState }[], live = true): void {
+    if (live) this.tick();
+    let playerSeen = false;
+    for (const { uid, game } of views) {
+      const before = previous.find(v => v.uid === uid)?.game;
+      if (!before) continue;
+      this.observeContacts(game, before);
+      if (!playerSeen) { this.observeFighter(game.fighters[0], before.fighters[0]); playerSeen = true; }
+      this.observeFighter(game.fighters[1], before.fighters[1], false);
+    }
+    const stunned = (f: Fighter) => f.state === 'Hitstun' || f.state === 'Knockdown';
+    for (let attacker = 0; attacker < 2; attacker++) {
+      if (this.comboCount[attacker] === 0 || this.comboEnding[attacker] >= 0) continue;
+      if (!views.some(({ game }) => stunned(game.fighters[1 - attacker]))) this.comboEnding[attacker] = 0;
+    }
+  }
+
   // -------------------------------------------------------- bar full -------
   /** Queues a burst for every bar that just became full and starts the due ones. */
   private observeResources(game: GameState, previous: GameState): void {
@@ -264,7 +288,7 @@ export class HitEffects {
     return [x, Math.min(y, ground - 3)];
   }
 
-  private observeFighter(f: Fighter, old: Fighter | undefined): void {
+  private observeFighter(f: Fighter, old: Fighter | undefined, dramaticKo = true): void {
     if (!old) return;
     const x = screenX(f.x), feet = screenY(0);
     // Landing from a jump, a knockdown or an aerial KO.
@@ -280,7 +304,8 @@ export class HitEffects {
       const burst = Math.abs(moved) >= 12 * rules.unit;
       this.spawnDust(x - Math.sign(moved) * 6, feet, burst ? 4 : 1, burst ? 1.1 : 0.7, -Math.sign(moved));
     }
-    if (f.state === 'KO' && old.state !== 'KO') {
+    if (f.state === 'KO' && old.state !== 'KO' && !dramaticKo) this.addShake(MAX_SHAKE * 0.3);
+    else if (f.state === 'KO' && old.state !== 'KO') {
       this.flash = 1;
       this.addShake(MAX_SHAKE * 0.85);
       this.zoom = ZOOM_AMOUNT; this.zoomAge = 0;

@@ -38,6 +38,12 @@ export interface Fighter {
   damageScalePermille: number;
   juggleState: number;
   advantage: number | 'pending' | 'n/a';
+  /**
+   * Resistance against ground knockdowns (see rules.hitStrength). A grounded hit
+   * whose strength reaches this value knocks the fighter down. Unset means
+   * rules.hitStrength.defaultStability; later survival enemy types tune it.
+   */
+  stability?: number;
 }
 
 export type ContactPose = Pick<Fighter,'x'|'y'|'vx'|'facing'|'attackFacing'|'state'|'stateFrame'|'moveId'|'moveFrame'|'crouching'|'hitReaction'> & { hitLevel?: HitLevel };
@@ -52,4 +58,9 @@ export interface GameState {
   measurements: { attacker: number; defender: number; attackerReady: number | null; defenderReady: number | null; complete: boolean }[];
   round: RoundState;
   training: TrainingState;
+  /**
+   * Survival only: a defender facing away from the attacker cannot block, so
+   * attacks into the back always connect. Unset in versus, training and replays.
+   */
+  noRearGuard?: boolean;
 }

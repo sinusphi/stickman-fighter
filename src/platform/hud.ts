@@ -20,7 +20,10 @@ export interface HudContext {
   stageCaption: string;
   /** "Bar full" presentation: effects switch and the monotonic event count per bar (see HitEffects). */
   ready?: { effects: boolean; events: (fighter: number, resource: 'revenge' | 'special') => number };
+  /** Survival run: `game` is then a [player, focused enemy] view (see survival/views). */
+  survival?: SurvivalHud;
 }
+export interface SurvivalHud { time: string; best: string; enemies: number; kills: number; playerMaxHp: number; enemyMaxHp: number }
 
 export interface HudModes { trainingCpu: boolean; cpuActive: boolean; demoActive: boolean; cpuPresent: boolean }
 
@@ -40,24 +43,25 @@ const describeIntent = (index: number, intent: Intent) => `CPU ${index}: ${inten
 export function hudLabels(c: HudContext) {
   const { game, cpu, playback } = c;
   const m = hudModes(c);
+  const s = c.survival;
   const level = difficultyName(cpu.difficulty).toUpperCase();
   const demoLevels = `${difficultyName(cpu.playerOneDifficulty).toUpperCase()} VS ${level}`;
   return {
     cpuButton: m.trainingCpu ? t('cpu.trainingDummy') : game.training.enabled ? t('cpu.trainingPriority') : playback ? t('cpu.replayPriority') : `CPU: ${t(m.cpuActive ? 'common.on' : 'common.off')} · F8`,
     demoButton: game.training.enabled ? t('demo.trainingPriority') : playback ? t('demo.replayPriority') : `Demo: ${t(m.demoActive ? 'common.on' : 'common.off')} · F9`,
-    p1: m.demoActive ? 'CPU 01' : 'PLAYER 01',
-    p2: m.demoActive ? 'CPU 02' : m.cpuPresent ? 'CPU' : 'PLAYER 02',
-    matchStatus: `${playback ? 'REPLAY' : m.trainingCpu ? 'TRAINING · CPU · ' + level : game.training.enabled ? 'TRAINING' : m.demoActive ? 'DEMO · ' + demoLevels : m.cpuActive ? 'VS CPU · ' + level : 'LOCAL VERSUS'} · ${rules.hz} HZ`,
+    p1: m.demoActive && !s ? 'CPU 01' : 'PLAYER 01',
+    p2: s ? t('survival.enemies', { count: s.enemies }) : m.demoActive ? 'CPU 02' : m.cpuPresent ? 'CPU' : 'PLAYER 02',
+    matchStatus: `${s ? 'SURVIVAL' : playback ? 'REPLAY' : m.trainingCpu ? 'TRAINING · CPU · ' + level : game.training.enabled ? 'TRAINING' : m.demoActive ? 'DEMO · ' + demoLevels : m.cpuActive ? 'VS CPU · ' + level : 'LOCAL VERSUS'} · ${rules.hz} HZ`,
     cpuDebug: m.demoActive ? c.cpuDebug.map((intent, i) => describeIntent(i + 1, intent)).join('\n') : m.cpuPresent ? describeIntent(2, c.cpuDebug[1]) : '',
-    arenaMode: playback ? `REPLAY / ${playback.index} : ${playback.total}`
+    arenaMode: s ? `${c.stageCaption} / ${t('survival.mode', { kills: s.kills })}` : playback ? `REPLAY / ${playback.index} : ${playback.total}`
       : c.recordingFrames !== null ? `REC / ${c.recordingFrames} FRAMES`
       : m.trainingCpu ? `TRAINING / CPU · ${level}`
       : game.training.enabled ? `TRAINING / ${dummyName(game.training.dummy).toUpperCase()}`
       : m.demoActive ? `${c.stageCaption} / CPU-DEMO · ${demoLevels}`
       : m.cpuActive ? `${c.stageCaption} / VS CPU · ${level}`
       : `${c.stageCaption} / LOCAL 1V1`,
-    timer: game.training.enabled ? '∞' : String(Math.ceil(game.round.timer / rules.hz)).padStart(2, '0'),
-    round: game.training.enabled ? 'TRAINING' : `ROUND ${String(game.round.number).padStart(2, '0')}`,
+    timer: s ? s.time : game.training.enabled ? '∞' : String(Math.ceil(game.round.timer / rules.hz)).padStart(2, '0'),
+    round: s ? t('survival.round', { time: s.best }) : game.training.enabled ? 'TRAINING' : `ROUND ${String(game.round.number).padStart(2, '0')}`,
     dummy: `Dummy: ${dummyName(game.training.dummy)} · F5`,
   };
 }
@@ -118,10 +122,15 @@ export class Hud {
     this.text('auto-block', t(autoBlock ? 'autoBlock.on' : 'autoBlock.off'));
     this.attr('auto-block', 'title', t(autoBlock ? 'autoBlock.disable' : 'autoBlock.enable'));
     this.attr('auto-block', 'aria-pressed', String(autoBlock));
-    this.flag('cpu', 'disabled', game.training.enabled || !!playback);
-    this.flag('demo', 'disabled', game.training.enabled || !!playback);
-    this.flag('cpu-level-0', 'disabled', !!playback || game.training.enabled);
-    this.flag('cpu-level', 'disabled', !!playback || (game.training.enabled && !m.trainingCpu));
+    const survival = !!c.survival;
+    this.flag('cpu', 'disabled', game.training.enabled || !!playback || survival);
+    this.flag('demo', 'disabled', game.training.enabled || !!playback || survival);
+    this.flag('cpu-level-0', 'disabled', !!playback || game.training.enabled || survival);
+    this.flag('cpu-level', 'disabled', !!playback || (game.training.enabled && !m.trainingCpu) || survival);
+    this.flag('training', 'disabled', survival);
+    this.flag('record', 'disabled', survival);
+    this.flag('survival', 'disabled', game.training.enabled || !!playback);
+    this.attr('survival', 'aria-pressed', String(survival));
     this.attr('cpu', 'aria-pressed', String(m.cpuActive || m.trainingCpu));
     this.attr('demo', 'aria-pressed', String(m.demoActive));
     this.text('cpu', labels.cpuButton);
@@ -141,7 +150,7 @@ export class Hud {
     this.text('dummy', labels.dummy);
     this.text('record', t(c.recordingFrames !== null ? 'button.stopRecord' : 'button.record'));
     this.attr('record', 'aria-pressed', String(c.recordingFrames !== null));
-    this.flag('play', 'disabled', !playback && !c.replayFrames && !c.recordingFrames);
+    this.flag('play', 'disabled', survival || (!playback && !c.replayFrames && !c.recordingFrames));
     this.text('play', t(playback ? 'button.leaveReplay' : 'button.replay'));
     this.flag('export-replay', 'disabled', !(c.recordingFrames ?? c.replayFrames));
     this.flag('debug', 'hidden', !c.show.states);
@@ -163,10 +172,11 @@ export class Hud {
         if (full && effects && events !== undefined && seen !== undefined && events > seen) this.flash(track);
         else if (!full || !effects) this.toggle(track, 'resource-flash', false);
       }
-      this.text(`hp-${f.id}`, `${f.hp} / ${rules.maxHealth}`);
-      this.width(`health-${f.id}`, f.hp / rules.maxHealth * 100);
+      const maxHp = c.survival ? f.id === 0 ? c.survival.playerMaxHp : c.survival.enemyMaxHp : rules.maxHealth;
+      this.text(`hp-${f.id}`, `${f.hp} / ${maxHp}`);
+      this.width(`health-${f.id}`, f.hp / maxHp * 100);
       if (this.changed(`health-${f.id}|now`, String(f.hp))) this.el(`health-${f.id}`).parentElement!.setAttribute('aria-valuenow', String(f.hp));
-      this.html(`wins-${f.id}`, Array.from({ length: rules.winsRequired }, (_, i) => `<span class="${game.round.wins[f.id] > i ? 'won' : ''}"></span>`).join(''));
+      this.html(`wins-${f.id}`, c.survival ? '' : Array.from({ length: rules.winsRequired }, (_, i) => `<span class="${game.round.wins[f.id] > i ? 'won' : ''}"></span>`).join(''));
       // Smoke tests and screen readers read these even while the panel is hidden.
       this.text(`state-${f.id}`, `${stateLine(f)}\n${t('state.inputFrame')} ${game.frame} · ${t('state.combatFrame')} ${game.combatFrame} · Hitstop ${game.hitstop}f`);
       if (c.show.inputs) this.text(`input-${f.id}`, inputLines(f));

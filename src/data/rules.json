@@ -54,5 +54,13 @@
       "gainPerBlock": 1
     }
   },
-  "hitSlideFriction": 128
+  "hitSlideFriction": 128,
+  "hitStrength": {
+    "defaultStability": 150,
+    "overrides": {
+      "middle_high_punch_combo:punch": 200
+    },
+    "groundKnockdownVelocity": -1024,
+    "groundKnockdownSpeed": 384
+  }
 }
