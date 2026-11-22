@@ -1,5 +1,53 @@
 # Changelog – Stickman Fighter
 
+## 1.10.0 · 21.11.2026
+
+- App-Version (`package.json`) **1.9.1 → 1.10.0**, Replay-Engine-Version (`ENGINE_VERSION`) **1.8.0 → 1.9.0**: Die zwei neuen Kombos ändern Moves, Posen und Kontaktgeometrie und damit den Replay-Datenhash. Ältere Replays werden eindeutig abgewiesen.
+- Die Treffereffekte sind rein präsentational und ändern weder Datenhash noch Engine-Version.
+
+## 2026-11-21 · Zwei neue Kombos: Jab → High Kick und Middle Kick → Körperhaken
+
+### Neu
+- **`punch_kick_combo` (vorwärts 6 + MP + RHK, P1 T + N, P2 Num8 + Num3):** mittlerer Jab, Körperdrehung zurück auf 0, Guard-Übergang mit abhebender Ferse, rechter High Kick auf stehendem linkem Fuß. 34 Frames (8 / 15 / 11), Treffer `punch` 55 MID (Frame 8–10), `kick` 95 HIGH (Frame 20–22), zusammen 150. Basis sind die Posen `standing_mp_*` und `standing_rhk_*`; der Jab ist um 5° tiefer angesetzt, damit der MID-Treffer auch eine hockende Deckung erreicht.
+- **`kick_punch_combo` (zurück 4 + MK + HP, P1 B + Y, P2 Num2 + Num9):** rechter Middle Kick, das Standbein bleibt bis zur Landung exakt am Boden, dann ein Ausfallschritt mit Körperhaken und eigener Körperdrehung. 47 Frames (17 / 16 / 14), Treffer `kick` 65 MID (Frame 17–19), `punch` 85 MID (Frame 30–32), zusammen 150. Basis sind `standing_mk_*` und `standing_hp_*`; der Haken wird mit Arm und Rumpf auf Körperhöhe geneigt (MID).
+- **Akkordeingabe** über `CHORD_UPGRADES`: beide Tastenreihenfolgen, bis zu 3 Frames versetzt. Quellen sind die Einzel-Moves, die die Engine für die jeweilige Taste wirklich startet: 6+MP `standing_mp`, 6+RHK `standing_rhk`, 4+MK `spin_mk`, 4+HP `standing_hp`. Keine bestehende Eingabe wird verdrängt (6+HP bleibt `jumping_uppercut`, auch mit MK).
+- **Timing statt Stun-Werte:** Erster Treffer ohne Pushback, Stun-Werte unverändert von `standing_mp` bzw. `standing_mk` übernommen. Der zweite Treffer liegt 12 bzw. 13 Frames nach dem ersten und damit sicher im Hitstun (23 / 25) und Blockstun (16 / 18). Der Finisher schiebt wie bei den übrigen Kombos zurück (5632 / 4096). Hüftschub (Kick) bzw. Ausfallschritt (Haken) sorgen dafür, dass der zweite Treffer überall dort ankommt, wo der erste trifft.
+- Generatoren `generate:punch-kick` und `generate:kick-punch` (Basis `scripts/kicks/generate.mjs`), beide mit `--check` in `npm run check`. Hit-Gruppen, Trails, Strike-Boxen, Posenkontakt (`pose-contact-moves.ts`) und Kontaktgeometrie neu erzeugt.
+- Kombo-Liste (EN/DE), Animationsvorschau, Hit-/Swing-Sounds (`classifyHit`: Gruppe `kick` klingt immer nach Tritt), CPU-Wissen (automatisch über `KNOWLEDGE`).
+- Tests `punch-kick-combos.test.ts` (22 Fälle): Akkord in beiden Reihenfolgen und im 3-Frame-Fenster ohne Wiederholung, Einzel-Moves erhalten, falsche Richtung/neutral/Hocke/späte Akkorde lösen nichts aus, beide Treffer genau einmal und in Reihenfolge bei 30–75 px in beiden Blickrichtungen inklusive Replay, durchgehender Blockstun bis zum zweiten Treffer, feste Knochenlängen, kein Bodendurchdringen, Start- und Endpose = Idle, geerdetes Standbein. Smoke `smoke:punch-kick-combos`.
+
+### Geändert
+- **Move-Tabelle in beiden READMEs:** `generate:move-table` schreibt die Tabelle jetzt auf Englisch in `README.md` und auf Deutsch in `README.de.md` (aufklappbarer Abschnitt „Move list“ / „Moveliste“). README: 35 Angriffe.
+- `combat.test.ts`: 14 statt 12 Hold-Angriffe. `hit-sound.test.ts`: Regel für Gruppe `kick` ergänzt.
+
+### Behoben
+- **`npm run generate:move-table -- --check` scheiterte seit `e1b4677`** mit `README.md: move-table markers missing`, weil die Marker nie in der README standen. Marker in beiden READMEs ergänzt.
+
+### Hinweis
+- MID muss in diesem Spiel hockend, HIGH stehend geblockt werden. Wer den Jab von `punch_kick_combo` hockend blockt und hocken bleibt, duckt den High Kick ab. Wer auf Stehblock wechselt, blockt beide; stehen ohne Block kassiert beide.
+
+## 2026-11-21 · Treffereffekte: Funken, Shake, Staub, Kombo-Zähler
+
+Rein präsentational: `src/render/effects.ts` (`HitEffects`) leitet alles aus `hitTargets`, `lastContact`, Positionen und Zuständen zweier aufeinanderfolgender Spielstände ab und schreibt nie in den `GameState`. Simulation, Snapshots, Replays, `DATA_HASH` und `ENGINE_VERSION` sind unberührt.
+
+### Neu
+- **Hit-Sparks** am Trefferpunkt (Spitze des treffenden Glieds, auf die Gegnerfront begrenzt): Linienburst plus Funkenstern mit Arena-Halo. Größe und Anzahl folgen Schaden und HitLevel (LOW < MID < HIGH); Schläge bilden einen kompakten Stern, Tritte einen längeren Fächer. Schwere und HIGH-Treffer bekommen zusätzliche Akzentstriche. Geblockte Treffer: kleiner, weniger Strahlen, gedämpfte Farbe, Block-Bogen.
+- **Screen-Shake** bei schweren Treffern ab 45 Schaden, mit dem Schaden skaliert und auf 8 px begrenzt. Dazu bei Knockdown-Landung und K.o. Beim Block nur 15 %. Exponentielles Abklingen (×0,8 pro Schritt), deterministisch.
+- **Staub und Bodenreaktionen:** Staubwölkchen bei Landung, Knockdown und Rutschen nach Treffer oder Block.
+- **Kombo-Zähler** („2 HITS“ / „2 TREFFER“ samt Kombo-Schaden) mit Pop und Fade, in Spielerfarbe mit Halo. Endet, sobald der Gegner wieder handeln kann; zählt Mehrfachtreffer-Kombos korrekt mit (Tornado 2, Middle-High-Punch 5).
+- **Zusätzlich:** Speed-Lines hinter Dreh- und Tornado-Angriffen und im Sprung, K.-o.-Aufblitzen mit leichtem Zoom auf den Getroffenen, Impact-Ring beim Landen.
+- **Einstellungen:** Schalter „Effekte“ und „Screen-Shake“ (Shake samt K.-o.-Zoom) im Settings-Panel, EN/DE, gespeichert unter `stickman.effects` und `stickman.shake` (`on`/`off`). Ohne gespeicherte Wahl schaltet `prefers-reduced-motion` Shake und Zoom aus.
+- **Zeitbasis:** ein Schritt pro Simulationsschritt, im Hitstop weiterlaufend, mit der K.-o.-Zeitlupe verlangsamt. Bei Pause und Einzelschritt steht alles still (neue Treffer erscheinen trotzdem); im Pausenbild wird kein Shake angewendet. Reset bei Neustart, Rundenwechsel, Replay-Start und Replay-Ende.
+- **Technik:** eigener geseedeter Zufall (mulberry32), Partikelpool mit hartem Limit von 192 (Typed Arrays, ältester wird recycelt), keine Allokation pro Frame. Kamera mit leichtem Overscan im logischen 960×420-Raum, also unabhängig von der `fitCanvas`-Skalierung. Gemessen (Chrome headless, 3×-Canvas): 0,73 statt 0,71 ms pro Renderaufruf.
+- Tests `effects.test.ts` (23 Fälle): Spawn-Regeln je HitLevel/Treffertyp/Block, deterministisches Shake-Abklingen, Begrenzung, Partikellimit, Reset, Pause, Reduced-Motion-Standard, Speicherung, Kombo-Zähler an echten Kombos, keine Zustandsänderung. Smoke `smoke:effects` (Schalter, Persistenz, Reduced Motion, Sichtbarkeit in Dark/Light auf allen drei Arenen).
+
+### Prüfstand nach beiden Einträgen
+- Typecheck (App und Skripte), **837 Tests in 49 Dateien**, alle Generatorprüfungen und Produktionsbuild grün.
+- `npm run check` bricht dennoch beim Lint-Schritt ab: `biome lint` meldet schon auf dem unveränderten Stand 672 Fehler (keine `biome.json`, unter anderem wird `dist/` mitgeprüft). Die neuen Dateien sind lint-frei, die übrigen Schritte liefen einzeln.
+- Browser-Smokes (Chrome) grün: alle außer `rotation`, der schon vorher scheiterte (siehe 30.09.).
+
+---
+
 ## 1.6.0 · 30.09.2026
 
 - Spiel- und Replay-Engine-Version auf **1.6.0** angehoben.
