@@ -2,7 +2,7 @@
 
 ![Gameplay-Demo](https://github.com/sinusphi/stickman-fighter/blob/main/pics/demo.gif)
 
-[![Version](https://img.shields.io/badge/version-1.11.0-2563eb)](package.json)
+[![Version](https://img.shields.io/badge/version-1.12.0-2563eb)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev/)
@@ -23,6 +23,7 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 - 35 standing, crouching, airborne, spin, tornado, and combo attacks, plus two throws (hip throw and shoulder throw with side switch)
 - Blocking, jumping, best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
 - Hit effects: sparks, screen shake, dust, speed lines, KO flash, and a combo counter (switchable in the settings)
+- Survival mode: endless enemies from both sides, the survived time is the score
 - Training mode, hitbox display, frame stepping, and animation preview
 - Deterministic replay recording, import, and export
 - Configurable keyboard and gamepad controls
@@ -59,6 +60,17 @@ Open the address shown in the terminal, usually <http://127.0.0.1:5173>.
 Directions are relative to the opponent: **6** forward, **4** back, **2** crouch, and **7/8/9** jump. 
 Throws: **6 + Throw** hip throw, **4 + Throw** shoulder throw (the opponent lands behind you). They only grab a standing or crouching opponent within arm's reach, cannot be blocked, and a missed grab has a long recovery. Numpad 0 is the code `Numpad0` (the "0 / Ins" key, regardless of NumLock), not the separate Insert key. 
 Use **Backspace** to restart a match. Controls can be reassigned in the game.
+
+
+## Survival mode
+
+Press **F10** (or the Survival button) to start, F10 again returns to versus. Player 1 starts in the middle of the arena while enemies keep walking in from the left and the right. The run only ends when your energy is empty; the survived time is the score, and the best time is kept in the browser. **Backspace** starts a new run.
+
+- Your facing stays fixed: walking backwards does not turn you around. **Double-tap backwards** to turn (a short turn animation; no attacks meanwhile). A single back press can still open a command move.
+- Only a few enemies in front of you attack at the same time, the others lurk at a distance. Enemies behind you rarely attack, and every attack from behind is announced: the attacker flashes and shows a **!**. Attacks into your back cannot be blocked.
+- The finisher of the five-hit combo knocks the opponent down in every mode; in survival, other heavy hits also knock the basic enemy down.
+
+All survival tuning values (enemy count, attack tokens, back budget, cooldowns, thresholds, turn time) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
 
 
 ## Move list
@@ -129,6 +141,7 @@ Use **Backspace** to restart a match. Controls can be reassigned in the game.
 ## Project structure
 
 - `src/simulation/` — deterministic combat and match logic
+- `src/survival/` — survival mode: simulation, director, enemy control and its configuration
 - `src/render/` — Canvas rendering and animation
 - `src/data/` — moves, poses, rules, and configuration
 - `tests/` — unit and integration tests

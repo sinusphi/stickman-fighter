@@ -2,7 +2,7 @@
 
 ![Gameplay-Demo](https://github.com/sinusphi/stickman-fighter/blob/main/pics/demo.gif)
 
-[![Version](https://img.shields.io/badge/version-1.11.0-2563eb)](package.json)
+[![Version](https://img.shields.io/badge/version-1.12.0-2563eb)](package.json)
 [![Node.js](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)](https://vite.dev/)
@@ -22,6 +22,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - 35 Angriffe im Stand, in der Hocke und in der Luft sowie Dreh-, Tornado- und Komboangriffe, dazu zwei Würfe (Hüftwurf und Schulterwurf mit Seitenwechsel)
 - Blocken, Springen, Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
 - Treffereffekte: Funken, Screen-Shake, Staub, Speed-Lines, K.-o.-Blitz und Kombo-Zähler (in den Einstellungen abschaltbar)
+- Survival-Modus: endlos Gegner von beiden Seiten, die überlebte Zeit ist der Highscore
 - Trainingsmodus, Kampfboxanzeige, Einzelschritt und Animationsvorschau
 - Deterministische Replay-Aufnahme sowie Import und Export
 - Konfigurierbare Tastatur- und Gamepad-Steuerung
@@ -56,6 +57,17 @@ Anschließend die im Terminal angezeigte Adresse öffnen, normalerweise <http://
 | Pause | P | P | — |
 
 Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hocken und **7/8/9** springen. Würfe: **6 + Wurf** Hüftwurf, **4 + Wurf** Schulterwurf (der Gegner landet hinter dir). Sie greifen nur einen stehenden oder hockenden Gegner in Armreichweite, sind nicht blockbar, und ein Fehlgriff hat eine lange Recovery. Numpad 0 ist der Code `Numpad0` (die Taste „0 / Einfg“, unabhängig von NumLock), nicht die separate Einfg-Taste. Mit **Backspace** wird ein Match neu gestartet. Die Belegung kann im Spiel geändert werden.
+
+
+## Survival-Modus
+
+**F10** (oder der Survival-Button) startet den Modus, erneut F10 führt zurück in den Versus. Spieler 1 startet in der Mitte der Arena, von links und rechts laufen immer wieder Gegner herein. Der Lauf endet erst, wenn deine Energie leer ist; die überlebte Zeit ist der Highscore, die Bestzeit merkt sich der Browser. **Backspace** startet einen neuen Lauf.
+
+- Deine Blickrichtung bleibt fest: Rückwärtslaufen dreht dich nicht um. **Doppeltipp nach hinten** dreht dich um (kurze Drehanimation, währenddessen kein Angriff). Ein einzelner Druck nach hinten kann weiterhin einen Command-Move einleiten.
+- Nur wenige Gegner vor dir greifen gleichzeitig an, die anderen lauern auf Abstand. Gegner im Rücken greifen selten an, und jeder Angriff von hinten wird angekündigt: Der Angreifer blinkt und zeigt ein **!**. Angriffe in den Rücken lassen sich nicht blocken.
+- Der Finisher der Fünfer-Combo wirft den Gegner in allen Modi um; im Survival werfen auch andere schwere Treffer den Basisgegner um.
+
+Alle Survival-Werte (Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Schwellwerte, Drehzeit) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
 
 
 ## Moveliste
@@ -126,6 +138,7 @@ Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hock
 ## Projektstruktur
 
 - `src/simulation/` — deterministische Kampf- und Matchlogik
+- `src/survival/` — Survival-Modus: Simulation, Director, Gegnersteuerung und Konfiguration
 - `src/render/` — Canvas-Darstellung und Animationen
 - `src/data/` — Moves, Posen, Regeln und Konfiguration
 - `tests/` — Unit- und Integrationstests
