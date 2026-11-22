@@ -32,7 +32,8 @@
     "LMK",
     "LP",
     "LK",
-    "RLK"
+    "RLK",
+    "THROW"
   ],
   "damageScaleUnit": 1000,
   "maxReplayFrames": 108000,
@@ -43,12 +44,14 @@
     "revenge": {
       "current": 0,
       "max": 100,
-      "gainPerHit": 10
+      "gainPerHit": 25,
+      "gainPerBlock": 0
     },
     "special": {
       "current": 0,
       "max": 100,
-      "gainPerHit": 10
+      "gainPerHit": 7,
+      "gainPerBlock": 1
     }
   },
   "hitSlideFriction": 128

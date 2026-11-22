@@ -48958,5 +48958,571 @@
         }
       }
     ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "throw_forward",
+    "stance": "standing",
+    "button": "THROW",
+    "command": {
+      "type": "hold",
+      "directions": [
+        6
+      ],
+      "buttons": [
+        "THROW"
+      ],
+      "trigger": "pressed",
+      "priority": 10
+    },
+    "animation": "throw_forward",
+    "startup": 4,
+    "active": 1,
+    "recovery": 22,
+    "damage": 0,
+    "hitLevel": "MID",
+    "hitstun": 0,
+    "blockstun": 0,
+    "pushbackHit": 0,
+    "pushbackBlock": 0,
+    "hitstop": 6,
+    "airHitReaction": "knockdown",
+    "multiHit": false,
+    "hitGroups": [
+      {
+        "id": "throw",
+        "maxHitsPerTarget": 1
+      }
+    ],
+    "cancelWindows": [],
+    "combo": {
+      "scalingPermille": 1000,
+      "juggleCost": 0,
+      "juggleLimit": 0
+    },
+    "throw": {
+      "phase": "attempt",
+      "range": 7424,
+      "execute": "throw_forward_exec"
+    },
+    "frameRanges": [
+      {
+        "from": 0,
+        "to": 26,
+        "hitboxes": [],
+        "hurtboxes": [
+          {
+            "x": -3072,
+            "y": -23040,
+            "width": 6144,
+            "height": 6144
+          },
+          {
+            "x": -4608,
+            "y": -16896,
+            "width": 9216,
+            "height": 16896
+          }
+        ],
+        "pushbox": {
+          "x": -4096,
+          "y": -21504,
+          "width": 8192,
+          "height": 21504
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "throw_forward_exec",
+    "stance": "standing",
+    "button": "THROW",
+    "command": {
+      "type": "hold",
+      "directions": [
+        6
+      ],
+      "buttons": [
+        "THROW"
+      ],
+      "trigger": "pressed",
+      "priority": 10
+    },
+    "animation": "throw_forward_exec",
+    "startup": 20,
+    "active": 1,
+    "recovery": 19,
+    "damage": 110,
+    "hitLevel": "MID",
+    "hitstun": 0,
+    "blockstun": 0,
+    "pushbackHit": 0,
+    "pushbackBlock": 0,
+    "hitstop": 12,
+    "airHitReaction": "knockdown",
+    "multiHit": false,
+    "hitGroups": [
+      {
+        "id": "throw",
+        "maxHitsPerTarget": 1
+      }
+    ],
+    "cancelWindows": [],
+    "combo": {
+      "scalingPermille": 1000,
+      "juggleCost": 0,
+      "juggleLimit": 0
+    },
+    "throw": {
+      "phase": "execute",
+      "impactFrame": 20,
+      "releaseFrame": 12,
+      "victimAnimation": "throw_forward_victim",
+      "path": [
+        [
+          14216,
+          0
+        ],
+        [
+          14270,
+          0
+        ],
+        [
+          14311,
+          0
+        ],
+        [
+          14269,
+          0
+        ],
+        [
+          14856,
+          0
+        ],
+        [
+          15679,
+          -2033
+        ],
+        [
+          15665,
+          -4762
+        ],
+        [
+          16314,
+          -8943
+        ],
+        [
+          17748,
+          -17868
+        ],
+        [
+          17412,
+          -20807
+        ],
+        [
+          14545,
+          -19876
+        ],
+        [
+          12187,
+          -16098
+        ],
+        [
+          8993,
+          -10152
+        ],
+        [
+          9740,
+          -11630
+        ],
+        [
+          10771,
+          -14779
+        ],
+        [
+          11945,
+          -16209
+        ],
+        [
+          13222,
+          -17299
+        ],
+        [
+          14583,
+          -17427
+        ],
+        [
+          16013,
+          -15746
+        ],
+        [
+          17505,
+          -10927
+        ],
+        [
+          19052,
+          0
+        ]
+      ]
+    },
+    "frameRanges": [
+      {
+        "from": 0,
+        "to": 39,
+        "hitboxes": [],
+        "hurtboxes": [
+          {
+            "x": -3072,
+            "y": -23040,
+            "width": 6144,
+            "height": 6144
+          },
+          {
+            "x": -4608,
+            "y": -16896,
+            "width": 9216,
+            "height": 16896
+          }
+        ],
+        "pushbox": {
+          "x": -4096,
+          "y": -21504,
+          "width": 8192,
+          "height": 21504
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "throw_back",
+    "stance": "standing",
+    "button": "THROW",
+    "command": {
+      "type": "hold",
+      "directions": [
+        4
+      ],
+      "buttons": [
+        "THROW"
+      ],
+      "trigger": "pressed",
+      "priority": 10
+    },
+    "animation": "throw_back",
+    "startup": 4,
+    "active": 1,
+    "recovery": 22,
+    "damage": 0,
+    "hitLevel": "MID",
+    "hitstun": 0,
+    "blockstun": 0,
+    "pushbackHit": 0,
+    "pushbackBlock": 0,
+    "hitstop": 6,
+    "airHitReaction": "knockdown",
+    "multiHit": false,
+    "hitGroups": [
+      {
+        "id": "throw",
+        "maxHitsPerTarget": 1
+      }
+    ],
+    "cancelWindows": [],
+    "combo": {
+      "scalingPermille": 1000,
+      "juggleCost": 0,
+      "juggleLimit": 0
+    },
+    "throw": {
+      "phase": "attempt",
+      "range": 7424,
+      "execute": "throw_back_exec"
+    },
+    "frameRanges": [
+      {
+        "from": 0,
+        "to": 26,
+        "hitboxes": [],
+        "hurtboxes": [
+          {
+            "x": -3072,
+            "y": -23040,
+            "width": 6144,
+            "height": 6144
+          },
+          {
+            "x": -4608,
+            "y": -16896,
+            "width": 9216,
+            "height": 16896
+          }
+        ],
+        "pushbox": {
+          "x": -4096,
+          "y": -21504,
+          "width": 8192,
+          "height": 21504
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "throw_back_exec",
+    "stance": "standing",
+    "button": "THROW",
+    "command": {
+      "type": "hold",
+      "directions": [
+        4
+      ],
+      "buttons": [
+        "THROW"
+      ],
+      "trigger": "pressed",
+      "priority": 10
+    },
+    "animation": "throw_back_exec",
+    "startup": 26,
+    "active": 1,
+    "recovery": 19,
+    "damage": 130,
+    "hitLevel": "MID",
+    "hitstun": 0,
+    "blockstun": 0,
+    "pushbackHit": 0,
+    "pushbackBlock": 0,
+    "hitstop": 12,
+    "airHitReaction": "knockdown",
+    "multiHit": false,
+    "hitGroups": [
+      {
+        "id": "throw",
+        "maxHitsPerTarget": 1
+      }
+    ],
+    "cancelWindows": [],
+    "combo": {
+      "scalingPermille": 1000,
+      "juggleCost": 0,
+      "juggleLimit": 0
+    },
+    "throw": {
+      "phase": "execute",
+      "impactFrame": 26,
+      "releaseFrame": 16,
+      "victimAnimation": "throw_back_victim",
+      "path": [
+        [
+          14216,
+          0
+        ],
+        [
+          14319,
+          0
+        ],
+        [
+          14197,
+          0
+        ],
+        [
+          13311,
+          0
+        ],
+        [
+          11674,
+          0
+        ],
+        [
+          10030,
+          0
+        ],
+        [
+          8443,
+          0
+        ],
+        [
+          6477,
+          -980
+        ],
+        [
+          4003,
+          -5103
+        ],
+        [
+          816,
+          -10675
+        ],
+        [
+          -2486,
+          -20811
+        ],
+        [
+          -4315,
+          -27356
+        ],
+        [
+          -3102,
+          -23093
+        ],
+        [
+          1030,
+          -23178
+        ],
+        [
+          5071,
+          -25891
+        ],
+        [
+          6522,
+          -26308
+        ],
+        [
+          6094,
+          -26355
+        ],
+        [
+          4715,
+          -28544
+        ],
+        [
+          2815,
+          -27738
+        ],
+        [
+          652,
+          -26694
+        ],
+        [
+          -1703,
+          -25729
+        ],
+        [
+          -4212,
+          -24652
+        ],
+        [
+          -6849,
+          -23157
+        ],
+        [
+          -9600,
+          -20787
+        ],
+        [
+          -12451,
+          -17005
+        ],
+        [
+          -15392,
+          -10494
+        ],
+        [
+          -18417,
+          0
+        ]
+      ]
+    },
+    "frameRanges": [
+      {
+        "from": 0,
+        "to": 45,
+        "hitboxes": [],
+        "hurtboxes": [
+          {
+            "x": -3072,
+            "y": -23040,
+            "width": 6144,
+            "height": 6144
+          },
+          {
+            "x": -4608,
+            "y": -16896,
+            "width": 9216,
+            "height": 16896
+          }
+        ],
+        "pushbox": {
+          "x": -4096,
+          "y": -21504,
+          "width": 8192,
+          "height": 21504
+        }
+      }
+    ]
+  },
+  {
+    "schemaVersion": 1,
+    "id": "throw_break",
+    "stance": "standing",
+    "button": "THROW",
+    "command": {
+      "type": "hold",
+      "directions": [
+        6
+      ],
+      "buttons": [
+        "THROW"
+      ],
+      "trigger": "pressed",
+      "priority": 10
+    },
+    "animation": "throw_break",
+    "startup": 1,
+    "active": 1,
+    "recovery": 12,
+    "damage": 0,
+    "hitLevel": "MID",
+    "hitstun": 0,
+    "blockstun": 0,
+    "pushbackHit": 3584,
+    "pushbackBlock": 0,
+    "hitstop": 6,
+    "airHitReaction": "knockdown",
+    "multiHit": false,
+    "hitGroups": [
+      {
+        "id": "throw",
+        "maxHitsPerTarget": 1
+      }
+    ],
+    "cancelWindows": [],
+    "combo": {
+      "scalingPermille": 1000,
+      "juggleCost": 0,
+      "juggleLimit": 0
+    },
+    "throw": {
+      "phase": "break"
+    },
+    "frameRanges": [
+      {
+        "from": 0,
+        "to": 13,
+        "hitboxes": [],
+        "hurtboxes": [
+          {
+            "x": -3072,
+            "y": -23040,
+            "width": 6144,
+            "height": 6144
+          },
+          {
+            "x": -4608,
+            "y": -16896,
+            "width": 9216,
+            "height": 16896
+          }
+        ],
+        "pushbox": {
+          "x": -4096,
+          "y": -21504,
+          "width": 8192,
+          "height": 21504
+        }
+      }
+    ]
   }
 ]

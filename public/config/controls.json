@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "socd": {
     "horizontal": "neutral",
     "vertical": "positive"
@@ -23,7 +23,8 @@
         "HK": "KeyH",
         "RLK": "KeyV",
         "RHK": "KeyN",
-        "LMK": "KeyG"
+        "LMK": "KeyG",
+        "THROW": "KeyC"
       },
       "gamepadIndex": null,
       "padButtons": {
@@ -35,7 +36,8 @@
         "HK": 7,
         "RLK": -1,
         "LMK": -1,
-        "RHK": -1
+        "RHK": -1,
+        "THROW": 4
       },
       "padDirections": {
         "up": 12,
@@ -62,7 +64,8 @@
         "HK": "Numpad6",
         "RLK": "Numpad1",
         "RHK": "Numpad3",
-        "LMK": "Numpad5"
+        "LMK": "Numpad5",
+        "THROW": "Numpad0"
       },
       "gamepadIndex": null,
       "padButtons": {
@@ -74,7 +77,8 @@
         "HK": 7,
         "RLK": -1,
         "LMK": -1,
-        "RHK": -1
+        "RHK": -1,
+        "THROW": 4
       },
       "padDirections": {
         "up": 12,
