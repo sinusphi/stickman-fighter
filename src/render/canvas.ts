@@ -11,18 +11,23 @@ import { drawKneeImpact, drawKneeSwoosh, kneeImpact } from './impact';
 import type { HitLevel } from '../data/schema';
 import type { Palette } from '../platform/theme';
 import { RELAX_FRAMES } from './feedback';
+import type { HitEffects } from './effects';
 import { t } from '../platform/i18n';
 import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type StageId } from './stages';
 export { samplePose } from './skeleton';
 
 const ground = STAGE_VIEW.ground;
 
-export function render(canvas: HTMLCanvasElement, game: GameState, previous: GameState, alpha: number, paused: boolean, boxes: boolean, palette: Palette, hitLevels: (HitLevel | undefined)[] = [], koFrames?: number[], stage: StageId = DEFAULT_STAGE, demo = false, relaxFrames?: number[]): void {
+export function render(canvas: HTMLCanvasElement, game: GameState, previous: GameState, alpha: number, paused: boolean, boxes: boolean, palette: Palette, hitLevels: (HitLevel | undefined)[] = [], koFrames?: number[], stage: StageId = DEFAULT_STAGE, demo = false, relaxFrames?: number[], effects?: HitEffects): void {
   const ctx = canvas.getContext('2d')!;
   // The backing store may be larger than 960x420 (see fitCanvas); all drawing stays in logical units.
   const scale=(canvas.width||960)/960;
   if(scale!==1)ctx.setTransform(scale,0,0,scale,0,0);
   ctx.clearRect(0, 0, 960, 420);
+  // Presentation-only camera: shake offset and KO zoom around the stage and fighters.
+  const camera=effects?.camera(paused);
+  if(camera){ctx.save();ctx.translate(camera.cx+camera.x,camera.cy+camera.y);ctx.scale(camera.zoom,camera.zoom);ctx.translate(-camera.cx,-camera.cy);}
+  const effectAlpha=paused?0:alpha;
   const impact=game.hitstop>0?game.lastContact?.poses:undefined;
   const displayFighters=game.fighters.map((f,i)=>impact?{...f,...impact[i]}:f);
   const poseLevels=impact?impact.map(p=>p.hitLevel):hitLevels;
@@ -46,6 +51,7 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     const facing=f.state==='Attack'?f.attackFacing:f.facing;
     return {f,x,y,koTime,pose,facing};
   });
+  effects?.drawBehind(ctx,game,previous,effectAlpha,palette);
   // Contact shadows first, so neither shadow covers the other fighter's feet.
   for (const {x,y,pose,facing} of drawOrder) {
     const xs=Object.values(pose).map(p=>p[0]*facing*FIGURE_SCALE),bottom=Math.max(...Object.values(pose).map(p=>p[1]))*FIGURE_SCALE;
@@ -85,6 +91,7 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     drawKneeImpact(ctx,facePoint(pose[knee.joint],facing),knee,palette);
     ctx.restore();
   }
+  effects?.drawWorld(ctx,effectAlpha,palette);
   // Debug geometry stays above both silhouettes, including close-range overlaps.
   if (boxes) for (const f of displayFighters) {
     const body = localBoxes(f);
@@ -106,6 +113,8 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     paint(body.pushbox,palette.push,'PUSH');
     body.hitboxes.forEach(b => paint(b,palette.hit,'HIT'));
   }
+  if(camera)ctx.restore();
+  effects?.drawOverlay(ctx,palette);
   // Overlay text keeps an arena-coloured halo so it stays readable on every stage.
   const banner=(text: string,y: number,font: string,halo: number)=>{
     ctx.font=font;ctx.lineJoin='round';ctx.strokeStyle=palette.arena;ctx.lineWidth=halo;ctx.strokeText(text,480,y);

@@ -51,6 +51,10 @@ export const CHORD_UPGRADES: readonly ChordUpgrade[] = [
   { sources: { left_turn_kick: 'LK', standing_lmk: 'LMK' }, direction: 4, target: 'double_high_kick', travel: 'catchUpTarget' },
   // Forward MK+HK.
   { sources: { tornado_mk: 'MK', spin_hk: 'HK' }, direction: 6, target: 'tornado_spin_combo', travel: 'none' },
+  // Forward T+N. Remove the single right high kick’s startup advance.
+  { sources: { standing_mp: 'MP', standing_rhk: 'RHK' }, direction: 6, target: 'punch_kick_combo', travel: 'undoSource' },
+  // Back B+Y. Neither single (spin_mk, standing_hp) nor the chord travels.
+  { sources: { spin_mk: 'MK', standing_hp: 'HP' }, direction: 4, target: 'kick_punch_combo', travel: 'none' },
 ];
 const advanceOffset = (moveId: string, frame: number): number => advanceAt(MOVES[moveId].advance, frame);
 function chordCompleted(f: Fighter, first: Button, second: Button, direction: Direction): boolean {

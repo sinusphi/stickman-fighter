@@ -16,7 +16,7 @@ it('describes every move and hit group with a valid, damage-based sound', () => 
     expect(['normal', 'spin', 'uppercut']).toContain(sound.style);
     expect(sound.weight).toBeGreaterThanOrEqual(0); expect(sound.weight).toBeLessThanOrEqual(1);
     expect(Math.abs(sound.signature)).toBeLessThanOrEqual(1);
-    expect(sound.kind === 'punch').toBe((move.button.endsWith('P') || group.id === 'punch') && group.id !== 'knee');
+    expect(sound.kind === 'punch').toBe((move.button.endsWith('P') || group.id === 'punch') && group.id !== 'knee' && group.id !== 'kick');
     identities.add(sound.signature.toFixed(3)); groups++;
   }
   // Every technique keeps its own timbre, even with identical kind/strength/zone.

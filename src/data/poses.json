@@ -17681,6 +17681,1626 @@
         "rightKnee": 103.5,
         "rightFoot": 9.772430388406434
       }
+    },
+    "punch_kick_combo_0": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
+    },
+    "punch_kick_combo_1": {
+      "root": [
+        -0.156,
+        -47.1981
+      ],
+      "angles": {
+        "neck": -75.496,
+        "head": 19.544,
+        "leftShoulder": 132.8,
+        "rightShoulder": -157.2,
+        "leftElbow": 7.5035,
+        "leftHand": -115.4587,
+        "rightElbow": -36.1418,
+        "rightHand": -130.8803,
+        "leftKnee": 62.6135,
+        "leftFoot": 27.3728,
+        "rightKnee": 101.9233,
+        "rightFoot": 12.6406
+      }
+    },
+    "punch_kick_combo_2": {
+      "root": [
+        -0.528,
+        -46.9929
+      ],
+      "angles": {
+        "neck": -81.448,
+        "head": 16.072,
+        "leftShoulder": 137.6,
+        "rightShoulder": -152.4,
+        "leftElbow": 25.3159,
+        "leftHand": -122.1531,
+        "rightElbow": -26.0686,
+        "rightHand": -137.1117,
+        "leftKnee": 61.6083,
+        "leftFoot": 28.4137,
+        "rightKnee": 98.9173,
+        "rightFoot": 17.9819
+      }
+    },
+    "punch_kick_combo_3": {
+      "root": [
+        -0.972,
+        -46.6988
+      ],
+      "angles": {
+        "neck": -88.552,
+        "head": 11.928,
+        "leftShoulder": 142.4,
+        "rightShoulder": -147.6,
+        "leftElbow": 47.5049,
+        "leftHand": -129.6421,
+        "rightElbow": -11.8651,
+        "rightHand": -145.8008,
+        "leftKnee": 60.2224,
+        "leftFoot": 29.9933,
+        "rightKnee": 95.872,
+        "rightFoot": 23.2954
+      }
+    },
+    "punch_kick_combo_4": {
+      "root": [
+        -1.344,
+        -46.3548
+      ],
+      "angles": {
+        "neck": -94.504,
+        "head": 8.456,
+        "leftShoulder": 147.2,
+        "rightShoulder": -142.8,
+        "leftElbow": 65.3174,
+        "leftHand": -134.9248,
+        "rightElbow": 1.7356,
+        "rightHand": -155.5596,
+        "leftKnee": 58.6786,
+        "leftFoot": 32.0139,
+        "rightKnee": 93.3001,
+        "rightFoot": 27.8461
+      }
+    },
+    "punch_kick_combo_5": {
+      "root": [
+        -1.5,
+        -46
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 70,
+        "leftHand": -135,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": 57.1815,
+        "leftFoot": 34.4223,
+        "rightKnee": 91.5189,
+        "rightFoot": 31.3039
+      }
+    },
+    "punch_kick_combo_6": {
+      "root": [
+        -0.7222,
+        -45.4568
+      ],
+      "angles": {
+        "neck": -93.1111,
+        "head": 3.1111,
+        "leftShoulder": 138.6667,
+        "rightShoulder": -143,
+        "leftElbow": 62.5926,
+        "leftHand": -114.7649,
+        "rightElbow": 21.512,
+        "rightHand": 158.6732,
+        "leftKnee": 55.2882,
+        "leftFoot": 39.6781,
+        "rightKnee": 91.4489,
+        "rightFoot": 33.607
+      }
+    },
+    "punch_kick_combo_7": {
+      "root": [
+        0.7222,
+        -44.8117
+      ],
+      "angles": {
+        "neck": -85.8889,
+        "head": -4.1111,
+        "leftShoulder": 125.3333,
+        "rightShoulder": -148,
+        "leftElbow": 37.4074,
+        "leftHand": -80.8824,
+        "rightElbow": 29.3671,
+        "rightHand": 100.4477,
+        "leftKnee": 53.7448,
+        "leftFoot": 45.8268,
+        "rightKnee": 92.8142,
+        "rightFoot": 34.6555
+      }
+    },
+    "punch_kick_combo_8": {
+      "root": [
+        1.5,
+        -44.5
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 30,
+        "leftHand": -63,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 53.2384,
+        "leftFoot": 48.5616,
+        "rightKnee": 93.7528,
+        "rightFoot": 34.7899
+      }
+    },
+    "punch_kick_combo_9": {
+      "root": [
+        1.5,
+        -44.5
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 30,
+        "leftHand": -63,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 53.2384,
+        "leftFoot": 48.5616,
+        "rightKnee": 93.7528,
+        "rightFoot": 34.7899
+      }
+    },
+    "punch_kick_combo_10": {
+      "root": [
+        1.5,
+        -44.5
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 30,
+        "leftHand": -63,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 53.2384,
+        "leftFoot": 48.5616,
+        "rightKnee": 93.7528,
+        "rightFoot": 34.7899
+      }
+    },
+    "punch_kick_combo_11": {
+      "root": [
+        1.5,
+        -45.214
+      ],
+      "angles": {
+        "neck": -83.35,
+        "head": -6.65,
+        "leftShoulder": 122.1,
+        "rightShoulder": -151.65,
+        "leftElbow": 6.2,
+        "leftHand": -66.5167,
+        "rightElbow": 29.5668,
+        "rightHand": 112.6839,
+        "leftKnee": 55.4524,
+        "leftFoot": 44.5157,
+        "rightKnee": 96.2176,
+        "rightFoot": 29.2502
+      }
+    },
+    "punch_kick_combo_12": {
+      "root": [
+        1.5,
+        -46.2
+      ],
+      "angles": {
+        "neck": -84.7,
+        "head": -5.3,
+        "leftShoulder": 132.2,
+        "rightShoulder": -150.3,
+        "leftElbow": -17.6,
+        "leftHand": -74.2,
+        "rightElbow": 17.5,
+        "rightHand": 166.5,
+        "leftKnee": 58.8329,
+        "leftFoot": 38.2639,
+        "rightKnee": 100.8546,
+        "rightFoot": 19.1607
+      }
+    },
+    "punch_kick_combo_13": {
+      "root": [
+        1.7363,
+        -46.636
+      ],
+      "angles": {
+        "neck": -78.85,
+        "head": 7.85,
+        "leftShoulder": 130.1,
+        "rightShoulder": -156.15,
+        "leftElbow": -7.3896,
+        "leftHand": -95.4635,
+        "rightElbow": -13.2425,
+        "rightHand": -155.4312,
+        "leftKnee": 60.5901,
+        "leftFoot": 35.5243,
+        "rightKnee": 90.4289,
+        "rightFoot": 38.7339
+      }
+    },
+    "punch_kick_combo_14": {
+      "root": [
+        2.2,
+        -47
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": -162,
+        "leftElbow": 2.8208,
+        "leftHand": -112.5604,
+        "rightElbow": -37.3514,
+        "rightHand": -128.4947,
+        "leftKnee": 62.2487,
+        "leftFoot": 33.47,
+        "rightKnee": 76.7671,
+        "rightFoot": 61.4314
+      }
+    },
+    "punch_kick_combo_15": {
+      "root": [
+        2.7185,
+        -47.4143
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": -162,
+        "leftElbow": 2.8208,
+        "leftHand": -112.5604,
+        "rightElbow": -37.3514,
+        "rightHand": -128.4947,
+        "leftKnee": 64.2343,
+        "leftFoot": 30.8971,
+        "rightKnee": 58.132,
+        "rightFoot": 73.1338
+      }
+    },
+    "punch_kick_combo_16": {
+      "root": [
+        3.5,
+        -47.8
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": -162,
+        "leftElbow": 2.8208,
+        "leftHand": -112.5604,
+        "rightElbow": -37.3514,
+        "rightHand": -128.4947,
+        "leftKnee": 66.3253,
+        "leftFoot": 28.6975,
+        "rightKnee": 34,
+        "rightFoot": 85
+      }
+    },
+    "punch_kick_combo_17": {
+      "root": [
+        5.2159,
+        -48.1482
+      ],
+      "angles": {
+        "neck": -82.4286,
+        "head": 12.1237,
+        "leftShoulder": 175,
+        "rightShoulder": 175,
+        "leftElbow": 3.839,
+        "leftHand": -141.545,
+        "rightElbow": -18.7471,
+        "rightHand": -119.2474,
+        "leftKnee": 68.8472,
+        "leftFoot": 27.7854,
+        "rightKnee": -4.5451,
+        "rightFoot": 113.9729
+      }
+    },
+    "punch_kick_combo_18": {
+      "root": [
+        7.5,
+        -48.4
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": 5,
+        "rightHand": -110,
+        "leftKnee": 71.6338,
+        "leftFoot": 27.637,
+        "rightKnee": -35,
+        "rightFoot": 130
+      }
+    },
+    "punch_kick_combo_19": {
+      "root": [
+        10.1669,
+        -48.5375
+      ],
+      "angles": {
+        "neck": -108.5714,
+        "head": 16.3763,
+        "leftShoulder": -134,
+        "rightShoulder": 156,
+        "leftElbow": -29.9286,
+        "leftHand": -104.7352,
+        "rightElbow": 41.5714,
+        "rightHand": -71.5,
+        "leftKnee": 74.7809,
+        "leftFoot": 27.6461,
+        "rightKnee": -43.5556,
+        "rightFoot": 65.9612
+      }
+    },
+    "punch_kick_combo_20": {
+      "root": [
+        12,
+        -48.6
+      ],
+      "angles": {
+        "neck": -115,
+        "head": 22,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -75,
+        "leftHand": -50,
+        "rightElbow": 73,
+        "rightHand": -33,
+        "leftKnee": 77.1973,
+        "leftFoot": 27.1385,
+        "rightKnee": -47,
+        "rightFoot": 7
+      }
+    },
+    "punch_kick_combo_21": {
+      "root": [
+        12.3625,
+        -48.6
+      ],
+      "angles": {
+        "neck": -115,
+        "head": 22,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -75,
+        "leftHand": -50,
+        "rightElbow": 73,
+        "rightHand": -33,
+        "leftKnee": 77.6548,
+        "leftFoot": 27.0779,
+        "rightKnee": -47,
+        "rightFoot": 7
+      }
+    },
+    "punch_kick_combo_22": {
+      "root": [
+        12.5,
+        -48.6
+      ],
+      "angles": {
+        "neck": -115,
+        "head": 22,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -75,
+        "leftHand": -50,
+        "rightElbow": 73,
+        "rightHand": -33,
+        "leftKnee": 77.8318,
+        "leftFoot": 27.0479,
+        "rightKnee": -47,
+        "rightFoot": 7
+      }
+    },
+    "punch_kick_combo_23": {
+      "root": [
+        11.8333,
+        -48.5333
+      ],
+      "angles": {
+        "neck": -113.7333,
+        "head": 21.0667,
+        "leftShoulder": -132.5,
+        "rightShoulder": 157.5,
+        "leftElbow": -73.2554,
+        "leftHand": -51.0497,
+        "rightElbow": 74.2333,
+        "rightHand": -33,
+        "leftKnee": 76.6705,
+        "leftFoot": 27.8008,
+        "rightKnee": -44.2308,
+        "rightFoot": 7.4808
+      }
+    },
+    "punch_kick_combo_24": {
+      "root": [
+        10.5,
+        -48.4
+      ],
+      "angles": {
+        "neck": -111,
+        "head": 19,
+        "leftShoulder": -135,
+        "rightShoulder": 155,
+        "leftElbow": -72,
+        "leftHand": -54,
+        "rightElbow": 74,
+        "rightHand": -33,
+        "leftKnee": 74.4945,
+        "leftFoot": 28.9993,
+        "rightKnee": -38,
+        "rightFoot": 10
+      }
+    },
+    "punch_kick_combo_25": {
+      "root": [
+        8.5382,
+        -48.2013
+      ],
+      "angles": {
+        "neck": -105.9529,
+        "head": 14.725,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": -30.0583,
+        "leftHand": -109.2273,
+        "rightElbow": 57.565,
+        "rightHand": -32.6962,
+        "leftKnee": 71.604,
+        "leftFoot": 30.1156,
+        "rightKnee": -25.9153,
+        "rightFoot": 63.0796
+      }
+    },
+    "punch_kick_combo_26": {
+      "root": [
+        6.5,
+        -48
+      ],
+      "angles": {
+        "neck": -100,
+        "head": 10,
+        "leftShoulder": -141,
+        "rightShoulder": 149,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": 40,
+        "rightHand": -40,
+        "leftKnee": 69.0025,
+        "leftFoot": 30.4563,
+        "rightKnee": -8,
+        "rightFoot": 112
+      }
+    },
+    "punch_kick_combo_27": {
+      "root": [
+        5.116,
+        -47.8791
+      ],
+      "angles": {
+        "neck": -95.5124,
+        "head": 8.9597,
+        "leftShoulder": -154.65,
+        "rightShoulder": 156.35,
+        "leftElbow": 14.3683,
+        "leftHand": -164.2197,
+        "rightElbow": 27.8192,
+        "rightHand": -54.519,
+        "leftKnee": 67.5243,
+        "leftFoot": 30.1152,
+        "rightKnee": 18.3988,
+        "rightFoot": 98.2004
+      }
+    },
+    "punch_kick_combo_28": {
+      "root": [
+        3.9204,
+        -47.7829
+      ],
+      "angles": {
+        "neck": -91.4281,
+        "head": 10.9424,
+        "leftShoulder": -168.3,
+        "rightShoulder": 163.7,
+        "leftElbow": 12.385,
+        "leftHand": -155.4052,
+        "rightElbow": 16.1935,
+        "rightHand": -67.9269,
+        "leftKnee": 66.4334,
+        "leftFoot": 29.458,
+        "rightKnee": 52.6458,
+        "rightFoot": 73.0258
+      }
+    },
+    "punch_kick_combo_29": {
+      "root": [
+        2.8897,
+        -47.6951
+      ],
+      "angles": {
+        "neck": -87.5797,
+        "head": 14.1039,
+        "leftShoulder": 178.05,
+        "rightShoulder": 171.05,
+        "leftElbow": 8.1324,
+        "leftHand": -143.5222,
+        "rightElbow": 4.8684,
+        "rightHand": -80.6456,
+        "leftKnee": 65.59,
+        "leftFoot": 28.7033,
+        "rightKnee": 83.0698,
+        "rightFoot": 48.0882
+      }
+    },
+    "punch_kick_combo_30": {
+      "root": [
+        2,
+        -47.6
+      ],
+      "angles": {
+        "neck": -83.8,
+        "head": 16.6,
+        "leftShoulder": 164.4,
+        "rightShoulder": 178.4,
+        "leftElbow": 5.693,
+        "leftHand": -133.536,
+        "rightElbow": -6.411,
+        "rightHand": -93.097,
+        "leftKnee": 64.8625,
+        "leftFoot": 28.0494,
+        "rightKnee": 98,
+        "rightFoot": 35
+      }
+    },
+    "punch_kick_combo_31": {
+      "root": [
+        1.1139,
+        -47.4695
+      ],
+      "angles": {
+        "neck": -79.3106,
+        "head": 18.429,
+        "leftShoulder": 152.2667,
+        "rightShoulder": -175.0667,
+        "leftElbow": 1.5016,
+        "leftHand": -124.8167,
+        "rightElbow": -17.6584,
+        "rightHand": -107.8113,
+        "leftKnee": 64.0499,
+        "leftFoot": 27.5633,
+        "rightKnee": 100.8894,
+        "rightFoot": 26.996
+      }
+    },
+    "punch_kick_combo_32": {
+      "root": [
+        0.3347,
+        -47.3362
+      ],
+      "angles": {
+        "neck": -74.9553,
+        "head": 20.2034,
+        "leftShoulder": 140.1333,
+        "rightShoulder": -168.5333,
+        "leftElbow": -2.2024,
+        "leftHand": -116.3579,
+        "rightElbow": -28.7649,
+        "rightHand": -122.0861,
+        "leftKnee": 63.3145,
+        "leftFoot": 27.1719,
+        "rightKnee": 102.8058,
+        "rightFoot": 15.5812
+      }
+    },
+    "punch_kick_combo_33": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
+    },
+    "kick_punch_combo_0": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
+    },
+    "kick_punch_combo_1": {
+      "root": [
+        0,
+        -47.3387
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 133.2875,
+        "rightShoulder": -164.5875,
+        "leftElbow": -2.4667,
+        "leftHand": -112.5604,
+        "rightElbow": -34.7639,
+        "rightHand": -128.4947,
+        "leftKnee": 63.324,
+        "leftFoot": 26.3869,
+        "rightKnee": 95.3751,
+        "rightFoot": 25.3233
+      }
+    },
+    "kick_punch_combo_2": {
+      "root": [
+        0,
+        -47.4744
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 138.575,
+        "rightShoulder": -167.175,
+        "leftElbow": -7.7542,
+        "leftHand": -112.5604,
+        "rightElbow": -32.1764,
+        "rightHand": -128.4947,
+        "leftKnee": 64.0409,
+        "leftFoot": 25.0273,
+        "rightKnee": 85.4364,
+        "rightFoot": 43.1612
+      }
+    },
+    "kick_punch_combo_3": {
+      "root": [
+        0,
+        -47.6
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 143.8625,
+        "rightShoulder": -169.7625,
+        "leftElbow": -13.0417,
+        "leftHand": -112.5604,
+        "rightElbow": -29.5889,
+        "rightHand": -128.4947,
+        "leftKnee": 64.7387,
+        "leftFoot": 23.7001,
+        "rightKnee": 77.4571,
+        "rightFoot": 55.8351
+      }
+    },
+    "kick_punch_combo_4": {
+      "root": [
+        0,
+        -47.7012
+      ],
+      "angles": {
+        "neck": -73.7998,
+        "head": 20.5334,
+        "leftShoulder": 149.15,
+        "rightShoulder": -172.35,
+        "leftElbow": -14.1242,
+        "leftHand": -114.6412,
+        "rightElbow": -27.9561,
+        "rightHand": -127.5451,
+        "leftKnee": 65.3289,
+        "leftFoot": 22.5747,
+        "rightKnee": 68.8516,
+        "rightFoot": 63.4505
+      }
+    },
+    "kick_punch_combo_5": {
+      "root": [
+        0,
+        -47.8079
+      ],
+      "angles": {
+        "neck": -75.8314,
+        "head": 19.3483,
+        "leftShoulder": 154.4375,
+        "rightShoulder": -174.9375,
+        "leftElbow": -8.7306,
+        "leftHand": -119.9267,
+        "rightElbow": -27.7937,
+        "rightHand": -125.133,
+        "leftKnee": 65.9822,
+        "leftFoot": 21.3255,
+        "rightKnee": 60.3251,
+        "rightFoot": 69.4252
+      }
+    },
+    "kick_punch_combo_6": {
+      "root": [
+        0,
+        -47.9039
+      ],
+      "angles": {
+        "neck": -78.5432,
+        "head": 17.7665,
+        "leftShoulder": 159.725,
+        "rightShoulder": -177.525,
+        "leftElbow": 0.2385,
+        "leftHand": -126.9816,
+        "rightElbow": -28.4431,
+        "rightHand": -121.9134,
+        "leftKnee": 66.6032,
+        "leftFoot": 20.1352,
+        "rightKnee": 51.7557,
+        "rightFoot": 74.5086
+      }
+    },
+    "kick_punch_combo_7": {
+      "root": [
+        0,
+        -47.9733
+      ],
+      "angles": {
+        "neck": -81.3832,
+        "head": 16.1098,
+        "leftShoulder": 165.0125,
+        "rightShoulder": 179.8875,
+        "leftElbow": 9.8826,
+        "leftHand": -134.3705,
+        "rightElbow": -29.2457,
+        "rightHand": -118.5414,
+        "leftKnee": 67.0745,
+        "leftFoot": 19.2299,
+        "rightKnee": 43.0213,
+        "rightFoot": 79.4503
+      }
+    },
+    "kick_punch_combo_8": {
+      "root": [
+        0,
+        -48
+      ],
+      "angles": {
+        "neck": -83.8,
+        "head": 14.7,
+        "leftShoulder": 170.3,
+        "rightShoulder": 177.3,
+        "leftElbow": 17.301,
+        "leftHand": -140.658,
+        "rightElbow": -29.543,
+        "rightHand": -115.672,
+        "leftKnee": 67.2615,
+        "leftFoot": 18.8702,
+        "rightKnee": 34,
+        "rightFoot": 85
+      }
+    },
+    "kick_punch_combo_9": {
+      "root": [
+        -0.0831,
+        -47.9372
+      ],
+      "angles": {
+        "neck": -85.6799,
+        "head": 13.071,
+        "leftShoulder": 177.6857,
+        "rightShoulder": 173.6857,
+        "leftElbow": 21.2304,
+        "leftHand": -146.4236,
+        "rightElbow": -28.9103,
+        "rightHand": -113.0408,
+        "leftKnee": 66.8619,
+        "leftFoot": 19.4476,
+        "rightKnee": 23.4146,
+        "rightFoot": 92.921
+      }
+    },
+    "kick_punch_combo_10": {
+      "root": [
+        -0.2974,
+        -47.7688
+      ],
+      "angles": {
+        "neck": -87.3586,
+        "head": 10.8497,
+        "leftShoulder": -174.9286,
+        "rightShoulder": 170.0714,
+        "leftElbow": 26.0104,
+        "leftHand": -152.832,
+        "rightElbow": -29.0209,
+        "rightHand": -110.1163,
+        "leftKnee": 65.8319,
+        "leftFoot": 20.9309,
+        "rightKnee": 10.9273,
+        "rightFoot": 103.2963
+      }
+    },
+    "kick_punch_combo_11": {
+      "root": [
+        -0.5904,
+        -47.5251
+      ],
+      "angles": {
+        "neck": -88.958,
+        "head": 8.4971,
+        "leftShoulder": -167.5429,
+        "rightShoulder": 166.4571,
+        "leftElbow": 30.8504,
+        "leftHand": -159.3256,
+        "rightElbow": -29.2826,
+        "rightHand": -107.153,
+        "leftKnee": 64.4304,
+        "leftFoot": 22.9331,
+        "rightKnee": -2.1751,
+        "rightFoot": 114.3548
+      }
+    },
+    "kick_punch_combo_12": {
+      "root": [
+        -0.9096,
+        -47.2362
+      ],
+      "angles": {
+        "neck": -90.5999,
+        "head": 6.4747,
+        "leftShoulder": -160.1571,
+        "rightShoulder": 162.8429,
+        "leftElbow": 34.96,
+        "leftHand": -165.3468,
+        "rightElbow": -29.1034,
+        "rightHand": -104.4052,
+        "leftKnee": 62.8785,
+        "leftFoot": 25.1446,
+        "rightKnee": -14.6058,
+        "rightFoot": 124.3256
+      }
+    },
+    "kick_punch_combo_13": {
+      "root": [
+        -1.2026,
+        -46.9322
+      ],
+      "angles": {
+        "neck": -92.4063,
+        "head": 5.2435,
+        "leftShoulder": -152.7714,
+        "rightShoulder": 159.2286,
+        "leftElbow": 37.5485,
+        "leftHand": -170.338,
+        "rightElbow": -27.8913,
+        "rightHand": -102.1275,
+        "leftKnee": 61.3476,
+        "leftFoot": 27.3574,
+        "rightKnee": -25.0781,
+        "rightFoot": 131.4374
+      }
+    },
+    "kick_punch_combo_14": {
+      "root": [
+        -1.4169,
+        -46.6435
+      ],
+      "angles": {
+        "neck": -94.499,
+        "head": 5.2649,
+        "leftShoulder": -145.3857,
+        "rightShoulder": 155.6143,
+        "leftElbow": 37.8253,
+        "leftHand": -173.7416,
+        "rightElbow": -25.0542,
+        "rightHand": -100.5743,
+        "leftKnee": 59.9731,
+        "leftFoot": 29.439,
+        "rightKnee": -32.305,
+        "rightFoot": 133.9192
+      }
+    },
+    "kick_punch_combo_15": {
+      "root": [
+        -1.5,
+        -46.4
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 35,
+        "leftHand": -175,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 58.8709,
+        "leftFoot": 31.2997,
+        "rightKnee": -35,
+        "rightFoot": 130
+      }
+    },
+    "kick_punch_combo_16": {
+      "root": [
+        -1.5,
+        -46.1473
+      ],
+      "angles": {
+        "neck": -101.6864,
+        "head": 11.6864,
+        "leftShoulder": -134,
+        "rightShoulder": 156,
+        "leftElbow": 23.1864,
+        "leftHand": -170,
+        "rightElbow": -19.3136,
+        "rightHand": -100,
+        "leftKnee": 57.7873,
+        "leftFoot": 33.3057,
+        "rightKnee": -30,
+        "rightFoot": 68.5725
+      }
+    },
+    "kick_punch_combo_17": {
+      "root": [
+        -1.5,
+        -46
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 57.1815,
+        "leftFoot": 34.4223,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "kick_punch_combo_18": {
+      "root": [
+        -1.5,
+        -46
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 57.1815,
+        "leftFoot": 34.4223,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "kick_punch_combo_19": {
+      "root": [
+        -1.5,
+        -46
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 57.1815,
+        "leftFoot": 34.4223,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "kick_punch_combo_20": {
+      "root": [
+        -0.6,
+        -46.0975
+      ],
+      "angles": {
+        "neck": -103.1818,
+        "head": 13.1818,
+        "leftShoulder": -132.5,
+        "rightShoulder": 157.5,
+        "leftElbow": 10.6818,
+        "leftHand": -165,
+        "rightElbow": -19.3182,
+        "rightHand": -100,
+        "leftKnee": 57.7224,
+        "leftFoot": 35.4896,
+        "rightKnee": -22.2791,
+        "rightFoot": 11.5518
+      }
+    },
+    "kick_punch_combo_21": {
+      "root": [
+        0.5,
+        -46.3
+      ],
+      "angles": {
+        "neck": -100,
+        "head": 10,
+        "leftShoulder": -135,
+        "rightShoulder": 155,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 58.8168,
+        "leftFoot": 35.9894,
+        "rightKnee": -16,
+        "rightFoot": 14
+      }
+    },
+    "kick_punch_combo_22": {
+      "root": [
+        0.7731,
+        -46.7025
+      ],
+      "angles": {
+        "neck": -96.3182,
+        "head": 6.3182,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 9.3182,
+        "leftHand": -165,
+        "rightElbow": -20.6818,
+        "rightHand": -100,
+        "leftKnee": 60.5158,
+        "leftFoot": 33.4474,
+        "rightKnee": -2.8786,
+        "rightFoot": 60.676
+      }
+    },
+    "kick_punch_combo_23": {
+      "root": [
+        1,
+        -47
+      ],
+      "angles": {
+        "neck": -94,
+        "head": 4,
+        "leftShoulder": -141,
+        "rightShoulder": 149,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 61.8452,
+        "leftFoot": 31.4721,
+        "rightKnee": 18,
+        "rightFoot": 100
+      }
+    },
+    "kick_punch_combo_24": {
+      "root": [
+        1.4126,
+        -46.9346
+      ],
+      "angles": {
+        "neck": -94,
+        "head": 4,
+        "leftShoulder": -159.2,
+        "rightShoulder": 158.8,
+        "leftElbow": 28.2,
+        "leftHand": -165,
+        "rightElbow": -29.8,
+        "rightHand": -100,
+        "leftKnee": 61.6837,
+        "leftFoot": 32.7241,
+        "rightKnee": 51.234,
+        "rightFoot": 76.1901
+      }
+    },
+    "kick_punch_combo_25": {
+      "root": [
+        1.8,
+        -46.8
+      ],
+      "angles": {
+        "neck": -94,
+        "head": 4,
+        "leftShoulder": -177.4,
+        "rightShoulder": 168.6,
+        "leftElbow": 46.4,
+        "leftHand": -165,
+        "rightElbow": -39.6,
+        "rightHand": -100,
+        "leftKnee": 61.2687,
+        "leftFoot": 34.3963,
+        "rightKnee": 85.6783,
+        "rightFoot": 45.31
+      }
+    },
+    "kick_punch_combo_26": {
+      "root": [
+        2,
+        -46.6
+      ],
+      "angles": {
+        "neck": -81.4,
+        "head": 14.2,
+        "leftShoulder": 164.4,
+        "rightShoulder": 178.4,
+        "leftElbow": 5.693,
+        "leftHand": -133.536,
+        "rightElbow": -30.411,
+        "rightHand": -117.097,
+        "leftKnee": 60.5657,
+        "leftFoot": 36.1784,
+        "rightKnee": 106.4205,
+        "rightFoot": 8.7849
+      }
+    },
+    "kick_punch_combo_27": {
+      "root": [
+        3.0813,
+        -46.279
+      ],
+      "angles": {
+        "neck": -85.2,
+        "head": 8.6,
+        "leftShoulder": 158.2,
+        "rightShoulder": -159.8,
+        "leftElbow": 11.1301,
+        "leftHand": -121.1516,
+        "rightElbow": -6.0303,
+        "rightHand": -146.1629,
+        "leftKnee": 51.858,
+        "leftFoot": 48.1844,
+        "rightKnee": 109.5407,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_28": {
+      "root": [
+        5,
+        -45.4527
+      ],
+      "angles": {
+        "neck": -89,
+        "head": 3,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 17.8,
+        "leftHand": -110,
+        "rightElbow": 2,
+        "rightHand": -165,
+        "leftKnee": 42.464,
+        "leftFoot": 58.1221,
+        "rightKnee": 111.9372,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_29": {
+      "root": [
+        8.3846,
+        -43.7524
+      ],
+      "angles": {
+        "neck": -73,
+        "head": -10,
+        "leftShoulder": 142,
+        "rightShoulder": -148,
+        "leftElbow": 1.0102,
+        "leftHand": -99.6102,
+        "rightElbow": -4,
+        "rightHand": -165,
+        "leftKnee": 42.7186,
+        "leftFoot": 54.6695,
+        "rightKnee": 116.2829,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_30": {
+      "root": [
+        11,
+        -42.2064
+      ],
+      "angles": {
+        "neck": -57,
+        "head": -23,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -13,
+        "leftHand": -92,
+        "rightElbow": -10,
+        "rightHand": -165,
+        "leftKnee": 43.9395,
+        "leftFoot": 52.15,
+        "rightKnee": 119.7684,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_31": {
+      "root": [
+        11.3654,
+        -41.9729
+      ],
+      "angles": {
+        "neck": -57,
+        "head": -23,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -13,
+        "leftHand": -92,
+        "rightElbow": -10,
+        "rightHand": -165,
+        "leftKnee": 43.3966,
+        "leftFoot": 53.9136,
+        "rightKnee": 120.2658,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_32": {
+      "root": [
+        11.5,
+        -41.8857
+      ],
+      "angles": {
+        "neck": -57,
+        "head": -23,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -13,
+        "leftHand": -92,
+        "rightElbow": -10,
+        "rightHand": -165,
+        "leftKnee": 43.2024,
+        "leftFoot": 54.5533,
+        "rightKnee": 120.4498,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_33": {
+      "root": [
+        11.3679,
+        -41.9713
+      ],
+      "angles": {
+        "neck": -56.8437,
+        "head": -23.3348,
+        "leftShoulder": 130.75,
+        "rightShoulder": -159.25,
+        "leftElbow": -12.0032,
+        "leftHand": -91.653,
+        "rightElbow": -8.9062,
+        "rightHand": -165,
+        "leftKnee": 43.3929,
+        "leftFoot": 53.9256,
+        "rightKnee": 120.2692,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_34": {
+      "root": [
+        11.0227,
+        -42.192
+      ],
+      "angles": {
+        "neck": -56.5,
+        "head": -24.1429,
+        "leftShoulder": 129.5,
+        "rightShoulder": -160.5,
+        "leftElbow": -11.3753,
+        "leftHand": -90.8247,
+        "rightElbow": -8,
+        "rightHand": -165,
+        "leftKnee": 43.905,
+        "leftFoot": 52.2609,
+        "rightKnee": 119.7993,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_35": {
+      "root": [
+        10.5412,
+        -42.4933
+      ],
+      "angles": {
+        "neck": -56.1562,
+        "head": -25.1295,
+        "leftShoulder": 128.25,
+        "rightShoulder": -161.75,
+        "leftElbow": -10.9097,
+        "leftHand": -89.8341,
+        "rightElbow": -7.0937,
+        "rightHand": -165,
+        "leftKnee": 44.6567,
+        "leftFoot": 49.8737,
+        "rightKnee": 119.1477,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_36": {
+      "root": [
+        10,
+        -42.823
+      ],
+      "angles": {
+        "neck": -56,
+        "head": -26,
+        "leftShoulder": 127,
+        "rightShoulder": -163,
+        "leftElbow": -10.4,
+        "leftHand": -89,
+        "rightElbow": -6,
+        "rightHand": -165,
+        "leftKnee": 45.5601,
+        "leftFoot": 47.0862,
+        "rightKnee": 118.4208,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_37": {
+      "root": [
+        9.2839,
+        -43.2449
+      ],
+      "angles": {
+        "neck": -58.3026,
+        "head": -24.6732,
+        "leftShoulder": 129,
+        "rightShoulder": -161,
+        "leftElbow": -12.3675,
+        "leftHand": -89.3704,
+        "rightElbow": -5.6974,
+        "rightHand": -165,
+        "leftKnee": 46.8693,
+        "leftFoot": 43.1899,
+        "rightKnee": 117.4675,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_38": {
+      "root": [
+        8.3026,
+        -43.7975
+      ],
+      "angles": {
+        "neck": -63.6403,
+        "head": -20.6642,
+        "leftShoulder": 131,
+        "rightShoulder": -159,
+        "leftElbow": -13.6638,
+        "leftHand": -91.0955,
+        "rightElbow": -2.3597,
+        "rightHand": -165,
+        "leftKnee": 48.9394,
+        "leftFoot": 37.3321,
+        "rightKnee": 116.1756,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_39": {
+      "root": [
+        7.17,
+        -44.3998
+      ],
+      "angles": {
+        "neck": -69.6578,
+        "head": -16.0731,
+        "leftShoulder": 133,
+        "rightShoulder": -157,
+        "leftElbow": -15.3282,
+        "leftHand": -93.1478,
+        "rightElbow": 1.6578,
+        "rightHand": -165,
+        "leftKnee": 51.9453,
+        "leftFoot": 29.3827,
+        "rightKnee": 114.7041,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_40": {
+      "root": [
+        6,
+        -44.9835
+      ],
+      "angles": {
+        "neck": -74,
+        "head": -13,
+        "leftShoulder": 135,
+        "rightShoulder": -155,
+        "leftElbow": -18.4,
+        "leftHand": -94.5,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 56.5709,
+        "leftFoot": 18.1758,
+        "rightKnee": 113.2042,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_41": {
+      "root": [
+        4.6491,
+        -45.611
+      ],
+      "angles": {
+        "neck": -76.7642,
+        "head": -11.5048,
+        "leftShoulder": 135,
+        "rightShoulder": -155,
+        "leftElbow": -21.832,
+        "leftHand": -94.7931,
+        "rightElbow": 6.7642,
+        "rightHand": -165,
+        "leftKnee": 55.4916,
+        "leftFoot": 20.2707,
+        "rightKnee": 111.4956,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_42": {
+      "root": [
+        3.1764,
+        -46.2403
+      ],
+      "angles": {
+        "neck": -79.0488,
+        "head": -10.4191,
+        "leftShoulder": 135,
+        "rightShoulder": -155,
+        "leftElbow": -25.9827,
+        "leftHand": -94.6466,
+        "rightElbow": 9.0488,
+        "rightHand": -165,
+        "leftKnee": 50.036,
+        "leftFoot": 33.8301,
+        "rightKnee": 109.6585,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_43": {
+      "root": [
+        2,
+        -46.7036
+      ],
+      "angles": {
+        "neck": -80,
+        "head": -10,
+        "leftShoulder": 135,
+        "rightShoulder": -155,
+        "leftElbow": -28,
+        "leftHand": -94.5,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": 48.4346,
+        "leftFoot": 40.9628,
+        "rightKnee": 108.2082,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_44": {
+      "root": [
+        1.0864,
+        -47.04
+      ],
+      "angles": {
+        "neck": -78.1852,
+        "head": -1.963,
+        "leftShoulder": 132.6667,
+        "rightShoulder": -157.3333,
+        "leftElbow": -19.4909,
+        "leftHand": -99.1823,
+        "rightElbow": -1.7578,
+        "rightHand": -155.5357,
+        "leftKnee": 52.4602,
+        "leftFoot": 38.7432,
+        "rightKnee": 107.0914,
+        "rightFoot": 5.1251
+      }
+    },
+    "kick_punch_combo_45": {
+      "root": [
+        0.321,
+        -47.2358
+      ],
+      "angles": {
+        "neck": -74.8148,
+        "head": 12.963,
+        "leftShoulder": 130.3333,
+        "rightShoulder": -159.6667,
+        "leftElbow": -5.6883,
+        "leftHand": -107.8781,
+        "rightElbow": -25.5936,
+        "rightHand": -137.9591,
+        "leftKnee": 59.1432,
+        "leftFoot": 31.7844,
+        "rightKnee": 104.833,
+        "rightFoot": 7.8346
+      }
+    },
+    "kick_punch_combo_46": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
     }
   },
   "animations": {
@@ -25710,6 +27330,538 @@
           "joint": "leftHand",
           "fromFrame": 76,
           "toFrame": 84,
+          "historyFrames": 3
+        }
+      ]
+    },
+    "punch_kick_combo": {
+      "durationFrames": 34,
+      "loop": false,
+      "grounded": false,
+      "clampFloor": true,
+      "interpolation": "angles",
+      "keyframes": [
+        {
+          "frame": 0,
+          "pose": "punch_kick_combo_0",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 1,
+          "pose": "punch_kick_combo_1",
+          "easing": "linear",
+          "turn": 0.03
+        },
+        {
+          "frame": 2,
+          "pose": "punch_kick_combo_2",
+          "easing": "linear",
+          "turn": 0.06
+        },
+        {
+          "frame": 3,
+          "pose": "punch_kick_combo_3",
+          "easing": "linear",
+          "turn": 0.09
+        },
+        {
+          "frame": 4,
+          "pose": "punch_kick_combo_4",
+          "easing": "linear",
+          "turn": 0.12
+        },
+        {
+          "frame": 5,
+          "pose": "punch_kick_combo_5",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 6,
+          "pose": "punch_kick_combo_6",
+          "easing": "linear",
+          "turn": 0.433333
+        },
+        {
+          "frame": 7,
+          "pose": "punch_kick_combo_7",
+          "easing": "linear",
+          "turn": 0.716667
+        },
+        {
+          "frame": 8,
+          "pose": "punch_kick_combo_8",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 9,
+          "pose": "punch_kick_combo_9",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 10,
+          "pose": "punch_kick_combo_10",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 11,
+          "pose": "punch_kick_combo_11",
+          "easing": "linear",
+          "turn": 0.7
+        },
+        {
+          "frame": 12,
+          "pose": "punch_kick_combo_12",
+          "easing": "linear",
+          "turn": 0.4
+        },
+        {
+          "frame": 13,
+          "pose": "punch_kick_combo_13",
+          "easing": "linear",
+          "turn": 0.2
+        },
+        {
+          "frame": 14,
+          "pose": "punch_kick_combo_14",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 15,
+          "pose": "punch_kick_combo_15",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 16,
+          "pose": "punch_kick_combo_16",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 17,
+          "pose": "punch_kick_combo_17",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 18,
+          "pose": "punch_kick_combo_18",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 19,
+          "pose": "punch_kick_combo_19",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 20,
+          "pose": "punch_kick_combo_20",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 21,
+          "pose": "punch_kick_combo_21",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 22,
+          "pose": "punch_kick_combo_22",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 23,
+          "pose": "punch_kick_combo_23",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 24,
+          "pose": "punch_kick_combo_24",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 25,
+          "pose": "punch_kick_combo_25",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 26,
+          "pose": "punch_kick_combo_26",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 27,
+          "pose": "punch_kick_combo_27",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 28,
+          "pose": "punch_kick_combo_28",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 29,
+          "pose": "punch_kick_combo_29",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 30,
+          "pose": "punch_kick_combo_30",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 31,
+          "pose": "punch_kick_combo_31",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 32,
+          "pose": "punch_kick_combo_32",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 33,
+          "pose": "punch_kick_combo_33",
+          "easing": "linear",
+          "turn": 0
+        }
+      ],
+      "trails": [
+        {
+          "joint": "leftHand",
+          "fromFrame": 4,
+          "toFrame": 12,
+          "historyFrames": 3
+        },
+        {
+          "joint": "rightFoot",
+          "fromFrame": 16,
+          "toFrame": 24,
+          "historyFrames": 3
+        }
+      ]
+    },
+    "kick_punch_combo": {
+      "durationFrames": 47,
+      "loop": false,
+      "grounded": false,
+      "clampFloor": true,
+      "interpolation": "angles",
+      "keyframes": [
+        {
+          "frame": 0,
+          "pose": "kick_punch_combo_0",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 1,
+          "pose": "kick_punch_combo_1",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 2,
+          "pose": "kick_punch_combo_2",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 3,
+          "pose": "kick_punch_combo_3",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 4,
+          "pose": "kick_punch_combo_4",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 5,
+          "pose": "kick_punch_combo_5",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 6,
+          "pose": "kick_punch_combo_6",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 7,
+          "pose": "kick_punch_combo_7",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 8,
+          "pose": "kick_punch_combo_8",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 9,
+          "pose": "kick_punch_combo_9",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 10,
+          "pose": "kick_punch_combo_10",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 11,
+          "pose": "kick_punch_combo_11",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 12,
+          "pose": "kick_punch_combo_12",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 13,
+          "pose": "kick_punch_combo_13",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 14,
+          "pose": "kick_punch_combo_14",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 15,
+          "pose": "kick_punch_combo_15",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 16,
+          "pose": "kick_punch_combo_16",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 17,
+          "pose": "kick_punch_combo_17",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 18,
+          "pose": "kick_punch_combo_18",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 19,
+          "pose": "kick_punch_combo_19",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 20,
+          "pose": "kick_punch_combo_20",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 21,
+          "pose": "kick_punch_combo_21",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 22,
+          "pose": "kick_punch_combo_22",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 23,
+          "pose": "kick_punch_combo_23",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 24,
+          "pose": "kick_punch_combo_24",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 25,
+          "pose": "kick_punch_combo_25",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 26,
+          "pose": "kick_punch_combo_26",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 27,
+          "pose": "kick_punch_combo_27",
+          "easing": "linear",
+          "turn": 0.075
+        },
+        {
+          "frame": 28,
+          "pose": "kick_punch_combo_28",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 29,
+          "pose": "kick_punch_combo_29",
+          "easing": "linear",
+          "turn": 0.575
+        },
+        {
+          "frame": 30,
+          "pose": "kick_punch_combo_30",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 31,
+          "pose": "kick_punch_combo_31",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 32,
+          "pose": "kick_punch_combo_32",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 33,
+          "pose": "kick_punch_combo_33",
+          "easing": "linear",
+          "turn": 0.9625
+        },
+        {
+          "frame": 34,
+          "pose": "kick_punch_combo_34",
+          "easing": "linear",
+          "turn": 0.925
+        },
+        {
+          "frame": 35,
+          "pose": "kick_punch_combo_35",
+          "easing": "linear",
+          "turn": 0.8875
+        },
+        {
+          "frame": 36,
+          "pose": "kick_punch_combo_36",
+          "easing": "linear",
+          "turn": 0.85
+        },
+        {
+          "frame": 37,
+          "pose": "kick_punch_combo_37",
+          "easing": "linear",
+          "turn": 0.7125
+        },
+        {
+          "frame": 38,
+          "pose": "kick_punch_combo_38",
+          "easing": "linear",
+          "turn": 0.575
+        },
+        {
+          "frame": 39,
+          "pose": "kick_punch_combo_39",
+          "easing": "linear",
+          "turn": 0.4375
+        },
+        {
+          "frame": 40,
+          "pose": "kick_punch_combo_40",
+          "easing": "linear",
+          "turn": 0.3
+        },
+        {
+          "frame": 41,
+          "pose": "kick_punch_combo_41",
+          "easing": "linear",
+          "turn": 0.25
+        },
+        {
+          "frame": 42,
+          "pose": "kick_punch_combo_42",
+          "easing": "linear",
+          "turn": 0.2
+        },
+        {
+          "frame": 43,
+          "pose": "kick_punch_combo_43",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 44,
+          "pose": "kick_punch_combo_44",
+          "easing": "linear",
+          "turn": 0.1
+        },
+        {
+          "frame": 45,
+          "pose": "kick_punch_combo_45",
+          "easing": "linear",
+          "turn": 0.05
+        },
+        {
+          "frame": 46,
+          "pose": "kick_punch_combo_46",
+          "easing": "linear",
+          "turn": 0
+        }
+      ],
+      "trails": [
+        {
+          "joint": "rightFoot",
+          "fromFrame": 13,
+          "toFrame": 21,
+          "historyFrames": 3
+        },
+        {
+          "joint": "leftHand",
+          "fromFrame": 26,
+          "toFrame": 34,
           "historyFrames": 3
         }
       ]

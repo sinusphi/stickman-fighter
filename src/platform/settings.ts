@@ -1,8 +1,10 @@
 import { ACTIONS, DEFAULT_CONTROLS, saveJson, validateControls, type Action, type Controls, type Devices } from './devices';
 import { type Button } from '../input/types';
 import { onLanguageChange, t } from './i18n';
+import { saveEffectSettings, type EffectSettings } from './effects-settings';
 
-export function setupSettings(devices: Devices, changed: () => void, message: (text: string) => void): () => void {
+/** `effects` is the live presentation preference object; toggles mutate and store it. */
+export function setupSettings(devices: Devices, changed: () => void, message: (text: string) => void, effects?: EffectSettings): () => void {
   const panel = document.querySelector<HTMLElement>('#settings')!;
   let bindPad: { player: number; action: Action; armed: boolean } | null = null;
   const mappingModes = ['key','key'];
@@ -35,6 +37,9 @@ export function setupSettings(devices: Devices, changed: () => void, message: (t
       `</div><div>`,
       `<label>${t('settings.buffer')} <input id="buffer" type="number" min="1" max="30" value="${devices.config.bufferFrames}" style="width:65px"></label>`,
       `<div class="toolbar-group"><button id="export-controls">${t('settings.saveJson')}</button><button id="import-controls">${t('settings.loadJson')}</button><button id="default-controls">${t('settings.defaults')}</button></div>`,
+      effects ? `</div><div><strong>${t('settings.effectsGroup')}</strong>` +
+        `<label title="${t('settings.effectsHint')}"><input type="checkbox" id="effects-toggle" ${effects.effects ? 'checked' : ''}> ${t('settings.effects')}</label>` +
+        `<label title="${t('settings.shakeHint')}"><input type="checkbox" id="shake-toggle" ${effects.shake ? 'checked' : ''}> ${t('settings.shake')}</label>` : '',
       `</div></div>`,
     ].join('');
   }
@@ -84,6 +89,10 @@ export function setupSettings(devices: Devices, changed: () => void, message: (t
       try { const imported = validateControls(JSON.parse(await selected.text())); commit(() => imported); } catch (error) { message(String(error)); }
     };
     panel.querySelector('#default-controls')!.addEventListener('click', () => commit(() => structuredClone(DEFAULT_CONTROLS)));
+    for (const [id, key] of [['#effects-toggle', 'effects'], ['#shake-toggle', 'shake']] as const) {
+      const input = panel.querySelector<HTMLInputElement>(id);
+      if (input && effects) input.onchange = () => { effects[key] = input.checked; saveEffectSettings(effects); };
+    }
     previousPads = null;
   }
   function cancelPendingBindings(): void { bindPad = null; devices.capture = null; }

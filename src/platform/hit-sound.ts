@@ -106,7 +106,9 @@ function groupOf(move: CompiledMove, groupId?: string): HitGroup {
 }
 function kindOf(move: CompiledMove, group: HitGroup): HitKind {
   if (group.id === 'knee') return 'knee';
+  // Mixed combos name their groups after the striking limb.
   if (group.id === 'punch') return 'punch';
+  if (group.id === 'kick') return 'kick';
   return move.button.endsWith('P') ? 'punch' : 'kick';
 }
 function strengthOf(damage: number): HitStrength {

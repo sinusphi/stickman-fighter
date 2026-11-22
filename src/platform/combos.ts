@@ -6,7 +6,9 @@ export const comboLabelKeys: Record<string, TranslationKey> = {
   spin_high_middle_combo: 'combo.spinHighMiddle',
   middle_high_low_combo: 'combo.middleHighLow',
   middle_high_punch_combo: 'combo.middleHighPunch',
+  punch_kick_combo: 'combo.punchKick',
   double_high_kick: 'combo.doubleHigh',
+  kick_punch_combo: 'combo.kickPunch',
 };
 // Commands come from the move data; the order follows comboLabelKeys (forward
 // combos, then back). Combos without a label yet follow at the end, by id.

@@ -7,6 +7,8 @@ import { FixedLoop } from './platform/loop';
 import { KoSlowMotion } from './platform/slow-motion';
 import { render, fitCanvas } from './render/canvas';
 import { HitFeedback } from './render/feedback';
+import { HitEffects } from './render/effects';
+import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
 import { newContactSounds, newSwingSounds } from './platform/hit-sound';
 import { setupAnimationPreview } from './debug/animation-preview';
@@ -56,6 +58,8 @@ async function main(): Promise<void> {
   cpuLevelOne.value = cpuSettings.playerOneDifficulty;
   cpuLevel.value = cpuSettings.difficulty;
   const feedback = new HitFeedback();
+  // Presentation only: sparks, shake, dust and the combo counter follow the game states.
+  const effects = new HitEffects(loadEffectSettings());
   const audio = new HitAudio();
   for (const event of ['keydown', 'pointerdown', 'touchstart']) {
     window.addEventListener(event, () => audio.unlock(), { capture: true, passive: true });
@@ -92,7 +96,7 @@ async function main(): Promise<void> {
   function setPaused(paused: boolean): void { loop.paused = paused; loop.reset(); previous = snapshot(game); }
   function stopPlayback(): void {
     if (!playback) return;
-    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); loop.timeScale=1;
+    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); effects.reset(); loop.timeScale=1;
     devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
@@ -101,10 +105,12 @@ async function main(): Promise<void> {
       const entry = playback.replay.frames[playback.index];
       if (!entry) { setPaused(true); return; }
       step(game,entry.inputs,entry.events);
-      if(entry.events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
+      const restarted=entry.events.some(e=>e.type==='reset'||e.type==='training');
+      if(restarted)feedback.reset(game);
       feedback.update(game,previous);
+      if(restarted)effects.reset(); else effects.update(game,previous,!loop.paused);
       playContactSound();playback.index++;
-      if (playback.index === playback.replay.frames.length) { setPaused(true); message(t('message.replayEnded')); }
+      if (playback.index === playback.replay.frames.length) { setPaused(true); effects.reset(); message(t('message.replayEnded')); }
     } else {
       const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
       const restarting = events.some(e=>e.type==='reset'||e.type==='training');
@@ -120,15 +126,16 @@ async function main(): Promise<void> {
         if (recording.frames.length >= MAX_REPLAY_FRAMES) { lastReplay=recording; recording=null; message(t('message.recordingLimit')); }
       }
       step(game,inputs,events);
-      if(events.some(e=>e.type==='reset'||e.type==='training'))feedback.reset(game);
+      if(restarting)feedback.reset(game);
       feedback.update(game,previous);
+      if(restarting)effects.reset(); else effects.update(game,previous,!loop.paused);
       playContactSound();
       if (events.some(e=>e.type==='reset'||e.type==='training')) previous=snapshot(game);
       if (demoActive && game.round.phase === 'matchOver') {
         if (++demoMatchOverFrames >= DEMO_MATCH_HOLD) { demoMatchOverFrames = 0; pendingEvents.push({ type:'reset' }); }
       } else demoMatchOverFrames = 0;
     }
-    if (previous.round.phase !== 'fighting' && game.round.phase === 'fighting') { previous = snapshot(game);feedback.reset(game); }
+    if (previous.round.phase !== 'fighting' && game.round.phase === 'fighting') { previous = snapshot(game);feedback.reset(game);effects.reset(); }
     loop.timeScale=slowMotion.update(game,feedback.koFrames);
   }
   function queue(event: ControlEvent): void {
@@ -137,7 +144,7 @@ async function main(): Promise<void> {
     if (loop.paused) { runFrame(); previous=snapshot(game); }
   }
   function togglePause(): void {
-    if (playback && playback.index === playback.replay.frames.length) { game=snapshot(playback.replay.initial); feedback.reset(game);playback.index=0; }
+    if (playback && playback.index === playback.replay.frames.length) { game=snapshot(playback.replay.initial); feedback.reset(game);effects.reset();playback.index=0; }
     setPaused(!loop.paused);
   }
   function reset(): void { devices.clear(); queue({type:'reset'}); loop.reset(); }
@@ -172,7 +179,7 @@ async function main(): Promise<void> {
     if (recording) { lastReplay=recording; recording=null; }
     if (!lastReplay?.frames.length) { message(t('message.replayMissing')); return; }
     playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnRelaxFrames:[...feedback.relaxFrames],returnLevels:[...feedback.levels]};
-    game=snapshot(playback.replay.initial); feedback.reset(game);previous=snapshot(game); pendingEvents=[]; slowMotion.reset(); loop.timeScale=1; devices.clear(); setPaused(false);
+    game=snapshot(playback.replay.initial); feedback.reset(game);effects.reset();previous=snapshot(game); pendingEvents=[]; slowMotion.reset(); loop.timeScale=1; devices.clear(); setPaused(false);
     message(t('message.replayRunning'));
   }
   function singleStep(): void { if(loop.paused) { runFrame(); previous=snapshot(game); } }
@@ -203,7 +210,7 @@ async function main(): Promise<void> {
     } catch(error) { if(ticket===replayImportTicket)message(String(error)); }
     finally { updateUI(); }
   };
-  const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message);
+  const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message,effects.settings);
   element('settings-details').addEventListener('toggle',event=>{ if((event.target as HTMLDetailsElement).open)setPaused(true); });
   document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button'))(document.activeElement as HTMLElement)?.blur(); });
   const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo' };
@@ -230,7 +237,7 @@ async function main(): Promise<void> {
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
     fitCanvas(canvas);
-    render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames);
+    render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
     preview(time,palette);
     pollSettings();updateUI();requestAnimationFrame(frame);
   }
