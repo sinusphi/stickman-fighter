@@ -1,5 +1,86 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-22 · „Leiste voll“-Sounds wieder hörbar, Revenge noch großzügiger
+
+- **Fix:** Die „Leiste voll“-Sounds waren praktisch unhörbar. Gemessen lagen sie bei ca. −40 dBFS, also 15–20 dB unter den Treffern, und starteten exakt gleichzeitig mit dem Treffer, der die Leiste füllt. Dadurch gingen sie im Treffersound und im Kompressor unter. Jetzt liegen sie auf Trefferniveau (≈ −21,5 dBFS, Revenge-Gain 0,05 → 0,4, Special 0,07 → 0,55) und setzen 120 ms nach dem Treffer ein (`READY_OFFSET`). Rein präsentational.
+- `smoke:audio-loudness` misst jetzt auch beide Ready-Cues (−25 … −18 dBFS), damit das nicht wieder passiert.
+- Revenge lädt bei erlittenen Treffern noch großzügiger (`gainPerHit` 16 → 25). Voll nach rund 400 statt 625 Schaden.
+- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+
+## 2026-11-22 · Revenge lädt schneller, dezentere „Leiste voll“-Sounds
+
+- Revenge lädt bei erlittenen Treffern deutlich großzügiger (`gainPerHit` 10 → 16). Die Leiste ist jetzt nach rund 625 statt 1000 Schaden voll, also nicht mehr erst kurz vor dem K.o.
+- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+- Die „Leiste voll“-Sounds sind neu: statt Sweep mit Schimmer jetzt ein kurzes, leises Chiptune-Arpeggio mit zwei weichen Echos (Revenge: tiefes Square-Moll, Special: helles Triangle-Dur bis zur Oktave). Rein präsentational.
+
+## 2026-11-22 · Special-Leiste von der Revenge-Leiste entkoppelt
+
+- Special und Revenge füllten sich bisher exakt gleich und waren deshalb immer gleichzeitig voll.
+- Special lädt bei gelandeten Treffern jetzt langsamer (`gainPerHit` 10 → 7), Revenge bleibt bei 10.
+- Neu: Geblockte Treffer geben dem Angreifer ein kleines bisschen Special (`gainPerBlock` 1, mindestens 1 Punkt). Revenge bekommt bei Block weiterhin nichts.
+- Ändert `rules.json` und damit den Replay-Datenhash; fällt noch in die unveröffentlichte Engine-Version 1.10.0.
+
+## 1.11.0 · 22.11.2026
+
+- App-Version (`package.json`) **1.10.0 → 1.11.0**, Replay-Engine-Version (`ENGINE_VERSION`) **1.9.0 → 1.10.0**: Die neue Taste THROW (Button-Bit 9, `BUTTON_MASK` jetzt 1023), der neue Zustand `Thrown`, fünf Wurf-Moves samt Posen und Kontaktgeometrie sowie `rules.normalPriority` ändern Simulation und Replay-Datenhash. Ältere Replays werden eindeutig abgewiesen.
+- Steuerungs-Schema (`stickman.controls`, `controls.json`) **2 → 3** mit Migration; gespeicherte Belegungen bleiben erhalten.
+- Der „Leiste voll“-Effekt ist rein präsentational und ändert weder Datenhash noch Engine-Version.
+- `package-lock.json` stand noch auf 1.9.1 und ist jetzt ebenfalls auf 1.11.0.
+
+## 2026-11-22 · „Leiste voll“: Revenge und Special
+
+Rein präsentational wie die Treffereffekte: alles wird aus zwei aufeinanderfolgenden Spielständen abgeleitet, nichts wird in den `GameState` geschrieben. Löst deshalb identisch in Replays und in der CPU-Demo aus.
+
+### Neu
+- **Auslöser** (`src/platform/resource-ready.ts`): pro Kämpfer und Leiste genau beim Übergang `current < max` → `current == max`. Füllen sich mehrere Leisten im selben Schritt, werden sie um 6 Schritte versetzt (P1 vor P2, Revenge vor Special).
+- **HUD:** kurzer heller Flash und danach ein ruhiges Glow-Pulsieren (1,6 s, deutlich unter 3 Blitzen pro Sekunde) auf `.resource-track`, solange die Leiste voll ist, dazu das Label „REVENGE READY“ / „SPECIAL READY“ (DE: „REVENGE BEREIT“ / „SPECIAL BEREIT“). Statische Hervorhebung und Label hängen nur am Füllstand; Flash und Pulsieren am Schalter „Effekte“. Bei `prefers-reduced-motion` ersetzt ein statisches Highlight Flash und Puls. Beim Absinken verschwindet alles.
+- **Canvas-Burst** am Kämpfer aus dem vorhandenen Partikelpool (Limit 192, geseedeter Zufall, keine Allokation pro Frame): neue Partikelarten Halo (expandierender Ring), Aura (kurzer Körperschimmer), Spark und Star. Revenge: schneller Ring, aggressive, schnell aufsteigende Funken in `palette.revenge`. Special: ruhiger, langsamer Ring mit funkelnden Sternen in `palette.special`. Kein Screen-Shake.
+- **Sound** `HitAudio.playResourceReady`: synthetischer Charge-up-Chirp mit Schimmer am Ende. Revenge tiefer und kantiger (Sägezahn 98 → 392 Hz durch einen sich öffnenden Tiefpass, leichte Sättigung, Square-Arpeggio), Special heller (Dreieck 330 → 1320 Hz, Sinus-Arpeggio und Glocken-Oberton bei 2,76×). Mindestens 18 ms Attack und exponentielles Ausblenden vor jedem Stopp; zwei Trigger kurz hintereinander laufen als getrennte Stimmen. Stummschaltung, Autoplay-Unlock und Stimmenverwaltung wie bei allen Sounds.
+- Tests: `effects.test.ts` (+6: Übergang, bereits volle Leiste, Rundenwechsel mit erhaltenen Ressourcen, Versatz, Partikellimit, GameState unverändert, Effekte aus, echtes Gameplay deterministisch), `audio.test.ts` (+2: Revenge/Special verschieden, klickfreie Hüllkurven, Versatz, Mute, Unlock), `hud.test.ts` (+2). `smoke:effects` erweitert: Burst sichtbar, Ready-Label, Dark/Light.
+
+### Hinweis
+- Ressourcen bleiben über Rundenwechsel erhalten (`resetRound`). Eine schon volle Leiste löst beim Rundenstart daher keinen neuen Burst aus, zeigt aber sofort den Ready-Zustand. Training-Wechsel und Neustart setzen die Leisten zurück.
+
+## 2026-11-22 · Würfe: Hüftwurf und Schulterwurf
+
+### Neu
+- **Taste THROW** als vollwertiger zehnter Button (am Ende von `BUTTONS`, niedrigste `normalPriority`): P1 **C** (`KeyC`), P2 **Numpad 0** (`Numpad0`, die Taste „0 / Einfg“, unabhängig von NumLock), Gamepad **LB** (Button 4). Einstellungs-Panel, Steuerungsanzeige, Eingabeanzeige im Debug-Overlay, Move-/Kombo-Liste (EN/DE) und beide README-Steuerungstabellen.
+- **Controls-Migration v2 → v3** in `validateControls`: THROW bekommt seinen Standard, sonst die erste freie Taste; `padButtons.THROW` = 4. Alle übrigen Belegungen bleiben unverändert, auch über v1 → v2 → v3 in einem Schritt.
+- **Eingabe:** 6 + THROW → `throw_forward`, 4 + THROW → `throw_back` (Hold-Command, nur im Stand, relativ zum Gegner). Neutral, Diagonalen, Hocke, Luft, Angriff oder Stun lösen nichts aus; der Buffer verhält sich wie bei allen Hold-Moves. `validateMoves` nimmt nur THROW von der Pflicht eines Normal-Moves aus; THROW ist nicht in `CROUCH_BUTTONS`.
+- **Daten** (`moves.json`, Feld `throw`, Schema und Validierung erweitert): Wurfversuche `throw_forward` / `throw_back` (Greifreichweite, Ausführung), Ausführungen `throw_forward_exec` / `throw_back_exec` (Bahn-Tabelle pro Frame, Release- und Aufprall-Frame, Clip des Geworfenen) und `throw_break` (Wurf-Clash). Würfe haben keine Hitboxen.
+- **Regeln** (`src/simulation/throws.ts`): Greifen am ersten aktiven Frame, nur gegen einen Gegner am Boden in Idle, Walk, Crouch oder CrouchWalk innerhalb der Greifbox. Nicht blockbar, kein Combo-Anschluss. Verfehlt: lange Recovery. Treffer während des Startups bricht über den normalen Hitstun ab. **Wurf-Clash:** erreichen beide im selben Schritt ihren Greif-Frame in gegenseitiger Reichweite, scheitern beide, werden symmetrisch auseinandergeschoben und erholen sich kurz. Während `Thrown` folgt der Geworfene der Tabelle und ist unverwundbar; beim Aufprall Schaden, Ressourcen (`addHitResource`), Hitstop, `lastContact`, danach Knockdown mit `rules.knockdownFrames` und `recoverGround`. K.o. durch Wurf über die normale Rundenlogik. Training: kein HP-Verlust.
+- **Seitenwechsel und Ecke:** Der Schulterwurf legt den Gegner hinter den Werfer. Wird der Geworfene von der Bühnengrenze geklemmt, weicht der Werfer um denselben Betrag aus; die Bahn bleibt stetig, niemand verlässt die Bühne, nach dem Aufprall überlappen die Pushboxen nicht.
+- **Animation** über den Generator `generate:throws` (`scripts/generate-throws.mjs`, mit `--check` in `generate:check` und damit in `npm run check`), auf Basis von `scripts/kicks/rig.mjs`: Werfer-Clips für Versuch/Fehlgriff, Hüftwurf, Schulterwurf und Clash (ein Keyframe pro Frame, feste Knochenlängen, Arm-IK zu Zielpunkten der Hände) und Clips des Geworfenen. Bis zum Release hängt der Hals des Geworfenen exakt an den abgetasteten Händen des Werfers; einknickende Beine werden per IK auf den Boden gestellt. Danach folgt die Hüfte einer gekrümmten Flugbahn. Die Ganzkörperrotation (über 270°) ist in die absoluten Winkel eingebacken, der letzte Frame ist exakt die Knockdown-Pose (beim Schulterwurf gespiegelt), sodass beim Übergang nichts springt oder kreiselt.
+- **Renderer** (minimal): Clip des Geworfenen über `thrownBy`, feste Blickrichtung zum Werfer während `Thrown`, Animationsflag `clampBody` (kein Gelenk unter dem Boden, `jointBottom`), Zeichenposition des Geworfenen aus der Bahn-Tabelle bei `moveFrame + alpha` (sonst hinge er einen Frame hinter den Händen). K.o. durch Wurf beginnt den K.-o.-Clip liegend.
+- **Effekte:** Greif-Spark an den Händen, beim Aufprall großer Spark, Impact-Ring, Staub, Screen-Shake nach den bestehenden Regeln und Knockdown-Landung; Clash-Spark. Der Kombo-Zähler zeigt einen Wurf als „1 HIT“ / „1 TREFFER“. Alles über „Effekte“ bzw. „Screen-Shake“ schaltbar.
+- **Sound:** `classifyHit`/`describeStrike` kennen die Art `throw`. Greifen: kurzer Stoff-/Griff-Thud (Synth), Flug: vorhandenes Whoosh-Sample (Hybrid, sonst Synth) mit Spitze auf dem Aufprall, Aufprall: tiefer, schwerer Slam (Synth, da kein Sample). Pegel mit `smoke:audio-loudness` vermessen.
+- **CPU:** einfache Heuristik in `UtilityBrain` (Gegner wahrgenommen im Greifbereich, greifbar, steht still, hockt oder blockt durch Zurückgehen), Häufigkeit über das neue Profilfeld `throwChance` (leicht 0,02, mittel 0,14, schwer 0,32 pro Entscheidung), höchstens ein Wurf alle 240 Frames, mit dem Rücken zur Wand bevorzugt der Schulterwurf. Eigener abgeleiteter Zufallsstrom, damit alle übrigen Entscheidungen unverändert bleiben.
+- **Werkzeuge:** Hitbox-Anzeige zeigt die Greifbox („GRAB“, am Greif-Frame „GRAB!“), Frame-Anzeige die Phasen STARTUP/GRAB/RECOVERY, THROW, THROW BREAK und THROWN. Animationsvorschau mit eigener Gruppe „Würfe“; bei den Ausführungen wird der Geworfene mitgezeichnet. Replay-Validierung kennt `Thrown` und prüft, dass genau der laufende Wurf des Gegners ihn hält.
+- Tests `throws.test.ts` (44 Fälle): Taste/Priorität/Validierung, 6+THROW und 4+THROW in beiden Blickrichtungen, Buffer, falsche Richtung/neutral/Hocke/Luft/Stun, Reichweite knapp drin/knapp draußen, alle nicht greifbaren Zustände, Fehlgriff mit Recovery, Clash in beiden Spielerreihenfolgen, Unblockbarkeit (auch mit Auto-Block), Abbruch im Startup, Seitenwechsel und Ecken, Unverwundbarkeit, Schaden/Ressourcen/Hitstop/K.o./Training, Rundenende während des Wurfs, Replay-Roundtrip mit Snapshot mitten im Wurf, Snapshot-Validierung, Generator-Konsistenz (`--check`), Animations-Invarianten, Effekte, Sounds, CPU. `devices.test.ts` (+5): Standardbelegung, Migration v2 → v3 inklusive belegter Standardtaste, Laden gespeicherter v2-Belegungen, Pflichtfeld in v3. Neuer Smoke `smoke:throws` (C und Numpad0 aus echtem Laufen, Wurfeffekte in Dark/Light, UI EN/DE), aufgenommen in die Kern-Smokes.
+
+### Gewählte Werte
+- **Greifreichweite** `range` 29 × 256 (ungeskaliert) ab der Vorderkante der Pushbox, im Spiel ≈ 36 px. Gegriffen wird bis ≈ 75 px Mittenabstand; Pushboxen berühren sich bei ≈ 40 px, Stand-LP trifft bis ≈ 87 px.
+- **Versuch:** 4 Frames Startup, Greif-Frame 4 (5. Frame), Fehlgriff-Recovery 22 Frames, gesamt 27. Hitstop beim Greifen 6.
+- **Hüftwurf:** 110 Schaden, Ausführung 40 Frames, Release Frame 12, Aufprall Frame 20, Hitstop beim Aufprall 12. **Schulterwurf:** 130 Schaden, 46 Frames, Release 16, Aufprall 26, Hitstop 12. Danach Knockdown 30 Frames.
+- **Clash:** 14 Frames, beide werden je 14 px auseinandergeschoben, Hitstop 6.
+
+### Geändert
+- Bestehende Tests nur dort angepasst, wo sie die alte Tasten- oder Move-Zahl fest kodierten: `combat.test.ts` (14 Hold-Angriffe ohne Würfe), `replay.test.ts` (ungültiges Button-Bit jetzt `BUTTON_MASK + 1` statt 512, das jetzt THROW ist), `leg-kicks.test.ts` (v1-Migration endet bei Schema 3 mit 14 Tasten), `hit-sound.test.ts` (Art `throw`; Würfe haben keine Swing-Cues), `cpu.test.ts` (`KNOWLEDGE` ohne Würfe), `hud.test.ts` (Fake-Elemente mit `classList`). Die Guard-Tests mit den „unaffected-moves“-Fixtures und alle Posen-/Kontakt-Hashes sind unverändert grün; bestehende Moves, Posen, Animationen und Kontaktgeometrie sind unverändert.
+- `KNOWLEDGE` (Schlag-Repertoire der CPU) enthält keine Würfe; sie werden über die Greifreichweite gewählt.
+- Footer: „TEN BUTTONS“ / „ZEHN BUTTONS“.
+- `smoke:animation-preview`: Würfe als eigene Gruppe und eigener Listenabschnitt.
+
+### Hinweis
+- Ein Gegner im Startup eines eigenen (späteren) Wurfs ist im Angriff und damit nicht greifbar; nur gleichzeitig ausgelöste Würfe ergeben einen Clash.
+- Kurz nach dem Aufstehen gibt es keinen gesonderten Wurfschutz.
+
+### Prüfstand nach beiden Einträgen
+- Typecheck (App und Skripte), **926 Tests in 50 Dateien**, alle Generatorprüfungen (inklusive `generate:throws -- --check`) und Produktionsbuild grün.
+- `biome lint` meldet weiterhin Fehler (keine `biome.json`); die Zahl in `src/`, `scripts/` und `tests/` ist gegenüber dem Ausgangsstand unverändert, der Anstieg der Gesamtzahl stammt aus dem neu gebauten `dist/`. Die neuen Dateien sind lint-frei.
+- Browser-Smokes (Chrome) grün: `smoke`, `audio`, `audio-loudness`, `update`, `cpu`, `stage`, `style`, `animation-preview`, `contact-timing`, `effects`, `punch-kick-combos`, `throws`. `smoke:rotation` nicht erneut geprüft (scheiterte schon vorher). `cpu:tournament` (schwer 91 % gegen mittel, mittel 95 % gegen leicht) und `cpu-benchmark` laufen.
+
+---
+
 ## 1.10.0 · 21.11.2026
 
 - App-Version (`package.json`) **1.9.1 → 1.10.0**, Replay-Engine-Version (`ENGINE_VERSION`) **1.8.0 → 1.9.0**: Die zwei neuen Kombos ändern Moves, Posen und Kontaktgeometrie und damit den Replay-Datenhash. Ältere Replays werden eindeutig abgewiesen.
