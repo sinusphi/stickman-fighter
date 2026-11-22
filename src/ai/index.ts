@@ -26,8 +26,9 @@ export class CpuPlayer {
    */
   gate?: (moveId: string, frame: number) => boolean;
   constructor(readonly difficulty: Difficulty = 'medium', private player: 0 | 1 = 1,
-    private factory: BrainFactory = (p,rng)=>new UtilityBrain(p,rng)) {
-    this.profile=PROFILES[difficulty]; this.perception=new Perception(this.profile.reactionFrames); this.reset(1);
+    private factory: BrainFactory = (p,rng)=>new UtilityBrain(p,rng), overrides: Partial<CpuProfile> = {}) {
+    // Survival enemy archetypes tune single profile values (aggression, reaction time) on top of a base level.
+    this.profile={...PROFILES[difficulty],...overrides}; this.perception=new Perception(this.profile.reactionFrames); this.reset(1);
   }
   reset(seed: number): void {
     this.brain=this.factory(this.profile,new Rng(seed)); this.perception.reset(); this.controller.clear();

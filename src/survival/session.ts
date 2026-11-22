@@ -3,7 +3,7 @@ import type { GameState } from '../simulation/types';
 import { SURVIVAL, SURVIVAL_BEST_KEY } from './config';
 import { Director } from './director';
 import { EnemyPilot } from './pilot';
-import { createSurvival, stepSurvival, type SurvivalState } from './state';
+import { createSurvival, stepSurvival, type Enemy, type SurvivalState } from './state';
 
 /**
  * One survival run: deterministic simulation plus the AI side (director and
@@ -33,16 +33,17 @@ export class SurvivalSession {
     for (const e of this.state.enemies) e.pair.inputConfig = { ...config, autoBlock: [config.autoBlock?.[0] ?? false, false] };
   }
 
-  pilot(uid: number): EnemyPilot {
+  pilot(enemy: Enemy): EnemyPilot {
+    const uid = enemy.uid;
     let pilot = this.pilots.get(uid);
-    if (!pilot) { pilot = new EnemyPilot(uid, (this.seed + Math.imul(uid, 0x2545f491)) | 0, this.director, this.config); this.pilots.set(uid, pilot); }
+    if (!pilot) { pilot = new EnemyPilot(uid, (this.seed + Math.imul(uid, 0x2545f491)) | 0, this.director, enemy, this.config); this.pilots.set(uid, pilot); }
     return pilot;
   }
 
   step(player: RawInput): void {
     const state = this.state;
     this.director.update(state);
-    const inputs = state.enemies.map(e => this.pilot(e.uid).next(state, e));
+    const inputs = state.enemies.map(e => this.pilot(e).next(state, e));
     stepSurvival(state, player, inputs);
     for (const e of state.enemies) e.warn = this.director.warning(e.uid, state.frame);
     if (this.pilots.size > state.enemies.length) {

@@ -23,7 +23,13 @@ export interface HudContext {
   /** Survival run: `game` is then a [player, focused enemy] view (see survival/views). */
   survival?: SurvivalHud;
 }
-export interface SurvivalHud { time: string; best: string; enemies: number; kills: number; playerMaxHp: number; enemyMaxHp: number }
+export interface SurvivalHud {
+  time: string; best: string; enemies: number; kills: number; playerMaxHp: number; enemyMaxHp: number;
+  /** Boss line: seconds until the next boss, or the number of the boss being fought (0 = none). */
+  bossIn: string; boss: number;
+  /** Energy won back so far. */
+  energy: number;
+}
 
 export interface HudModes { trainingCpu: boolean; cpuActive: boolean; demoActive: boolean; cpuPresent: boolean }
 
@@ -53,7 +59,7 @@ export function hudLabels(c: HudContext) {
     p2: s ? t('survival.enemies', { count: s.enemies }) : m.demoActive ? 'CPU 02' : m.cpuPresent ? 'CPU' : 'PLAYER 02',
     matchStatus: `${s ? 'SURVIVAL' : playback ? 'REPLAY' : m.trainingCpu ? 'TRAINING · CPU · ' + level : game.training.enabled ? 'TRAINING' : m.demoActive ? 'DEMO · ' + demoLevels : m.cpuActive ? 'VS CPU · ' + level : 'LOCAL VERSUS'} · ${rules.hz} HZ`,
     cpuDebug: m.demoActive ? c.cpuDebug.map((intent, i) => describeIntent(i + 1, intent)).join('\n') : m.cpuPresent ? describeIntent(2, c.cpuDebug[1]) : '',
-    arenaMode: s ? `${c.stageCaption} / ${t('survival.mode', { kills: s.kills })}` : playback ? `REPLAY / ${playback.index} : ${playback.total}`
+    arenaMode: s ? `${c.stageCaption} / ${t('survival.mode', { kills: s.kills })} · ${s.boss ? t('survival.boss', { n: s.boss }) : t('survival.bossIn', { time: s.bossIn })} · ${t('survival.energy', { energy: s.energy })}` : playback ? `REPLAY / ${playback.index} : ${playback.total}`
       : c.recordingFrames !== null ? `REC / ${c.recordingFrames} FRAMES`
       : m.trainingCpu ? `TRAINING / CPU · ${level}`
       : game.training.enabled ? `TRAINING / ${dummyName(game.training.dummy).toUpperCase()}`

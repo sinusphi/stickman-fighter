@@ -31,8 +31,9 @@ export class EnemyPilot {
   private guarding = false;
   /** The CPU drove this enemy in the previous frame. */
   private driving = false;
-  constructor(readonly uid: number, seed: number, private director: Director, private config = SURVIVAL) {
-    this.cpu = new CpuPlayer(config.enemies.difficulty, 1);
+  constructor(readonly uid: number, seed: number, private director: Director, enemy: Pick<Enemy, 'difficulty' | 'aggression' | 'reactionFrames'>, private config = SURVIVAL) {
+    // Archetype tuning: base profile of the difficulty, with its own aggression and reaction time.
+    this.cpu = new CpuPlayer(enemy.difficulty, 1, undefined, { aggression: enemy.aggression, reactionFrames: enemy.reactionFrames });
     this.cpu.reset(seed);
     this.cpu.gate = (moveId, frame) => director.allowMove(uid, moveId, frame);
     this.rng = new Rng((seed ^ 0x9e3779b9) | 0);

@@ -21,12 +21,17 @@ export function survivalViews(state: SurvivalState): SurvivalView[] {
     .map(e => ({ uid: e.uid, game: view(state, e) }));
 }
 
-/** HUD view: the player against the enemy hit last (else the closest living one). */
-export function survivalHudGame(state: SurvivalState): GameState {
+/** Enemy shown in the HUD: the one hit last, else a living boss, else the closest living one. */
+export function survivalFocus(state: SurvivalState): Enemy | undefined {
   const p = state.player;
   const living = state.enemies.filter(e => !e.dead && !e.entering).sort((a, b) => Math.abs(a.fighter.x - p.x) - Math.abs(b.fighter.x - p.x));
-  const focus = state.enemies.find(e => e.uid === state.focus && !e.dead) ?? living[0];
+  return state.enemies.find(e => e.uid === state.focus && !e.dead) ?? living.find(e => e.boss > 0) ?? living[0];
+}
+
+/** HUD view: the player against the focused enemy. */
+export function survivalHudGame(state: SurvivalState): GameState {
+  const focus = survivalFocus(state);
   if (focus) return view(state, focus);
   const placeholder = createFighter(1); placeholder.hp = 0;
-  return { ...createGame(), frame: state.frame, combatFrame: state.combatFrame, hitstop: state.hitstop, inputConfig: state.inputConfig, fighters: [p, placeholder] };
+  return { ...createGame(), frame: state.frame, combatFrame: state.combatFrame, hitstop: state.hitstop, inputConfig: state.inputConfig, fighters: [state.player, placeholder] };
 }

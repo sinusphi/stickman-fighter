@@ -2,11 +2,12 @@ import rules from '../data/rules.json';
 import { captureInput } from '../input/commands';
 import { buttonBit, neutralInput, type RawInput } from '../input/types';
 import { createFighter, createRound } from '../simulation/factory';
-import { moveFighter } from '../simulation/movement';
+import { moveFighter, transition } from '../simulation/movement';
 import { pushbox, resolvePushboxes } from '../simulation/collision';
 import { advanceAttack, resolveCombat, startAttack, standingHoldEligible } from '../simulation/combat';
 import type { Facing, Fighter, GameState } from '../simulation/types';
-import { SURVIVAL, type SurvivalConfig } from './config';
+import { SURVIVAL, type EnemyTier, type SurvivalConfig } from './config';
+import { bossSpec, gainFactor, pickType, typeSpec, type EnemySpec } from './spawner';
 
 /*
  * Survival simulation: one player against a changing crowd of enemies.
@@ -34,9 +35,46 @@ export interface Enemy {
   /** Counted as killed (once, when it went KO). */
   dead: boolean;
   koFrames: number;
+  /** Archetype id (`boss` for minibosses) and tier. */
+  archetype: string;
+  tier: EnemyTier;
+  /** 0 for regular enemies, otherwise the boss number. */
+  boss: number;
+  /** Starting energy (HUD bar) and the director budget the enemy occupies. */
+  maxHp: number;
+  cost: number;
+  /** CPU tuning of the archetype (read by the pilot). */
+  difficulty: 'easy' | 'medium' | 'hard';
+  aggression: number;
+  reactionFrames: number;
+  /** Energy the player gets for the KO. */
+  killEnergy: number;
+  /** Stagger: the enemy falls when `poise` reaches `poiseMax` (see config `stagger`). */
+  poise: number;
+  poiseMax: number;
+  /** Frame of the last landed hit, and hits in the current combo (hits during hitstun). */
+  hitFrame: number;
+  chain: number;
   /** Presentation only, written by the session: frames left of the back-attack warning. */
   warn: number;
 }
+/** Boss, wave and mix bookkeeping of the director's spawn side. */
+export interface SpawnFlow {
+  /** Frames until the next boss; only runs while no boss is around, restarts when one has gone. */
+  bossTimer: number;
+  /** Bosses spawned so far. */
+  bosses: number;
+  /** Frame the last boss fell (director: cleanup phase), null before the first. */
+  bossDown: number | null;
+  /** Tier of the regular enemy that fell last, consumed by the next pick. */
+  lastFallen: EnemyTier | null;
+  waveTimer: number;
+  waves: number;
+  waveLeft: number;
+  waveGap: number;
+}
+/** Energy rewards: total so far and the latest gain (floating "+N"). */
+export interface EnergyLog { total: number; lastFrame: number; last: number; boss: boolean }
 export interface TurnState { frame: number; from: Facing }
 export interface SurvivalState {
   frame: number;
@@ -46,6 +84,8 @@ export interface SurvivalState {
   enemies: Enemy[];
   nextUid: number;
   spawnTimer: number;
+  flow: SpawnFlow;
+  energy: EnergyLog;
   survivedFrames: number;
   kills: number;
   over: boolean;
@@ -82,6 +122,8 @@ export function createSurvival(seed = 1, inputConfig?: GameState['inputConfig'],
   player.facing = player.attackFacing = 1;
   return {
     frame: 0, combatFrame: 0, seed: seed | 0, player, enemies: [], nextUid: 1,
+    flow: { bossTimer: config.boss.firstFrames, bosses: 0, bossDown: null, lastFallen: null, waveTimer: config.waves.firstFrames, waves: 0, waveLeft: 0, waveGap: 0 },
+    energy: { total: 0, lastFrame: -Infinity, last: 0, boss: false },
     spawnTimer: config.enemies.firstSpawnFrames, survivedFrames: 0, kills: 0, over: false, hitstop: 0,
     turn: null, tap: { left: false, right: false, lastBack: -Infinity }, turns: 0, playerAttackId: player.attackId,
     inputConfig: structuredClone(inputConfig ?? { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }),
@@ -104,8 +146,9 @@ export function inFront(player: Fighter, enemy: Fighter): boolean {
 }
 export const alive = (e: Enemy): boolean => !e.dead && e.fighter.state !== 'KO';
 
-export function spawnEnemy(state: SurvivalState, side?: -1 | 1): Enemy {
+export function spawnEnemy(state: SurvivalState, side?: -1 | 1, kind: EnemySpec | keyof SurvivalConfig['types'] = 'rookie'): Enemy {
   const c = state.config.enemies, p = state.player;
+  const spec = typeof kind === 'string' ? typeSpec(state.config, kind) : kind;
   if (!side) {
     const left = state.enemies.filter(e => alive(e) && e.fighter.x < p.x).length;
     const right = state.enemies.filter(e => alive(e) && e.fighter.x >= p.x).length;
@@ -114,10 +157,52 @@ export function spawnEnemy(state: SurvivalState, side?: -1 | 1): Enemy {
   const f = createFighter(1);
   f.x = side < 0 ? -c.spawnOffset * U : rules.stageWidth + c.spawnOffset * U;
   f.facing = f.attackFacing = side < 0 ? 1 : -1;
-  f.hp = c.hp; f.damageScalePermille = Math.round(rules.damageScaleUnit * c.damagePermille / 1000); f.stability = c.stability;
-  const enemy: Enemy = { uid: state.nextUid++, fighter: f, pair: createPair(state, f), playerHits: [], entering: true, dead: false, koFrames: 0, warn: 0 };
+  f.hp = spec.hp; f.damageScalePermille = Math.round(rules.damageScaleUnit * spec.damagePermille / 1000); f.stability = spec.stability;
+  const enemy: Enemy = {
+    uid: state.nextUid++, fighter: f, pair: createPair(state, f), playerHits: [], entering: true, dead: false, koFrames: 0, warn: 0,
+    archetype: spec.id, tier: spec.tier, boss: spec.boss, maxHp: spec.hp, cost: spec.cost, difficulty: spec.difficulty,
+    aggression: spec.aggression, reactionFrames: spec.reactionFrames, killEnergy: spec.killEnergy,
+    poise: 0, poiseMax: spec.poise, hitFrame: -Infinity, chain: 0,
+  };
   state.enemies.push(enemy);
   return enemy;
+}
+
+/** Heavy grounded hit: a short hop backwards, then the regular knockdown and stand-up (same as combat.ts). */
+function knockDown(f: Fighter, side: number): void {
+  transition(f, 'Knockdown', rules.knockdownFrames);
+  f.vy = rules.hitStrength.groundKnockdownVelocity; f.vx = side * rules.hitStrength.groundKnockdownSpeed;
+  f.airAttackUsed = true;
+}
+
+/**
+ * Stagger bookkeeping after the combat of one pair. Every landed hit fills the
+ * enemy's poise (more for combo hits); a full poise knocks it down. Returns
+ * the energy gain of the hit (before time decay), 0 when no hit landed.
+ */
+function applyHit(state: SurvivalState, e: Enemy, hpBefore: number, stateBefore: Fighter['state']): number {
+  const f = e.fighter, contact = e.pair.lastContact, c = state.config;
+  if (f.hp >= hpBefore || !contact || contact.blocked || contact.defender !== 1 || contact.frame !== state.combatFrame) return 0;
+  e.chain = stateBefore === 'Hitstun' ? e.chain + 1 : 1;
+  e.hitFrame = state.frame;
+  e.poise += e.chain > 1 ? c.stagger.comboHit : c.stagger.perHit;
+  if (f.state === 'Knockdown') { e.poise = 0; e.chain = 0; }
+  else if (f.state === 'Hitstun' && e.poise >= e.poiseMax) {
+    knockDown(f, Math.sign(f.x - state.player.x) || -state.player.facing); e.poise = 0; e.chain = 0;
+  }
+  return c.energy.perHit + (e.chain > 1 ? c.energy.perComboHit : 0);
+}
+
+/** Energy for the player. Normal gains stop at full energy, the boss bonus may go up to `energy.reserveCap`. */
+function gainEnergy(state: SurvivalState, amount: number, boss: boolean): void {
+  const p = state.player, c = state.config;
+  if (p.hp <= 0 || p.state === 'KO') return;
+  const gain = Math.round(amount * gainFactor(c, state.survivedFrames, rules.hz)), cap = boss ? c.energy.reserveCap : c.player.hp;
+  const next = Math.max(p.hp, Math.min(cap, p.hp + gain)), real = next - p.hp;
+  if (real <= 0) return;
+  p.hp = next;
+  const log = state.energy;
+  log.last = state.frame - log.lastFrame <= 30 ? log.last + real : real; log.lastFrame = state.frame; log.total += real; log.boss = boss;
 }
 
 /**
@@ -171,9 +256,11 @@ function insideArena(f: Fighter): boolean {
 
 function resolveBodies(state: SurvivalState): void {
   const p = state.player;
-  const solid = state.enemies.filter(e => !e.entering && e.fighter.state !== 'KO').map(e => e.fighter).sort((a, b) => a.x - b.x);
-  for (let i = 1; i < solid.length; i++) resolvePushboxes([solid[i - 1], solid[i]]);
-  for (const f of solid) resolvePushboxes([p, f]);
+  const present = state.enemies.filter(e => !e.entering && e.fighter.state !== 'KO');
+  // A miniboss pushes through the crowd: spectators between it and the player must not block the duel.
+  const crowd = present.filter(e => e.boss === 0).map(e => e.fighter).sort((a, b) => a.x - b.x);
+  for (let i = 1; i < crowd.length; i++) resolvePushboxes([crowd[i - 1], crowd[i]]);
+  for (const { fighter: f } of present) resolvePushboxes([p, f]);
 }
 
 /**
@@ -221,31 +308,89 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   // KO'd enemies lie as scenery: no pushbox, no contact.
   const order = state.enemies.filter(e => !e.entering && !e.dead).sort((a, b) => Math.abs(a.fighter.x - p.x) - Math.abs(b.fighter.x - p.x));
   for (const e of order) {
-    const hpBefore = e.fighter.hp;
+    const hpBefore = e.fighter.hp, stateBefore = e.fighter.state;
     p.hitTargets = e.playerHits;
     e.pair.hitstop = 0;
     resolveCombat(e.pair);
     state.hitstop = Math.max(state.hitstop, e.pair.hitstop);
     if (e.fighter.hp < hpBefore) state.focus = e.uid;
+    const hitGain = applyHit(state, e, hpBefore, stateBefore);
+    if (hitGain) gainEnergy(state, hitGain, false);
   }
   p.hitTargets = [];
 
-  for (const e of state.enemies) if (!e.dead && e.fighter.state === 'KO') { e.dead = true; state.kills++; }
+  for (const e of state.enemies) {
+    if (!e.dead && e.fighter.state === 'KO') {
+      e.dead = true; state.kills++;
+      gainEnergy(state, e.killEnergy, e.boss > 0);
+      if (e.boss) state.flow.bossDown = state.frame; else state.flow.lastFallen = e.tier;
+    }
+    // Stagger recovers while the enemy is left alone.
+    if (e.poise > 0 && state.frame - e.hitFrame > c.stagger.recoverDelayFrames && e.fighter.state !== 'Hitstun') e.poise = Math.max(0, e.poise - c.stagger.recoverPerFrame);
+    if (e.chain && e.fighter.state !== 'Hitstun' && e.fighter.state !== 'Knockdown') e.chain = 0;
+  }
   removeFallen(state);
   if (p.state === 'KO' || p.hp === 0) state.over = true;
   else state.survivedFrames++;
 
-  if (state.spawnTimer > 0) state.spawnTimer--;
-  if (!state.over && state.spawnTimer === 0 && state.enemies.filter(alive).length < c.enemies.max) {
-    spawnEnemy(state);
-    state.spawnTimer = c.enemies.spawnIntervalFrames;
-  }
+  if (!state.over) spawnStep(state);
   state.combatFrame++;
+}
+
+/**
+ * Spawns of one frame: the boss when its timer ran out, small waves and the
+ * regular refill. The boss timer only runs while no boss is in the arena
+ * (see removeFallen); there is never more than one boss.
+ */
+function spawnStep(state: SurvivalState): void {
+  const c = state.config, flow = state.flow, p = state.player;
+  const living = state.enemies.filter(alive), bossPresent = state.enemies.some(e => e.boss > 0), bossAlive = living.some(e => e.boss > 0);
+  if (!bossPresent) {
+    if (flow.bossTimer > 0) flow.bossTimer--;
+    if (flow.bossTimer === 0) {
+      // The boss walks in on the side the player looks at: the duel starts in front.
+      flow.bosses++; flow.waveLeft = 0;
+      spawnEnemy(state, p.facing, bossSpec(c, flow.bosses));
+      state.spawnTimer = Math.max(state.spawnTimer, c.enemies.spawnIntervalFrames);
+      return;
+    }
+  }
+  const regular = living.filter(e => e.boss === 0).length;
+  const cleanup = !bossAlive && flow.bossDown !== null && state.frame - flow.bossDown < c.duel.cleanupFrames;
+
+  // Small waves between the bosses, not right before one.
+  if (!bossPresent && flow.bossTimer > c.waves.bossMarginFrames) {
+    if (flow.waveLeft === 0 && flow.waveTimer > 0) flow.waveTimer--;
+    if (flow.waveLeft === 0 && flow.waveTimer === 0) {
+      flow.waves++; flow.waveTimer = c.waves.intervalFrames;
+      flow.waveLeft = Math.min(c.waves.maxSize, Math.floor(c.waves.size + c.waves.growth * (flow.waves - 1)));
+    }
+  } else flow.waveLeft = 0;
+  if (flow.waveLeft > 0) {
+    if (flow.waveGap > 0) flow.waveGap--;
+    else if (regular < c.enemies.max + c.waves.extraSlots) {
+      spawnEnemy(state, undefined, pickType(state, () => random(state), rules.hz, { wave: true }));
+      flow.waveLeft--; flow.waveGap = c.waves.gapFrames;
+    }
+    return;
+  }
+
+  if (state.spawnTimer > 0) state.spawnTimer--;
+  const cap = bossAlive ? c.boss.spectators : c.enemies.max;
+  if (state.spawnTimer === 0 && regular < cap) {
+    const id = pickType(state, () => random(state), rules.hz);
+    flow.lastFallen = null;
+    spawnEnemy(state, undefined, id);
+    state.spawnTimer = cleanup ? c.duel.cleanupSpawnIntervalFrames : c.enemies.spawnIntervalFrames;
+  }
 }
 
 function removeFallen(state: SurvivalState): void {
   for (const e of state.enemies) if (e.dead) e.koFrames++;
+  const before = state.enemies.some(e => e.boss > 0);
   state.enemies = state.enemies.filter(e => !e.dead || e.koFrames < state.config.enemies.koRemoveFrames);
+  // The boss timer starts over once no boss is left in the arena (alive or lying on the floor).
+  if (before && !state.enemies.some(e => e.boss > 0)) state.flow.bossTimer = state.config.boss.intervalFrames;
   if (state.focus !== null && !state.enemies.some(e => e.uid === state.focus)) state.focus = null;
 }
 

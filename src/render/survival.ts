@@ -44,7 +44,15 @@ const ENEMY_COLORS = {
   dark: ['#ff3040', '#ff8a1f', '#ffe040', '#7dff4f', '#ff4fd8', '#c996ff'],
   light: ['#bc1720', '#c25a00', '#8a6d00', '#2f7d1a', '#b0197f', '#7836a5'],
 } as const;
-function enemyColor(uid: number): string {
+const BOSS_COLORS = { dark: '#ffc83a', light: '#a86f00' } as const;
+/** Drawn size by tier: heavier enemies look a little bigger (hitboxes stay the same). */
+const TIER_SCALE = { light: 1, medium: 1.03, heavy: 1.07 } as const;
+const BOSS_SCALE = 1.14;
+const enemyScale = (e?: Enemy): number => !e ? 1 : e.boss ? BOSS_SCALE : TIER_SCALE[e.tier];
+function enemyColor(enemy: Enemy): string {
+  const light = document.documentElement.dataset.theme === 'light';
+  if (enemy.boss) return BOSS_COLORS[light ? 'light' : 'dark'];
+  const uid = enemy.uid;
   const set = ENEMY_COLORS[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
   return set[(uid - 1) % set.length];
 }
@@ -91,8 +99,9 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   }
   for (const { f, enemy, x, y, koTime, pose, facing, yaw, level } of figures) {
     if (enemy?.dead && blinkHidden(enemy, state)) continue;
-    ctx.save(); ctx.translate(x, y); ctx.scale(FIGURE_SCALE, FIGURE_SCALE);
-    const color = enemy ? enemyColor(enemy.uid) : palette.p1;
+    const grow = enemyScale(enemy);
+    ctx.save(); ctx.translate(x, y); ctx.scale(FIGURE_SCALE * grow, FIGURE_SCALE * grow);
+    const color = enemy ? enemyColor(enemy) : palette.p1;
     const time = (f.state === 'Attack' ? f.moveFrame : f.stateFrame) + a;
     if (f.state === 'Attack' && f.moveId) {
       const trails = animationTrails(f.moveId), samples = sampleTrails(f.moveId, time);
@@ -114,6 +123,9 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   if (camera) ctx.restore();
   effects?.drawOverlay(ctx, palette);
 
+  drawBossBar(ctx, state, palette);
+  drawEnergyGain(ctx, state, lerp(player.f, player.old)[0], palette);
+
   const banner = (text: string, y: number, font: string, halo: number) => {
     ctx.font = font; ctx.lineJoin = 'round'; ctx.strokeStyle = palette.arena; ctx.lineWidth = halo; ctx.strokeText(text, 480, y);
     ctx.fillStyle = palette.text; ctx.fillText(text, 480, y);
@@ -127,6 +139,34 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
     banner(t('survival.restart'), 198, '11px monospace', 4);
   }
   ctx.textAlign = 'left'; ctx.lineJoin = 'miter';
+}
+
+/** Health bar of a living miniboss at the top of the arena. */
+function drawBossBar(ctx: CanvasRenderingContext2D, state: SurvivalState, palette: Palette): void {
+  const boss = state.enemies.find(e => e.boss > 0 && !e.dead);
+  if (!boss) return;
+  const width = 300, x = 480 - width / 2, y = 98, ratio = Math.max(0, Math.min(1, boss.fighter.hp / boss.maxHp));
+  ctx.save();
+  ctx.fillStyle = palette.arena; ctx.globalAlpha = .65; ctx.fillRect(x - 3, y - 3, width + 6, 16);
+  ctx.globalAlpha = 1; ctx.fillStyle = enemyColor(boss); ctx.fillRect(x, y, width * ratio, 10);
+  ctx.strokeStyle = palette.text; ctx.lineWidth = 1; ctx.strokeRect(x - .5, y - .5, width + 1, 11);
+  ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.strokeStyle = palette.arena; ctx.lineWidth = 4;
+  const label = t('survival.bossBar', { n: boss.boss });
+  ctx.strokeText(label, 480, y - 7); ctx.fillStyle = palette.text; ctx.fillText(label, 480, y - 7);
+  ctx.restore();
+}
+
+/** Floating "+N" above the player for a short time after an energy gain. */
+function drawEnergyGain(ctx: CanvasRenderingContext2D, state: SurvivalState, x: number, palette: Palette): void {
+  const age = state.frame - state.energy.lastFrame, life = 50;
+  if (age < 0 || age > life) return;
+  const rise = age * .5;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, (life - age) / 20);
+  ctx.font = state.energy.boss ? 'bold 20px Arial' : 'bold 13px Arial'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = palette.arena; ctx.lineWidth = 4; ctx.fillStyle = palette.special;
+  ctx.strokeText(`+${state.energy.last}`, x, ground - 150 - rise); ctx.fillText(`+${state.energy.last}`, x, ground - 150 - rise);
+  ctx.restore();
 }
 
 function blinkHidden(enemy: Enemy, state: SurvivalState): boolean {

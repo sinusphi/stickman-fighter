@@ -29,7 +29,7 @@ import { neutralInput } from './input/types';
 import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
 import { SurvivalSession, loadBest, saveBest } from './survival/session';
 import { formatSurvival, snapshotSurvival, type SurvivalState } from './survival/state';
-import { survivalHudGame, survivalViews, type SurvivalView } from './survival/views';
+import { survivalFocus, survivalHudGame, survivalViews, type SurvivalView } from './survival/views';
 import { renderSurvival } from './render/survival';
 
 /** Upper bound for replay files read into memory (see message.replayTooLarge). */
@@ -287,7 +287,7 @@ async function main(): Promise<void> {
     const s = survival?.state;
     hud.update({
       game: s ? survivalHudGame(s) : game,
-      survival: s ? { time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: s.config.enemies.hp } : undefined,
+      survival: s ? { time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: survivalFocus(s)?.maxHp ?? 1, bossIn: formatSurvival(s.flow.bossTimer).slice(0, -3), boss: s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0, energy: s.energy.total } : undefined,
       paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
@@ -300,7 +300,7 @@ async function main(): Promise<void> {
   function exposeSurvival(): void {
     const s = survival?.state, data = canvas.dataset;
     if (!s) { delete data.survival; return; }
-    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}`;
+    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}`;
   }
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);

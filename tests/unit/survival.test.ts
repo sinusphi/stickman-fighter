@@ -102,8 +102,8 @@ describe('survival: run flow', () => {
   it('one swing hits several enemies', () => {
     const s = quiet(), a = place(s, 40), b = place(s, 80);
     stepSurvival(s, raw({}, buttonBit('LK'))); run(s, 50);
-    expect(a.fighter.hp).toBeLessThan(SURVIVAL.enemies.hp);
-    expect(b.fighter.hp).toBeLessThan(SURVIVAL.enemies.hp);
+    expect(a.fighter.hp).toBeLessThan(SURVIVAL.types.rookie.hp);
+    expect(b.fighter.hp).toBeLessThan(SURVIVAL.types.rookie.hp);
   });
 
   it('attacks into the back cannot be blocked, attacks in front can', () => {

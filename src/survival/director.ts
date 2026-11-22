@@ -21,6 +21,16 @@ import { alive, inFront, type Enemy, type SurvivalState } from './state';
  *  - Every token starts with a small random delay; identical moves of two
  *    enemies and attack starts closer than `attackGapFrames` are vetoed.
  *
+ * States (`mode`):
+ *  - normal:  tokens, back throttling and mixes as described above.
+ *  - duel:    a miniboss is alive. It is the only attacker (front token even
+ *             from behind); everyone else is a spectator that waits at the
+ *             edge and holds no token.
+ *  - cleanup: the boss just fell. Cooldowns and grace periods are gone, back
+ *             enemies have full rights, there is one extra front token and the
+ *             first waiting enemy may attack after a short delay: the pressure
+ *             comes back at once. Ends after `duel.cleanupFrames`.
+ *
  * Cheap by design: the full evaluation runs every `intervalFrames` frames or
  * at once after the player turned; per frame only token holders are checked.
  * Lives outside the deterministic simulation like the CPU, with its own
@@ -28,9 +38,12 @@ import { alive, inFront, type Enemy, type SurvivalState } from './state';
  */
 
 export type Side = 'front' | 'back';
+export type DirectorMode = 'normal' | 'duel' | 'cleanup';
 export type BackPhase = 'approach' | 'warn' | 'strike';
 interface Slot {
   side: Side;
+  /** The miniboss. */
+  boss: boolean;
   /** Back enemy with full attack rights (few enemies left in front). */
   promoted: boolean;
   token: Side | null;
@@ -58,6 +71,7 @@ export class Director {
   private slots = new Map<number, Slot>();
   private nextFull = 0;
   private lastFacing: Facing | null = null;
+  mode: DirectorMode = 'normal';
   private backReadyAt = 0;
   private lastAttack = -Infinity;
   private locks = new Map<string, { uid: number; frame: number }>();
@@ -66,13 +80,15 @@ export class Director {
 
   reset(seed: number): void {
     this.rng = new Rng(seed); this.slots.clear(); this.locks.clear();
-    this.nextFull = 0; this.lastFacing = null; this.backReadyAt = 0; this.lastAttack = -Infinity;
+    this.nextFull = 0; this.lastFacing = null; this.mode = 'normal'; this.backReadyAt = 0; this.lastAttack = -Infinity;
   }
 
   /** Call once per frame before the enemies decide. */
   update(state: SurvivalState): void {
     const frame = state.frame, p = state.player;
     const turned = this.lastFacing !== null && this.lastFacing !== p.facing;
+    const mode = this.modeOf(state);
+    if (mode !== this.mode) this.enter(mode, state);
     if (turned || frame >= this.nextFull) { this.evaluate(state, turned); this.nextFull = frame + this.config.director.intervalFrames; }
     this.lastFacing = p.facing;
     // Per frame: back attackers that reached striking distance start their warning.
@@ -88,6 +104,23 @@ export class Director {
     }
   }
 
+  private modeOf(state: SurvivalState): DirectorMode {
+    if (state.enemies.some(e => e.boss > 0 && alive(e))) return 'duel';
+    const down = state.flow.bossDown;
+    return down !== null && state.frame - down < this.config.duel.cleanupFrames ? 'cleanup' : 'normal';
+  }
+
+  /** State change: the evaluation runs at once; a fallen boss releases the pressure on the player. */
+  private enter(mode: DirectorMode, state: SurvivalState): void {
+    const from = this.mode, frame = state.frame;
+    this.mode = mode; this.nextFull = 0;
+    if (mode !== 'cleanup' || from !== 'duel') return;
+    // Cleanup: everybody who waited may attack now, back attackers included.
+    this.backReadyAt = frame;
+    for (const slot of this.slots.values()) { slot.cooldownUntil = 0; slot.graceUntil = 0; }
+    this.lastAttack = -Infinity;
+  }
+
   private attacksFromBehind(slot: Slot): boolean { return slot.side === 'back'; }
 
   private evaluate(state: SurvivalState, turned: boolean): void {
@@ -101,7 +134,7 @@ export class Director {
       const side: Side = inFront(p, e.fighter) ? 'front' : 'back';
       let slot = this.slots.get(e.uid);
       if (!slot) {
-        slot = { side, promoted: false, token: null, since: 0, startAt: 0, attacks: 0, warnAt: null, rewarnFrom: null, cooldownUntil: 0, lastAllowed: -Infinity, graceUntil: 0, rank: 0, shuffle: 0, shuffleUntil: 0 };
+        slot = { side, boss: e.boss > 0, promoted: false, token: null, since: 0, startAt: 0, attacks: 0, warnAt: null, rewarnFrom: null, cooldownUntil: 0, lastAllowed: -Infinity, graceUntil: 0, rank: 0, shuffle: 0, shuffleUntil: 0 };
         this.slots.set(e.uid, slot);
       } else if (slot.side !== side) {
         // Re-sorted after a turn (or after walking around the player).
@@ -111,9 +144,13 @@ export class Director {
       }
     }
     const slots = active.map(e => ({ e, slot: this.slots.get(e.uid)! }));
-    const promote = slots.filter(s => s.slot.side === 'front').length <= d.promoteFrontAtMost;
+    const duel = this.mode === 'duel', cleanup = this.mode === 'cleanup';
+    const promote = cleanup || slots.filter(s => s.slot.side === 'front').length <= d.promoteFrontAtMost;
     for (const { slot } of slots) {
+      // The boss attacks with full rights from either side and without a grace period.
+      if (slot.boss) { slot.promoted = true; slot.graceUntil = 0; continue; }
       if (slot.side !== 'back' || slot.promoted === promote) continue;
+      if (promote && cleanup) { slot.promoted = true; continue; }
       slot.promoted = promote;
       if (promote) slot.graceUntil = Math.max(slot.graceUntil, frame + d.promotionGraceFrames);
       else if (slot.token === 'front') this.release(slot, frame);
@@ -123,22 +160,25 @@ export class Director {
     for (const { e, slot } of slots) {
       if (!slot.token) continue;
       const f = e.fighter, idle = f.state !== 'Attack' && frame - slot.lastAllowed > ATTACK_START_FRAMES;
-      const used = slot.attacks >= (slot.token === 'back' ? 1 : d.attacksPerToken);
-      if (idle && (used || frame - slot.since > d.tokenMaxFrames || f.state === 'Knockdown')) this.release(slot, frame);
+      const used = slot.attacks >= (slot.token === 'back' ? 1 : slot.boss ? this.config.duel.bossAttacksPerToken : d.attacksPerToken);
+      // In a boss duel the spectators give their tokens back as soon as they are idle.
+      const spectator = duel && !slot.boss;
+      if (idle && (used || spectator || frame - slot.since > d.tokenMaxFrames || f.state === 'Knockdown')) this.release(slot, frame);
     }
 
     const ready = (e: Enemy, slot: Slot) => !slot.token && frame >= slot.cooldownUntil && frame >= slot.graceUntil && READY_STATES.includes(e.fighter.state);
     // Front pool: enemies in front first, then promoted back enemies; closest first.
-    let front = slots.filter(s => s.slot.token === 'front').length;
-    const frontPool = slots.filter(s => (s.slot.side === 'front' || s.slot.promoted) && ready(s.e, s.slot))
+    let front = slots.filter(s => s.slot.token === 'front' && (!duel || s.slot.boss)).length;
+    const frontTokens = d.frontTokens + (cleanup ? this.config.duel.cleanupExtraTokens : 0);
+    const frontPool = slots.filter(s => (duel ? s.slot.boss : s.slot.side === 'front' || s.slot.promoted) && ready(s.e, s.slot))
       .sort((a, b) => Number(a.slot.side === 'back') - Number(b.slot.side === 'back') || distance(a.e) - distance(b.e));
     for (const { slot } of frontPool) {
-      if (front >= d.frontTokens) break;
+      if (front >= (duel ? 1 : frontTokens)) break;
       this.grant(slot, 'front', frame); front++;
     }
     // Back pool: small separate budget with a long cooldown.
     let back = slots.filter(s => s.slot.token === 'back').length;
-    if (frame >= this.backReadyAt) {
+    if (!duel && frame >= this.backReadyAt) {
       const backPool = slots.filter(s => s.slot.side === 'back' && !s.slot.promoted && ready(s.e, s.slot)).sort((a, b) => distance(a.e) - distance(b.e));
       for (const { slot } of backPool) {
         if (back >= d.backTokens) break;
@@ -162,13 +202,13 @@ export class Director {
 
   private grant(slot: Slot, token: Side, frame: number): void {
     slot.token = token; slot.since = frame; slot.attacks = 0; slot.warnAt = null; slot.rewarnFrom = null;
-    slot.startAt = frame + this.range(this.config.director.startDelayFrames);
+    slot.startAt = frame + this.range(this.mode === 'cleanup' ? this.config.duel.cleanupStartDelayFrames : this.config.director.startDelayFrames);
   }
 
   private release(slot: Slot, frame: number): void {
     if (slot.token === 'back') this.backReadyAt = frame + this.config.director.backCooldownFrames;
     slot.token = null; slot.warnAt = null; slot.rewarnFrom = null; slot.attacks = 0;
-    slot.cooldownUntil = frame + this.config.director.tokenCooldownFrames;
+    slot.cooldownUntil = frame + (slot.boss ? this.config.duel.bossCooldownFrames : this.config.director.tokenCooldownFrames);
   }
 
   // ------------------------------------------------------------ queries ---
@@ -197,7 +237,8 @@ export class Director {
   lurkDistance(uid: number): number {
     const slot = this.slots.get(uid), lurk = this.config.lurk;
     if (!slot) return lurk.frontDistance;
-    const base = slot.side === 'front' || slot.promoted ? lurk.frontDistance : lurk.backDistance;
+    // Spectators of a boss duel keep to the edge.
+    const base = this.mode === 'duel' && !slot.boss ? this.config.duel.spectatorDistance : slot.side === 'front' || slot.promoted ? lurk.frontDistance : lurk.backDistance;
     return base + slot.rank * lurk.spacing + slot.shuffle;
   }
   /**
