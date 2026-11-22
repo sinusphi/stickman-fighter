@@ -43,7 +43,8 @@ it('loads only valid preferences and tolerates blocked storage',()=>{
   expect(loadCpuSettings({getItem:()=>'{"enabled":true,"difficulty":"__proto__"}'}).enabled).toBe(false);
 });
 it('derives every move, group, scaled edge and advance without an ID allowlist',()=>{
-  expect(KNOWLEDGE.map(m=>m.id)).toEqual(Object.keys(PLAYABLE_MOVES));
+  // Throws are chosen by grab range (UtilityBrain.throwIntent), not by hitbox knowledge.
+  expect(KNOWLEDGE.map(m=>m.id)).toEqual(Object.keys(PLAYABLE_MOVES).filter(id=>!PLAYABLE_MOVES[id].throw));
   const f=createGame().fighters[0];f.x=f.y=0;f.facing=1;
   for(const m of Object.values(MOVES))for(const [frame,boxes] of m.frames.entries())for(const [index,b] of boxes.hitboxes.entries()) {
     expect(scaledBox(b)).toEqual(worldBox({x:b.x,y:b.y,width:b.width,height:b.height},f));

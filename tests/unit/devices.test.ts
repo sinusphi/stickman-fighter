@@ -80,3 +80,56 @@ describe('atomic control changes',()=>{
     expect(devices.config).toEqual({...before,bufferFrames:12});
   });
 });
+
+describe('throw button (controls schema 3)',()=>{
+  /** A stored v2 configuration as earlier versions saved it: no THROW anywhere. */
+  function v2() {
+    const old=structuredClone(DEFAULT_CONTROLS);old.schemaVersion=2;
+    for(const player of old.players) {
+      delete (player.keys as Partial<typeof player.keys>).THROW;
+      delete (player.padButtons as Partial<typeof player.padButtons>).THROW;
+    }
+    return old;
+  }
+  it('binds C (P1), Numpad0 (P2) and LB (button 4) by default',()=>{
+    expect(DEFAULT_CONTROLS.schemaVersion).toBe(3);
+    expect(DEFAULT_CONTROLS.players.map(p=>p.keys.THROW)).toEqual(['KeyC','Numpad0']);
+    expect(DEFAULT_CONTROLS.players.map(p=>p.padButtons.THROW)).toEqual([4,4]);
+    for(const player of DEFAULT_CONTROLS.players)expect(new Set(Object.values(player.keys)).size).toBe(Object.keys(player.keys).length);
+  });
+  it('migrates stored v2 bindings: adds THROW, keeps every custom binding',()=>{
+    const old=v2();old.players[0].keys.LP='KeyQ';old.players[1].padButtons.HK=9;old.players[0].autoBlock=true;
+    const migrated=validateControls(old);
+    expect(migrated.schemaVersion).toBe(3);expect(old.schemaVersion).toBe(2);
+    expect(migrated.players.map(p=>p.keys.THROW)).toEqual(['KeyC','Numpad0']);
+    expect(migrated.players.map(p=>p.padButtons.THROW)).toEqual([4,4]);
+    expect(migrated.players[0].keys.LP).toBe('KeyQ');expect(migrated.players[1].padButtons.HK).toBe(9);expect(migrated.players[0].autoBlock).toBe(true);
+    const { THROW: _t0, ...keys0 }=migrated.players[0].keys;const { THROW: _t1, ...pads1 }=migrated.players[1].padButtons;
+    expect(keys0).toEqual(old.players[0].keys);expect(pads1).toEqual(old.players[1].padButtons);
+  });
+  it('picks the first free key when the default is already taken, also across players',()=>{
+    const old=v2();old.players[0].keys.LP='KeyC';old.players[1].keys.HP='KeyX';
+    const migrated=validateControls(old);
+    expect(migrated.players[0].keys.THROW).toBe('KeyZ');
+    expect(migrated.players[1].keys.THROW).toBe('Numpad0');
+    for(const player of migrated.players)expect(new Set(Object.values(player.keys)).size).toBe(14);
+  });
+  it('loads a stored v2 configuration instead of discarding it',()=>{
+    const old=v2();old.players[0].keys.LP='KeyQ';
+    vi.stubGlobal('localStorage',{getItem:()=>JSON.stringify(old),setItem:vi.fn()});
+    const devices=new Devices();
+    expect(devices.config.players[0].keys.LP).toBe('KeyQ');
+    expect(devices.config.players[0].keys.THROW).toBe('KeyC');
+    key('keydown','KeyC');
+    expect(devices.sample([])[0].buttons).toBe(buttonBit('THROW'));
+    key('keyup','KeyC');key('keydown','Numpad0');
+    expect(devices.sample([])[1].buttons).toBe(buttonBit('THROW'));
+  });
+  it('requires THROW in a v3 configuration and reads the throw pad button',()=>{
+    const broken=structuredClone(DEFAULT_CONTROLS);delete (broken.players[1].keys as Partial<typeof broken.players[1]['keys']>).THROW;
+    expect(()=>validateControls(broken)).toThrow(/Tastaturbelegung/);
+    const devices=new Devices();devices.config.players[0].gamepadIndex=0;
+    const reading=pad();reading.buttons[4]={value:1,pressed:true,touched:true};
+    expect(devices.sample([reading])[0].buttons).toBe(buttonBit('THROW'));
+  });
+});

@@ -20,6 +20,12 @@ class FakeElement {
   get innerHTML(): string { return this.content; }
   set innerHTML(value: string) { this.content = value; this.writes++; }
   setAttribute(name: string, value: string): void { this.attributes.set(name, value); this.writes++; }
+  classes = new Set<string>(); flashes = 0; offsetWidth = 0;
+  classList = {
+    add: (name: string) => { if (name === 'resource-flash') this.flashes++; this.classes.add(name); },
+    remove: (name: string) => { this.classes.delete(name); },
+    toggle: (name: string, on: boolean) => { if (on) this.classes.add(name); else this.classes.delete(name); },
+  };
 }
 function fakeDocument() {
   const elements = new Map<string, FakeElement>();
@@ -57,5 +63,44 @@ describe('HUD', () => {
     expect(elements.get('wins-0')!.writes).toBe(1);
     hud.invalidate(); hud.update(c);
     expect(elements.get('wins-0')!.writes).toBe(2);
+  });
+});
+
+describe('HUD bar full', () => {
+  const full = (game: ReturnType<typeof createGame>, fighter: number, name: 'revenge' | 'special', current = 100) => { game.fighters[fighter].resources[name].current = current; };
+  it('shows READY and a static highlight while full, pulses only with effects and removes everything when the bar sinks', () => {
+    const { elements, document } = fakeDocument(), hud = new Hud(document), game = createGame();
+    let events = 0;
+    const ready = (effects = true) => ({ effects, events: (f: number, r: string) => f === 0 && r === 'revenge' ? events : 0 });
+    hud.update(context({ game, ready: ready() }));
+    const track = elements.get('resource-0-revenge')!, label = elements.get('resource-ready-0-revenge')!;
+    expect(track.classes.has('is-full')).toBe(false);
+    expect(label.classes.has('is-visible')).toBe(false);
+    full(game, 0, 'revenge'); events = 1;
+    hud.update(context({ game, ready: ready() }));
+    expect([...track.classes].sort()).toEqual(['is-full', 'is-pulsing', 'resource-flash']);
+    expect(label.classes.has('is-visible')).toBe(true);
+    expect(track.flashes).toBe(1);
+    // Holding the full bar never flashes again; P2's bars stay untouched.
+    hud.update(context({ game, ready: ready() }));
+    expect(track.flashes).toBe(1);
+    expect(elements.get('resource-1-revenge')!.classes.size).toBe(0);
+    expect(elements.get('resource-0-special')!.classes.size).toBe(0);
+    // Effects off: no pulse and no flash, the READY state stays readable.
+    hud.update(context({ game, ready: ready(false) }));
+    expect([...track.classes]).toEqual(['is-full']);
+    full(game, 0, 'revenge', 40);
+    hud.update(context({ game, ready: ready() }));
+    expect(track.classes.size).toBe(0);
+    expect(label.classes.has('is-visible')).toBe(false);
+  });
+  it('does not flash a bar that is already full when the HUD first sees it (round start, replay, import)', () => {
+    const { elements, document } = fakeDocument(), hud = new Hud(document), game = createGame();
+    full(game, 1, 'special');
+    hud.update(context({ game, ready: { effects: true, events: () => 7 } }));
+    const track = elements.get('resource-1-special')!;
+    expect(track.classes.has('is-full')).toBe(true);
+    expect(track.classes.has('is-pulsing')).toBe(true);
+    expect(track.flashes).toBe(0);
   });
 });

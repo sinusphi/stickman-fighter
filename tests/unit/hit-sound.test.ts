@@ -10,13 +10,14 @@ it('describes every move and hit group with a valid, damage-based sound', () => 
   let groups = 0;
   for (const move of Object.values(MOVES)) for (const group of move.hitGroups) {
     const sound = describeStrike(move.id, group.id);
-    expect(['punch', 'kick', 'knee']).toContain(sound.kind);
+    expect(['punch', 'kick', 'knee', 'throw']).toContain(sound.kind);
+    expect(sound.kind === 'throw').toBe(Boolean(move.throw));
     expect(['light', 'middle', 'high']).toContain(sound.strength);
     expect(['head', 'body', 'legs']).toContain(sound.zone);
     expect(['normal', 'spin', 'uppercut']).toContain(sound.style);
     expect(sound.weight).toBeGreaterThanOrEqual(0); expect(sound.weight).toBeLessThanOrEqual(1);
     expect(Math.abs(sound.signature)).toBeLessThanOrEqual(1);
-    expect(sound.kind === 'punch').toBe((move.button.endsWith('P') || group.id === 'punch') && group.id !== 'knee' && group.id !== 'kick');
+    if (!move.throw) expect(sound.kind === 'punch').toBe((move.button.endsWith('P') || group.id === 'punch') && group.id !== 'knee' && group.id !== 'kick');
     identities.add(sound.signature.toFixed(3)); groups++;
   }
   // Every technique keeps its own timbre, even with identical kind/strength/zone.
@@ -113,7 +114,8 @@ it('does not replay an old hit on resets, training changes, or round transitions
 });
 
 it('times every whoosh to peak on the first active frame of each separate strike', () => {
-  for (const move of Object.values(MOVES)) {
+  // Throws have no hitboxes; their flight whoosh is cued by the throw table (newThrowSounds).
+  for (const move of Object.values(MOVES).filter(m => !m.throw)) {
     const cues = swingCues(move.id);
     expect(cues.length).toBeGreaterThan(0);
     for (const cue of cues) {

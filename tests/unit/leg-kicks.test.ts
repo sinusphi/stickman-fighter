@@ -75,11 +75,12 @@ it('maps both nine-button keyboards and migrates stored six-button settings with
     delete (player.keys as Partial<typeof player.keys>)[button];delete (player.padButtons as Partial<typeof player.padButtons>)[button];
   }
   const migrated=validateControls(old);
-  expect(migrated.schemaVersion).toBe(2);expect(old.schemaVersion).toBe(1);
+  // v1 → v2 (kicks) → v3 (throw button) in one pass.
+  expect(migrated.schemaVersion).toBe(3);expect(old.schemaVersion).toBe(1);
   expect(migrated.players[0].keys.LP).toBe('KeyQ');
   expect(migrated.players[0].keys.MK).toBe('KeyB');expect(migrated.players[0].keys.LMK).toBe('KeyG');
   expect(migrated.players[1].keys.MK).toBe('Numpad2');expect(migrated.players[1].keys.LMK).toBe('Numpad5');
-  for(const player of migrated.players)expect(new Set(Object.values(player.keys)).size).toBe(13);
+  for(const player of migrated.players)expect(new Set(Object.values(player.keys)).size).toBe(14);
 });
 it.each(['RLK','LMK','RHK'] as const)('%s respects stance restrictions and replays higher input bits deterministically',button=>{
   for(const stance of ['standing','crouching','airborne'])for(const facing of [1,-1]) {

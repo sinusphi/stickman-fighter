@@ -154,3 +154,52 @@ it('works without StereoPannerNode', () => {
   expect(() => { audio.playHit(hk); audio.playSwing(swing()); }).not.toThrow();
   expect(context.sources.length).toBeGreaterThan(0);
 });
+
+it('plays a distinct charge-up for Revenge and Special, click-free and staggered', () => {
+  const audio = setup(); audio.unlock();
+  const context = Context.instances[0];
+  audio.playResourceReady('revenge', -0.3);
+  const revenge = context.sources.splice(0), revengeNodes = context.nodes.length;
+  audio.playResourceReady('special', 0.3, 0.1);
+  const special = context.sources.splice(0);
+  // Revenge: low square arpeggio; Special: brighter triangle arpeggio; both with echoes.
+  expect(revenge[0].type).toBe('square');
+  expect(special[0].type).toBe('triangle');
+  expect(revenge.length).toBe(9);
+  expect(special.length).toBe(12);
+  const firstFrequency = (source: InstanceType<typeof Node>) => source.frequency.setValueAtTime.mock.calls[0][0];
+  expect(firstFrequency(revenge[0])).toBeLessThan(firstFrequency(special[0]));
+  // Both arpeggios rise.
+  for (const notes of [revenge, special]) expect(firstFrequency(notes[2])).toBeGreaterThan(firstFrequency(notes[0]));
+  // The staggered Special starts 100 ms later.
+  expect(special[0].start.mock.calls[0][0]).toBeCloseTo(revenge[0].start.mock.calls[0][0] + 0.1);
+  // Every envelope starts and ends at silence, and every source stops after its fade-out.
+  const envelopes = context.nodes.filter(node => node.gain.setValueAtTime.mock.calls.length);
+  expect(envelopes.length).toBe(revenge.length + special.length);
+  for (const node of envelopes) {
+    expect(node.gain.setValueAtTime.mock.calls[0][0]).toBe(0.0001);
+    expect(node.gain.exponentialRampToValueAtTime.mock.calls.at(-1)![0]).toBe(0.0001);
+    // Attack of at least 15 ms.
+    const [, attackAt] = node.gain.exponentialRampToValueAtTime.mock.calls[0], [, startAt] = node.gain.setValueAtTime.mock.calls[0];
+    expect(attackAt - startAt).toBeGreaterThanOrEqual(0.015);
+  }
+  for (const source of [...revenge, ...special]) { expect(source.start).toHaveBeenCalledOnce(); expect(source.stop).toHaveBeenCalledOnce(); expect(source.stop.mock.calls[0][0]).toBeGreaterThan(source.start.mock.calls[0][0]); }
+  // Two independent voices: finishing the first never touches the second.
+  for (const source of revenge) source.onended?.();
+  expect(context.nodes.slice(SHARED, revengeNodes).every(node => node.disconnect.mock.calls.length === 1)).toBe(true);
+  expect(context.nodes.slice(revengeNodes).every(node => node.disconnect.mock.calls.length === 0)).toBe(true);
+});
+
+it('keeps the charge-up silent while muted or before the autoplay unlock', () => {
+  const audio = setup();
+  audio.setMuted(true); audio.playResourceReady('special');
+  expect(Context.instances).toHaveLength(0);
+  audio.setMuted(false);
+  const suspended = setup();
+  suspended.playResourceReady('revenge');
+  const context = Context.instances[0];
+  context.state = 'suspended';
+  suspended.playResourceReady('revenge');
+  expect(context.resume).toHaveBeenCalled();
+  expect(() => { vi.stubGlobal('AudioContext', undefined); new HitAudio().playResourceReady('special'); }).not.toThrow();
+});

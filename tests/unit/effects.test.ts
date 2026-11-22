@@ -4,6 +4,7 @@ import { createGame, snapshot, step } from '../../src/simulation/state';
 import { buttonBit, neutralInput, type RawInput } from '../../src/input/types';
 import type { GameState } from '../../src/simulation/types';
 import { COMBO_FADE_STEPS, HitEffects, MAX_PARTICLES, MAX_SHAKE, ParticleKind, SHAKE_DECAY, Tint, shakeForHit, type SparkSpec } from '../../src/render/effects';
+import { newResourceFills, READY_STAGGER_STEPS } from '../../src/platform/resource-ready';
 import { EFFECTS_STORAGE_KEY, SHAKE_STORAGE_KEY, loadEffectSettings, saveEffectSettings } from '../../src/platform/effects-settings';
 
 const spec = (overrides: Partial<SparkSpec> = {}): SparkSpec => ({ x: 400, y: 250, side: 1, weight: .5, level: 'MID', kind: 'kick', blocked: false, damage: 65, ...overrides });
@@ -244,5 +245,91 @@ describe('effect settings', () => {
     const broken = { getItem: () => { throw Error('denied'); }, setItem: () => { throw Error('denied'); } };
     expect(loadEffectSettings(broken, true)).toEqual({ effects: true, shake: false });
     expect(saveEffectSettings({ effects: true, shake: true }, broken)).toBe(false);
+  });
+});
+
+describe('bar full (Revenge / Special)', () => {
+  const fill = (game: GameState, fighter: number, name: 'revenge' | 'special', current: number) => { game.fighters[fighter].resources[name].current = current; };
+  const observe = (effects: HitEffects, game: GameState, previous: GameState) => { const before = snapshot(game); effects.update(game, previous); return before; };
+  it('fires once on the transition to full, per fighter and per bar', () => {
+    const previous = createGame(); fill(previous, 1, 'special', 95);
+    const game = snapshot(previous); fill(game, 1, 'special', 100);
+    expect(newResourceFills(game, previous)).toEqual([{ fighter: 1, resource: 'special', delay: 0 }]);
+    const effects = new HitEffects(); effects.update(game, previous);
+    expect(effects.readyEventCount(1, 'special')).toBe(1);
+    expect([effects.readyEventCount(0, 'special'), effects.readyEventCount(0, 'revenge'), effects.readyEventCount(1, 'revenge')]).toEqual([0, 0, 0]);
+    const list = effects.particles();
+    expect(list.some(p => p.kind === ParticleKind.Halo)).toBe(true);
+    expect(list.some(p => p.kind === ParticleKind.Aura)).toBe(true);
+    expect(list.filter(p => p.kind === ParticleKind.Star).length).toBeGreaterThan(4);
+    expect(list.every(p => p.tint === Tint.Special || p.tint === Tint.Light)).toBe(true);
+    // Centred on P2, not P1.
+    const x = game.fighters[1].x / rules.unit;
+    expect(list.filter(p => p.kind === ParticleKind.Halo).every(p => p.x === x)).toBe(true);
+    // The bar stays full: no second burst, no shake.
+    const again = snapshot(game); effects.update(again, game);
+    expect(effects.readyEventCount(1, 'special')).toBe(1);
+    expect(effects.shake).toBe(0);
+  });
+  it('distinguishes Revenge (fast red-orange sparks) from Special (calm ring and stars)', () => {
+    const revenge = new HitEffects(); revenge.spawnReadyBurst(400, 250, 'revenge');
+    const special = new HitEffects(); special.spawnReadyBurst(400, 250, 'special');
+    const r = revenge.particles(), s = special.particles();
+    expect(r.some(p => p.kind === ParticleKind.Spark) && !r.some(p => p.kind === ParticleKind.Star)).toBe(true);
+    expect(s.some(p => p.kind === ParticleKind.Star) && !s.some(p => p.kind === ParticleKind.Spark)).toBe(true);
+    expect(r.filter(p => p.kind !== ParticleKind.Halo || p.tint !== Tint.Light).every(p => p.tint === Tint.Revenge || p.tint === Tint.Light)).toBe(true);
+    // Revenge sparks rise faster than the Special stars.
+    const rise = (effects: HitEffects, kind: ParticleKind) => { const y0 = effects.particles().filter(p => p.kind === kind).map(p => p.y); effects.update(createGame(), createGame()); return effects.particles().filter(p => p.kind === kind).map((p, i) => y0[i] - p.y); };
+    expect(Math.min(...rise(revenge, ParticleKind.Spark))).toBeGreaterThan(Math.max(...rise(special, ParticleKind.Star)));
+  });
+  it('ignores bars that are already full, including the round change where resources carry over', () => {
+    const game = createGame();
+    for (const f of game.fighters) { fill(game, f.id, 'revenge', 100); fill(game, f.id, 'special', 100); }
+    game.round = { ...game.round, phase: 'roundOver', transition: 1, winner: 0, reason: 'KO', wins: [1, 0] };
+    const effects = new HitEffects(), previous = snapshot(game);
+    step(game);
+    expect(game.round).toMatchObject({ phase: 'fighting', number: 2 });
+    expect(game.fighters.map(f => [f.resources.revenge.current, f.resources.special.current])).toEqual([[100, 100], [100, 100]]);
+    effects.update(game, previous);
+    expect(newResourceFills(game, previous)).toEqual([]);
+    expect(effects.activeCount()).toBe(0);
+  });
+  it('staggers two bars that fill in the same step', () => {
+    const previous = createGame(); fill(previous, 0, 'revenge', 99); fill(previous, 0, 'special', 98);
+    const game = snapshot(previous); fill(game, 0, 'revenge', 100); fill(game, 0, 'special', 100);
+    expect(newResourceFills(game, previous)).toEqual([{ fighter: 0, resource: 'revenge', delay: 0 }, { fighter: 0, resource: 'special', delay: READY_STAGGER_STEPS }]);
+    const effects = new HitEffects(); effects.update(game, previous);
+    expect(effects.particles().some(p => p.kind === ParticleKind.Spark)).toBe(true);
+    expect(effects.particles().some(p => p.kind === ParticleKind.Star)).toBe(false);
+    for (let i = 0; i < READY_STAGGER_STEPS - 1; i++) effects.update(game, game);
+    expect(effects.particles().some(p => p.kind === ParticleKind.Star)).toBe(false);
+    effects.update(game, game);
+    expect(effects.particles().some(p => p.kind === ParticleKind.Star)).toBe(true);
+  });
+  it('stays inside the particle pool, never writes the game state and spawns nothing with effects off', () => {
+    const effects = new HitEffects();
+    for (let i = 0; i < 40; i++) { effects.spawnReadyBurst(300, 200, 'revenge'); effects.spawnReadyBurst(300, 200, 'special'); }
+    expect(effects.activeCount()).toBe(MAX_PARTICLES);
+    const previous = createGame(); fill(previous, 0, 'revenge', 90);
+    const game = snapshot(previous); fill(game, 0, 'revenge', 100);
+    const before = observe(new HitEffects(), game, previous);
+    expect(game).toEqual(before);
+    const off = new HitEffects({ effects: false, shake: true });
+    off.update(game, previous);
+    expect(off.activeCount()).toBe(0);
+    expect(off.readyEventCount(0, 'revenge')).toBe(1);
+  });
+  it('fires from real gameplay and identically when the same steps are replayed', () => {
+    const run = () => {
+      const game = close(), effects = new HitEffects();
+      game.training.enabled = true;
+      fill(game, 1, 'revenge', 97);
+      play(game, effects, 40, frame => [frame === 0 ? { ...neutralInput(), buttons: buttonBit('LP') } : neutralInput(), neutralInput()]);
+      return { effects, game };
+    };
+    const a = run(), b = run();
+    expect(a.game.fighters[1].resources.revenge.current).toBe(100);
+    expect(a.effects.readyEventCount(1, 'revenge')).toBe(1);
+    expect(a.effects.particles()).toEqual(b.effects.particles());
   });
 });

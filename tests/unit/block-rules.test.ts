@@ -49,7 +49,7 @@ describe('posture and blocked damage',()=>{
     expect(game.lastContact?.blocked).toBe(true);
     expect(b.hp).toBe(rules.maxHealth-Math.round(Math.trunc(MOVES.standing_lp.damage*scale/rules.damageScaleUnit)*.08));
     expect(b.state).toBe('Blockstun');expect(a.comboCount).toBe(0);
-    expect(a.resources.special.current).toBe(0);expect(b.resources.revenge.current).toBe(0);
+    expect(a.resources.special.current).toBe(Math.max(1,Math.round(MOVES.standing_lp.damage*rules.resources.special.gainPerBlock/100)));expect(b.resources.revenge.current).toBe(0);
   });
   it('uses the damage of the contacting knee group rather than the main kick',()=>{
     const game=contactGame('standing_mk',true),[a,b]=game.fighters;

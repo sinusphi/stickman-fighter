@@ -35,21 +35,24 @@ it('copies, validates and restores resource values without cross-player aliasing
     const invalid=snapshot(game);invalid.fighters[0].resources.revenge.current=value;
     expect(()=>validateSnapshot(invalid)).toThrow();
   }
-  expect(()=>validateResources({...rules.resources,special:{current:0,max:0,gainPerHit:10}})).toThrow();
-  expect(()=>validateResources({...rules.resources,special:{current:0,max:100,gainPerHit:-1}})).toThrow();
+  expect(()=>validateResources({...rules.resources,special:{current:0,max:0,gainPerHit:10,gainPerBlock:1}})).toThrow();
+  expect(()=>validateResources({...rules.resources,special:{current:0,max:100,gainPerHit:-1,gainPerBlock:1}})).toThrow();
 });
 it('gains special for landed hits and revenge for received hits in proportion to base damage',()=>{
   const light=resolveStandingHit('standing_lp'),hard=resolveStandingHit('standing_hp');
-  const expected=(damage:number)=>Math.round(damage*rules.resources.special.gainPerHit/100);
-  expect(light.fighters[0].resources.special.current).toBe(expected(MOVES.standing_lp.damage));
-  expect(light.fighters[1].resources.revenge.current).toBe(expected(MOVES.standing_lp.damage));
-  expect(hard.fighters[0].resources.special.current).toBe(expected(MOVES.standing_hp.damage));
-  expect(hard.fighters[1].resources.revenge.current).toBe(expected(MOVES.standing_hp.damage));
+  const expected=(damage:number,name:'special'|'revenge')=>Math.round(damage*rules.resources[name].gainPerHit/100);
+  expect(light.fighters[0].resources.special.current).toBe(expected(MOVES.standing_lp.damage,'special'));
+  expect(light.fighters[1].resources.revenge.current).toBe(expected(MOVES.standing_lp.damage,'revenge'));
+  expect(hard.fighters[0].resources.special.current).toBe(expected(MOVES.standing_hp.damage,'special'));
+  expect(hard.fighters[1].resources.revenge.current).toBe(expected(MOVES.standing_hp.damage,'revenge'));
+  expect(hard.fighters[0].resources.special.current).toBeLessThan(hard.fighters[1].resources.revenge.current);
   expect(hard.fighters[0].resources.special.current).toBeGreaterThan(light.fighters[0].resources.special.current);
 });
-it('does not gain resources on block and caps both meters at their maximum',()=>{
+it('gains a little special on block, no revenge, and caps both meters at their maximum',()=>{
   const blocked=resolveStandingHit('standing_lp',true);
-  expect(blocked.fighters.map(f=>f.resources)).toEqual([rules.resources,rules.resources]);
+  expect(blocked.fighters[0].resources.special.current).toBe(Math.max(1,Math.round(MOVES.standing_lp.damage*rules.resources.special.gainPerBlock/100)));
+  expect(blocked.fighters[0].resources.revenge).toEqual(rules.resources.revenge);
+  expect(blocked.fighters[1].resources).toEqual(rules.resources);
   const capped=resolveStandingHit('standing_hp',false,99);
   expect(capped.fighters[0].resources.special.current).toBe(rules.resources.special.max);
   expect(capped.fighters[1].resources.revenge.current).toBe(rules.resources.revenge.max);

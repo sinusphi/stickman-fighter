@@ -2,7 +2,7 @@ import { FIGURE_SCALE } from '../../src/data/figure-scale';
 import { describe, expect, it } from 'vitest';
 import { createGame, snapshot, step } from '../../src/simulation/state';
 import { COUNTER_LIMIT, createReplay, hash, parseReplay, playReplay, validateSnapshot, type Replay } from '../../src/debug/replay';
-import { neutralInput, type RawInput } from '../../src/input/types';
+import { BUTTON_MASK, neutralInput, type RawInput } from '../../src/input/types';
 import type { ControlEvent } from '../../src/simulation/events';
 import sequence from '../fixtures/replays/sequence.json';
 import { FixedLoop } from '../../src/platform/loop';
@@ -73,7 +73,7 @@ describe('replays and snapshots',()=>{
     const replay=createReplay(createGame());
     expect(()=>parseReplay({...replay,dataHash:'bad'})).toThrow();
     expect(()=>parseReplay({...replay,engineVersion:'99'})).toThrow();
-    expect(()=>parseReplay({...replay,frames:[{inputs:[{...neutralInput(),buttons:512},neutralInput()],events:[]}]})).toThrow();
+    expect(()=>parseReplay({...replay,frames:[{inputs:[{...neutralInput(),buttons:BUTTON_MASK+1},neutralInput()],events:[]}]})).toThrow();
     const invalid=snapshot(replay.initial);invalid.fighters[0].state='Attack';
     expect(()=>validateSnapshot(invalid)).toThrow();
     const gap=snapshot(replay.initial);gap.fighters[0].input.history.length=1;
