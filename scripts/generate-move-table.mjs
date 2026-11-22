@@ -1,7 +1,8 @@
-// Writes the move overview in README.md from the compiled move data, so the
-// documented inputs and frame data cannot drift from the game.
-//   node scripts/generate-move-table.mjs          update README.md
-//   node scripts/generate-move-table.mjs --check  fail if README.md is stale
+// Writes the move overview in README.md (English) and README.de.md (German)
+// from the compiled move data, so the documented inputs and frame data cannot
+// drift from the game.
+//   node scripts/generate-move-table.mjs          update both READMEs
+//   node scripts/generate-move-table.mjs --check  fail if a README is stale
 import { createServer } from 'vite';
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -13,8 +14,22 @@ const NAMES = {
   dwit_chagi: 'Dwit Chagi', left_turn_kick: 'Left Turn Kick', double_high_kick: 'Double High Kick',
   middle_high_punch_combo: 'Right Middle → High → Left Middle → High → Medium Punch',
   spin_high_middle_combo: 'Spin High → Spin Middle', middle_high_low_combo: 'Middle → High → Low',
+  punch_kick_combo: 'Medium Punch → Right High', kick_punch_combo: 'Right Middle → Body Hook',
 };
-const STANCE = { standing: 'Stand', crouching: 'Hocke', airborne: 'Sprung' };
+const LANGUAGES = {
+  en: {
+    file: '../README.md', stance: { standing: 'Standing', crouching: 'Crouching', airborne: 'Jump' },
+    hold: key => `hold ${key}`, air: buttons => `in the air ${buttons}`,
+    intro: count => `${count} moves. Directions are relative to the opponent (6 forward, 4 back); keys for the starting positions with default controls (P1 left, P2 right). Frames at 60 Hz, startup counted from frame 0. Knee hit groups of the standing middle/high kicks are included in the damage.`,
+    header: '| Move | ID | Input | P1 | P2 | Startup / Active / Recovery | Total | Damage | Block level |',
+  },
+  de: {
+    file: '../README.de.md', stance: { standing: 'Stand', crouching: 'Hocke', airborne: 'Sprung' },
+    hold: key => `${key} halten`, air: buttons => `im Sprung ${buttons}`,
+    intro: count => `${count} Moves. Richtungen relativ zum Gegner (6 vorwärts, 4 zurück); Tasten für die Ausgangsaufstellung mit Standardbelegung (P1 links, P2 rechts). Frames bei 60 Hz, Startup gezählt ab Frame 0. Knie-Treffergruppen der stehenden Middle-/Highkicks sind im Schaden mit aufgeführt.`,
+    header: '| Move | ID | Eingabe | P1 | P2 | Startup / Aktiv / Recovery | Dauer | Schaden | Block-Level |',
+  },
+};
 const label = code => ({ ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' })[code] ?? code.replace('Key', '').replace('Numpad', 'Num').replace('Digit', '');
 
 const server = await createServer({ server: { middlewareMode: true, ws: false, hmr: false, watch: null }, appType: 'custom', logLevel: 'error' });
@@ -24,33 +39,29 @@ try {
   const keys = controls.players.map(player => player.keys);
   // P1 starts on the left (forward = right), P2 on the right (forward = left).
   const direction = (player, d) => ({ 6: keys[player][player === 0 ? 'right' : 'left'], 4: keys[player][player === 0 ? 'left' : 'right'] })[d];
-  const input = (move, player) => {
-    const buttons = (move.command.type === 'hold' ? move.command.buttons : [move.button]).map(b => label(keys[player][b])).join(' + ');
-    if (move.command.type === 'hold') return `${label(direction(player, move.command.directions[0]))} halten + ${buttons}`;
-    if (move.stance === 'crouching') return `${label(keys[player].down)} halten + ${buttons}`;
-    if (move.stance === 'airborne') return `im Sprung ${buttons}`;
-    return buttons;
-  };
-  const notation = move => move.command.type === 'hold' ? `${move.command.directions.join('/')} + ${move.command.buttons.join(' + ')}` : `${STANCE[move.stance]} · ${move.button}`;
-  const level = move => [...new Set(move.hitGroups.map(group => group.hitLevel ?? move.hitLevel))].join(' / ');
-  const damage = move => move.hitGroups.map(group => group.damage ?? move.damage).join(' + ');
-  const name = move => NAMES[move.id] ?? `${STANCE[move.stance]} ${move.button}`;
-  const rows = Object.values(MOVES).map(move => `| ${name(move)} | \`${move.id}\` | ${notation(move)} | ${input(move, 0)} | ${input(move, 1)} | ${move.startup} / ${move.active} / ${move.recovery} | ${move.duration} | ${damage(move)} | ${level(move)} |`);
-  const table = [
-    START,
-    `${rows.length} Moves. Richtungen relativ zum Gegner (6 vorwärts, 4 zurück); Tasten für die Ausgangsaufstellung mit Standardbelegung (P1 links, P2 rechts). Frames bei 60 Hz, Startup gezählt ab Frame 0. Knie-Treffergruppen der stehenden Middle-/Highkicks sind im Schaden mit aufgeführt.`,
-    '',
-    '| Move | ID | Eingabe | P1 | P2 | Startup / Aktiv / Recovery | Dauer | Schaden | Block-Level |',
-    '|---|---|---|---|---|---|---:|---|---|',
-    ...rows,
-    END,
-  ].join('\n');
-  const path = new URL('../README.md', import.meta.url);
-  const readme = await readFile(path, 'utf8');
-  const from = readme.indexOf(START), to = readme.indexOf(END);
-  if (from < 0 || to < from) throw Error('README.md: move-table markers missing');
-  const next = readme.slice(0, from) + table + readme.slice(to + END.length);
-  if (process.argv.includes('--check')) { if (next !== readme) throw Error('README move table stale: npm run generate:move-table'); }
-  else await writeFile(path, next);
-  console.log(`Move table synchronized (${rows.length} moves).`);
+  let stale = false;
+  for (const language of Object.values(LANGUAGES)) {
+    const input = (move, player) => {
+      const buttons = (move.command.type === 'hold' ? move.command.buttons : [move.button]).map(b => label(keys[player][b])).join(' + ');
+      if (move.command.type === 'hold') return `${language.hold(label(direction(player, move.command.directions[0])))} + ${buttons}`;
+      if (move.stance === 'crouching') return `${language.hold(label(keys[player].down))} + ${buttons}`;
+      if (move.stance === 'airborne') return language.air(buttons);
+      return buttons;
+    };
+    const notation = move => move.command.type === 'hold' ? `${move.command.directions.join('/')} + ${move.command.buttons.join(' + ')}` : `${language.stance[move.stance]} · ${move.button}`;
+    const level = move => [...new Set(move.hitGroups.map(group => group.hitLevel ?? move.hitLevel))].join(' / ');
+    const damage = move => move.hitGroups.map(group => group.damage ?? move.damage).join(' + ');
+    const name = move => NAMES[move.id] ?? `${language.stance[move.stance]} ${move.button}`;
+    const rows = Object.values(MOVES).map(move => `| ${name(move)} | \`${move.id}\` | ${notation(move)} | ${input(move, 0)} | ${input(move, 1)} | ${move.startup} / ${move.active} / ${move.recovery} | ${move.duration} | ${damage(move)} | ${level(move)} |`);
+    const table = [START, language.intro(rows.length), '', language.header, '|---|---|---|---|---|---|---:|---|---|', ...rows, END].join('\n');
+    const path = new URL(language.file, import.meta.url);
+    const readme = await readFile(path, 'utf8');
+    const from = readme.indexOf(START), to = readme.indexOf(END);
+    if (from < 0 || to < from) throw Error(`${language.file}: move-table markers missing`);
+    const next = readme.slice(0, from) + table + readme.slice(to + END.length);
+    if (process.argv.includes('--check')) { if (next !== readme) { console.error(`${language.file}: move table stale`); stale = true; } }
+    else await writeFile(path, next);
+  }
+  if (stale) throw Error('README move table stale: npm run generate:move-table');
+  console.log(`Move table synchronized (${Object.keys(MOVES).length} moves, EN + DE).`);
 } finally { await server.close(); }
