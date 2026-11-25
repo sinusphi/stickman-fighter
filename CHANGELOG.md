@@ -1,5 +1,15 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-25 · Survival: headless Balance-Lauf
+
+- **Neu:** `npm run balance:survival` spielt den Survival ohne Browser hunderte Male durch und misst die Balance, statt sie zu schätzen. Parameter: `--runs` (Anzahl Läufe, Standard 100), `--seed` (Seed-Start, 1), `--profile` (`defensive`, `aggressive` oder `all`), `--max-seconds` (maximale Spielzeit, 600), `--out` (Zielordner).
+- **Bot** (`scripts/survival-balance-lib.ts`): Die Versus-CPU (`CpuPlayer` als Spieler 0) kämpft über die `pair`-Sicht jeweils gegen einen Zielgegner (nächster vorne, mit Hysterese; im Boss-Duell immer der Boss). Dazu kommt nur Survival-Verhalten: Umdrehen per Doppeltipp, wenn vorne niemand mehr steht, der Boss oder ein naher Gegner hinten ist oder (per Zufall je Profil) ein Rücken-Angreifer warnt. Zufällige Doppeltipps der CPU-Eingaben werden herausgefiltert, der Bot dreht nur absichtlich. Zwei Profile: `defensive` (Mittel-CPU, viel Blocken, wenig Angriff, reagiert fast immer auf Warnungen) und `aggressive` (Schwer-CPU, hohe Aggression, kurze Pausen, reagiert auf jede zweite Warnung).
+- **Erfasst pro Lauf:** überlebte Zeit, besiegte Gegner pro Typ (inkl. Boss), erreichte Boss-Nummer, Todesursache (letzter Schadensgeber: Typ, vorne/hinten, Boss-Nummer), Energie am Ende jeder Minute, Energie gewonnen/verloren je Minute und gesamt, Drehungen.
+- **Ausgabe** in `test-results/survival-balance/`: `summary.md` (Median, 10./90. Perzentil der Zeit, Kills, Boss-Verteilung, Todesursachen, Energiebilanz je Minute), `runs.csv` (ein Lauf pro Zeile) und `minutes.csv` (Lauf × Minute). Geladen wird der TS-Code wie bei `cpu:tournament` über Vites SSR-Loader; ein Lauf dauert etwa eine halbe Sekunde.
+- **Wichtig:** Der Bot ist kein Mensch. Die Zahlen taugen für Vorher/Nachher-Vergleiche bei Tuning-Änderungen in `src/survival/config.ts` (gleiche Seeds, Profil und Limit), nicht für absolute Zeiten. Steht so auch in der Skript-Doku und in beiden READMEs.
+- Keine Änderung an Simulation, Survival-Logik oder Spieldaten.
+- Test: `survival-balance.test.ts` (gleicher Seed ergibt denselben Lauf für beide Profile, Energie-Buchhaltung konsistent, Berichte, Perzentile).
+
 ## 2026-11-25 · Survival: Würfe des Spielers
 
 - **Neu:** Hüft- und Schulterwurf (6/4 + Wurf) funktionieren jetzt auch im Survival. Bisher wurde die Wurf-Taste dort maskiert. Nur der Spieler wirft; die Wurf-Taste der Gegner bleibt maskiert und der Director lässt weiterhin keinen Wurf-Move zu.
