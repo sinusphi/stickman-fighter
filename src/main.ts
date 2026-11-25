@@ -10,7 +10,7 @@ import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
-import { newContactSounds, newRevengeStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
+import { newContactSounds, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
 import { newResourceFills } from './platform/resource-ready';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
@@ -87,7 +87,7 @@ async function main(): Promise<void> {
     for (const flight of throws.flights) audio.playSwing(flight);
     for (const slam of throws.slams) audio.playContact(slam);
     for (const fill of newResourceFills(game, previous)) audio.playResourceReady(fill.resource, panOf(game.fighters[fill.fighter].x), fill.delay / rules.hz);
-    for (const start of newRevengeStarts(game, previous)) audio.playRevengeStart(start.pan);
+    for (const start of newResourceStarts(game, previous)) audio.playResourceStart(start.resource, start.pan);
   };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
@@ -134,8 +134,8 @@ async function main(): Promise<void> {
       const swingView = index === 0 ? view.game : { ...view.game, fighters: [old.fighters[0], view.game.fighters[1]] as GameState['fighters'] };
       for (const swing of newSwingSounds(swingView, old)) audio.playSwing(swing);
       for (const contact of newContactSounds(view.game, old)) audio.playContact(contact);
-      // The player is fighter 0 of every view: its Revenge start sounds once.
-      if (index === 0) for (const start of newRevengeStarts(swingView, old)) if (start.fighter === 0) audio.playRevengeStart(start.pan);
+      // The player is fighter 0 of every view: its full-bar start (Revenge, Wirbel) sounds once.
+      if (index === 0) for (const start of newResourceStarts(swingView, old)) if (start.fighter === 0) audio.playResourceStart(start.resource, start.pan);
     });
     if (!wasOver && session.state.over && session.state.survivedFrames > survivalBest) {
       survivalBest = session.state.survivedFrames; saveBest(storage, survivalBest);
@@ -316,10 +316,12 @@ async function main(): Promise<void> {
   function exposeSurvival(): void {
     const s = survival?.state, data = canvas.dataset;
     if (!s) { delete data.survival; return; }
-    // Nearest enemy in front (px, -1 = none) and landed hits of the player's current attack.
-    const front = s.enemies.filter(e => !e.dead && !e.entering && inFront(s.player, e.fighter)).map(e => Math.round(Math.abs(e.fighter.x - s.player.x) / rules.unit));
-    const hits = Math.max(0, ...s.enemies.map(e => e.playerHits.length));
-    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${front.length ? Math.min(...front) : -1}|${hits}`;
+    // Nearest enemy in front and behind (px, -1 = none), landed hits of the player's
+    // current attack (most on one enemy) and the number of enemies it struck.
+    const distances = (ahead: boolean) => s.enemies.filter(e => !e.dead && !e.entering && inFront(s.player, e.fighter) === ahead).map(e => Math.round(Math.abs(e.fighter.x - s.player.x) / rules.unit));
+    const nearest = (list: number[]) => list.length ? Math.min(...list) : -1;
+    const hits = Math.max(0, ...s.enemies.map(e => e.playerHits.length)), struck = s.enemies.filter(e => e.playerHits.length > 0).length;
+    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${nearest(distances(true))}|${hits}|${nearest(distances(false))}|${struck}`;
   }
   const hudElement = document.getElementById('hud')!;
   /** Bottom of the DOM HUD in logical canvas pixels, so canvas overlays (boss bar) stay clear of it. */

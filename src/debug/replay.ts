@@ -16,7 +16,7 @@ import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/t
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.11.0';
+export const ENGINE_VERSION = '1.12.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }

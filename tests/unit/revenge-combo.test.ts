@@ -9,7 +9,7 @@ import type { GameState } from '../../src/simulation/types';
 import { CpuPlayer } from '../../src/ai';
 import { KNOWLEDGE } from '../../src/ai/knowledge';
 import { advanceOffset, samplePose } from '../../src/render/skeleton';
-import { classifyHit, newRevengeStarts, swingCues } from '../../src/platform/hit-sound';
+import { classifyHit, newResourceStarts, swingCues } from '../../src/platform/hit-sound';
 import { SURVIVAL } from '../../src/survival/config';
 import { bossSpec } from '../../src/survival/spawner';
 import { createSurvival, spawnEnemy, stepSurvival, type SurvivalState } from '../../src/survival/state';
@@ -163,7 +163,8 @@ describe('revenge combo: input', () => {
         expect(game.fighters[0].moveId).toBe(want);
         expect(game.fighters[0].resources.revenge.current).toBe(100);
       }
-      for (const chord of CHORD_UPGRADES.filter(c => c.target !== id)) {
+      // Other full-bar chords need their own bar (special_spin: tests/unit/special-spin.test.ts).
+      for (const chord of CHORD_UPGRADES.filter(c => c.target !== id && !MOVES[c.target].command.resource)) {
         const buttons = Object.values(chord.sources);
         for (let gap = 0; gap <= CHORD_WINDOW_FRAMES; gap++) {
           const game = setup(facing);
@@ -304,7 +305,7 @@ describe('revenge combo: CPU, presentation, animation', () => {
     let previous = snapshot(game), reported = 0;
     for (const buttons of [buttonBit('HK'), ALL, ALL, 0, 0]) {
       step(game, [press(1, buttons), neutralInput()]);
-      reported += newRevengeStarts(game, previous).length; previous = snapshot(game);
+      reported += newResourceStarts(game, previous).length; previous = snapshot(game);
     }
     expect(game.fighters[0].moveId).toBe(id);
     expect(reported).toBe(1);

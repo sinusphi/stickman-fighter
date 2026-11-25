@@ -59,7 +59,9 @@
     "defaultStability": 150,
     "overrides": {
       "middle_high_punch_combo:punch": 200,
-      "revenge_combo:punch": 240
+      "revenge_combo:punch": 240,
+      "special_spin:back": 160,
+      "special_spin:front": 160
     },
     "groundKnockdownVelocity": -1024,
     "groundKnockdownSpeed": 384

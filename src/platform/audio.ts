@@ -207,9 +207,15 @@ export const READY_PRESETS: Record<'revenge' | 'special', ReadyPreset> = {
   special: { wave: 'triangle', notes: [523.25, 659.25, 783.99, 1046.5], spacing: 0.06, duration: 0.1, gain: 0.55, cutoff: 5000,
     echoes: [{ delay: 0.15, level: 0.4 }, { delay: 0.3, level: 0.16 }] },
 };
-/** Start of the Revenge combo: a fast, low rising square figure with one short echo. */
-export const REVENGE_START_PRESET: ReadyPreset = { wave: 'square', notes: [110, 146.83, 220, 293.66], spacing: 0.035, duration: 0.09, gain: 0.45, cutoff: 2400,
-  echoes: [{ delay: 0.12, level: 0.3 }] };
+/** Start of a full-bar move: Revenge combo a fast, low rising square figure; Wirbel
+ * (Special) a quick bright triangle figure that falls and rises again like a turn.
+ * Both with one short echo. */
+export const START_PRESETS: Record<'revenge' | 'special', ReadyPreset> = {
+  revenge: { wave: 'square', notes: [110, 146.83, 220, 293.66], spacing: 0.035, duration: 0.09, gain: 0.45, cutoff: 2400,
+    echoes: [{ delay: 0.12, level: 0.3 }] },
+  special: { wave: 'triangle', notes: [783.99, 587.33, 783.99, 1174.66], spacing: 0.03, duration: 0.08, gain: 0.5, cutoff: 6000,
+    echoes: [{ delay: 0.11, level: 0.3 }] },
+};
 const READY_ATTACK = 0.018;
 /** The bar fills on a hit; start the cue after that impact's transient so it is not masked. */
 export const READY_OFFSET = 0.12;
@@ -351,10 +357,10 @@ export class HitAudio {
     if (context) this.charge(context, READY_PRESETS[resource], pan, READY_OFFSET + Math.max(0, delay));
   }
 
-  /** Cue when a fighter starts the Revenge combo (synth only, no sample exists). */
-  playRevengeStart(pan = 0): void {
+  /** Cue when a fighter starts a full-bar move (Revenge combo, Wirbel); synth only, no sample exists. */
+  playResourceStart(resource: 'revenge' | 'special', pan = 0): void {
     const context = this.ready(2);
-    if (context) this.charge(context, REVENGE_START_PRESET, pan, 0);
+    if (context) this.charge(context, START_PRESETS[resource], pan, 0);
   }
 
   /** Running context with a free (or stolen) voice slot, otherwise null. */

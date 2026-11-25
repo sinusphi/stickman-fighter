@@ -278,17 +278,19 @@ export function newSwingSounds(game: GameState, previous: GameState): SwingSound
 }
 
 /**
- * Fighters that started a full-bar move (`command.resource`, the Revenge combo)
- * in this step, with their stereo position. A chord upgrade switches the move
- * in place (same attackId), so the move id is compared as well.
+ * Fighters that started a full-bar move (`command.resource`: Revenge combo,
+ * Wirbel) in this step, with the spent bar and their stereo position. A chord
+ * upgrade switches the move in place (same attackId), so the move id is
+ * compared as well.
  */
-export function newRevengeStarts(game: GameState, previous: GameState): { fighter: number; pan: number }[] {
-  const starts: { fighter: number; pan: number }[] = [];
+export function newResourceStarts(game: GameState, previous: GameState): { fighter: number; pan: number; resource: 'revenge' | 'special' }[] {
+  const starts: { fighter: number; pan: number; resource: 'revenge' | 'special' }[] = [];
   for (const f of game.fighters) {
     const before = previous.fighters[f.id];
-    if (f.state !== 'Attack' || !f.moveId || !MOVES[f.moveId]?.command.resource) continue;
+    const resource = f.state === 'Attack' && f.moveId ? MOVES[f.moveId]?.command.resource : undefined;
+    if (!resource) continue;
     if (before && before.state === 'Attack' && before.moveId === f.moveId && before.attackId === f.attackId) continue;
-    starts.push({ fighter: f.id, pan: panOf(f.x) });
+    starts.push({ fighter: f.id, pan: panOf(f.x), resource });
   }
   return starts;
 }

@@ -515,7 +515,7 @@ describe('throw replays and snapshots', () => {
     const stray = snapshot(game); stray.fighters[0].thrownBy = 'throw_forward_exec';
     expect(() => validateSnapshot(stray)).toThrow(/Wurfzustand/);
     const old = { ...createReplay(createGame()), engineVersion: '1.9.0' };
-    expect(() => parseReplay(old)).toThrow(/Engine 1\.11\.0/);
+    expect(() => parseReplay(old)).toThrow(/Engine 1\.12\.0/);
   });
 });
 

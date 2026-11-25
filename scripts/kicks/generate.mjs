@@ -77,6 +77,10 @@ try {
   Object.assign(rawPoses.default.poses, poses.poses);
   Object.assign(runtime.animations, { [id]: animation });
   const { strikeCapsule, kneeCapsule, capsuleBoxes } = await server.ssrLoadModule('/src/data/contact-shapes.ts');
+  // `boxes: 'spin'`: hit- and hurtboxes as for the spin kicks (spin-boxes.ts):
+  // one box around knee and foot of the striking leg, wherever it points
+  // (front or back), and a hurtbox per bone.
+  const { spinFrameBoxes } = await server.ssrLoadModule('/src/data/spin-boxes.ts');
 
   const toBox = (points, margin) => {
     const x = Math.floor((Math.min(...points.map(p => p[0])) - margin) * 256), y = Math.floor((Math.min(...points.map(p => p[1])) - margin) * 256);
@@ -86,6 +90,13 @@ try {
   for (let frame = 0; frame < duration; frame++) {
     const pose = runtime.samplePose(id, frame);
     const strike = strikes.find(s => frame >= s.from && frame <= s.to);
+    if (def.boxes === 'spin') {
+      const side = (strike?.joint ?? def.kickFoot).startsWith('right') ? 'right' : 'left';
+      const range = { from: frame, to: frame, ...spinFrameBoxes(pose, Boolean(strike), side, strike?.group ?? 'main') };
+      const previous = ranges.at(-1), same = r => JSON.stringify([r.hitboxes, r.hurtboxes, r.pushbox]);
+      if (previous && same(previous) === same(range)) previous.to = frame; else ranges.push(range);
+      continue;
+    }
     const isActive = Boolean(strike);
     const isKnee = Boolean(strike?.joint.endsWith('Knee'));
     // `hurtJoint` lets a mixed punch/kick chain name the limb that is out between its strikes.

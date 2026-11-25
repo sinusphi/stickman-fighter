@@ -231,6 +231,24 @@ export class HitEffects {
     }
   }
 
+  /**
+   * Wirbel start (Special bar): a cool flash, a wide ring and sparks flying out
+   * to both sides at hip height, matching the strike that covers front and back.
+   * Shake and effects switch as for the Revenge start.
+   */
+  spawnSpecialStart(x: number, y: number): void {
+    this.addShake(3);
+    if (!this.settings.effects) return;
+    const r = this.random;
+    this.spawn(ParticleKind.Flash, x, y, 0, 0, 24, 8, Tint.Special);
+    this.spawn(ParticleKind.Ring, x, y + BODY_CENTRE, 0, 0, 18, 16, Tint.Special, 1.3);
+    for (let i = 0; i < 12; i++) {
+      const side = i % 2 ? 1 : -1, angle = r.range(-0.35, 0.35), speed = r.range(3.5, 6.5);
+      this.spawn(ParticleKind.Ray, x + side * 6, y + r.range(-8, 14), side * Math.cos(angle) * speed, Math.sin(angle) * speed,
+        r.range(5, 9), Math.round(r.range(8, 12)), i % 3 === 0 ? Tint.Light : Tint.Special);
+    }
+  }
+
   // ------------------------------------------------------------- events ----
   private observeContacts(game: GameState, previous: GameState): void {
     const contact = game.lastContact, fresh = contact && (!previous.lastContact || previous.lastContact.frame !== contact.frame || previous.lastContact.attacker !== contact.attacker) ? contact : null;
@@ -310,9 +328,12 @@ export class HitEffects {
   private observeFighter(f: Fighter, old: Fighter | undefined, dramaticKo = true): void {
     if (!old) return;
     const x = screenX(f.x), feet = screenY(0);
-    // Start of a full-bar move (Revenge combo); a chord upgrade keeps the attackId.
-    if (f.state === 'Attack' && f.moveId && MOVES[f.moveId]?.command.resource &&
-      !(old.state === 'Attack' && old.moveId === f.moveId && old.attackId === f.attackId)) this.spawnRevengeStart(x, screenY(f.y) - BODY_CENTRE, f.attackFacing);
+    // Start of a full-bar move (Revenge combo, Wirbel); a chord upgrade keeps the attackId.
+    const resource = f.state === 'Attack' && f.moveId ? MOVES[f.moveId]?.command.resource : undefined;
+    if (resource && !(old.state === 'Attack' && old.moveId === f.moveId && old.attackId === f.attackId)) {
+      if (resource === 'special') this.spawnSpecialStart(x, screenY(f.y) - BODY_CENTRE);
+      else this.spawnRevengeStart(x, screenY(f.y) - BODY_CENTRE, f.attackFacing);
+    }
     // Landing from a jump, a knockdown or an aerial KO.
     if (old.y < 0 && f.y === 0) {
       const heavy = f.state === 'Knockdown' || f.state === 'KO';

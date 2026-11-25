@@ -47,6 +47,9 @@ export const CHORD_UPGRADES: readonly ChordUpgrade[] = [
   // Forward LK+LMK+HK (D+F+G+H), only with a full Revenge bar (see resourceReady).
   // No two-key subset of it is a forward chord, so it never shadows one.
   { sources: { standing_lk: 'LK', standing_lmk: 'LMK', spin_hk: 'HK' }, direction: 6, target: 'revenge_combo', travel: 'replace' },
+  // Back LP+LK+MK (A+R+F+B, pad X+A+B), only with a full Special bar: the Wirbel.
+  // No two-key subset of it is a back chord (those are LK+LMK and MK+HP).
+  { sources: { standing_lp: 'LP', left_turn_kick: 'LK', spin_mk: 'MK' }, direction: 4, target: 'special_spin', travel: 'replace' },
   // Forward H+N. Remove the single right high kick’s startup advance.
   { sources: { spin_hk: 'HK', standing_rhk: 'RHK' }, direction: 6, target: 'middle_high_punch_combo', travel: 'undoSource' },
   // Forward G+B.
