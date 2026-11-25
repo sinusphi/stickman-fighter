@@ -21,8 +21,11 @@ h1 { font-size:22px; letter-spacing:-1px; margin:0; text-transform:uppercase; }
 .section-bar { display:flex; justify-content:space-between; align-items:center; padding:24px 0 16px; gap:12px; }
 .section-bar strong { font-size:12px; font-weight:500; }
 .arena { position:relative; border:1px solid var(--line); background:var(--arena); border-radius:5px; overflow:hidden; }
-.hud { position:absolute;top:24px;left:28px;right:28px;display:grid;grid-template-columns:1fr 90px 1fr;gap:18px;pointer-events:none; }
-.health-label { display:flex;justify-content:space-between;font-size:10px;margin-bottom:9px;letter-spacing:.7px; }
+.hud { position:absolute;top:24px;left:28px;right:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,max-content) minmax(0,1fr);gap:18px;pointer-events:none; }
+.health-player { min-width:0; }
+.health-label { display:flex;justify-content:space-between;gap:10px;font-size:10px;margin-bottom:9px;letter-spacing:.7px; }
+.health-label>* { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.health-label strong { flex-shrink:0; }
 .health-label span { color:var(--muted); }
 .health-track { height:12px; background:var(--track);border-radius:2px;overflow:hidden; }
 .health-track>div { height:100%;background:var(--p1); }
@@ -33,9 +36,11 @@ h1 { font-size:22px; letter-spacing:-1px; margin:0; text-transform:uppercase; }
 .round-wins span { width:7px;height:7px;border:1px solid var(--line);border-radius:50%; }
 .round-wins .won { background:var(--p1);border-color:var(--p1); }
 .player-two .round-wins .won { background:var(--p2);border-color:var(--p2); }
-.timer-wrap { text-align:center; }
+.timer-wrap { text-align:center;white-space:nowrap; }
 #timer { font:700 42px/1 'Courier New',monospace;letter-spacing:-3px; }
 #round-label { font-size:8px;letter-spacing:1px; }
+/* Survival time runs as m:ss and may reach three-digit minutes: a little smaller, the column grows with it. */
+.hud.is-survival #timer { font-size:36px;letter-spacing:-2px; }
 canvas { display:block; width:100%; aspect-ratio:960/420; }
 .arena-caption { display:flex;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--subtle-line);font-size:10px;letter-spacing:1px;color:var(--muted); }
 .toolbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:16px 0 10px; }
@@ -70,7 +75,7 @@ summary { cursor:pointer;font-weight:600; }
 .input-history pre { max-height:350px;overflow:auto; }
 .notice:not(:empty) { padding:12px 0; }
 @media(max-width:700px) { main {padding:20px 14px;}header{align-items:flex-start;}.status{display:none}.controls{gap:16px;}.control-grid{gap:12px;flex-wrap:wrap}.settings{grid-template-columns:1fr}.toolbar{gap:8px}h1{font-size:19px}.arena-caption{padding:10px;font-size:8px}footer{flex-wrap:wrap} }
-@media(max-width:700px) { .hud{top:12px;left:12px;right:12px;gap:8px;grid-template-columns:1fr 48px 1fr}.health-label{font-size:7px;margin-bottom:5px}.health-label span{display:none}.health-track{height:7px}#timer{font-size:27px}#round-label{font-size:6px}.round-wins{margin-top:5px} }
+@media(max-width:700px) { .hud{top:12px;left:12px;right:12px;gap:8px;grid-template-columns:minmax(0,1fr) minmax(48px,max-content) minmax(0,1fr)}.hud.is-survival #timer{font-size:22px;letter-spacing:-1px}.health-label{font-size:7px;margin-bottom:5px}.health-label span{display:none}.health-track{height:7px}#timer{font-size:27px}#round-label{font-size:6px}.round-wins{margin-top:5px} }
 
 .header-actions { display:flex;align-items:center;gap:20px; }
 #theme,#language { width:40px;height:40px;display:grid;place-items:center;padding:0;flex-shrink:0; }
