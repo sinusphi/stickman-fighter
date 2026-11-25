@@ -1,5 +1,17 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-25 · Survival: Würfe des Spielers
+
+- **Neu:** Hüft- und Schulterwurf (6/4 + Wurf) funktionieren jetzt auch im Survival. Bisher wurde die Wurf-Taste dort maskiert. Nur der Spieler wirft; die Wurf-Taste der Gegner bleibt maskiert und der Director lässt weiterhin keinen Wurf-Move zu.
+- **Ziel:** Der Griff prüft die Gegner von nah nach fern, der erste in Reichweite entscheidet. Es läuft die vorhandene Wurf-Logik aus `simulation/throws.ts` auf dem Paar [Spieler, Gegner]; `resolveThrows` nimmt dafür optional ein Werfbarkeits-Prädikat (Standard `isThrowable`, im Versus also unverändert).
+- **Hitstun:** Im Survival sind Gegner im Hitstun am Boden zusätzlich werfbar (`survivalGrabbable`), im Versus bleibt es bei Stand/Gehen/Hocke.
+- **Miniboss immun:** Steht der Boss als nächster Gegner in Reichweite, läuft der Versuch ins Leere (normale Fehlgriff-Recovery). Rückmeldung: gedämpfte Block-Funken mit grauem Ring am Boss, der dumpfe geblockte Wurf-Sound und kurz „ABGESCHÜTTELT“ / „SHRUGGED OFF“ über ihm (`state.shrug`). Heavy-Gegner sind werfbar.
+- **Wirkung:** Umwerfen, Schaden und Leisten-Gain (Special für den Spieler, Revenge für den Gegner) wie im Versus; Energie wie ein einzelner Treffer (`energy.perHit`, kein Kombo-Bonus), Standfestigkeit wird beim Knockdown zurückgesetzt. Ein K.O. per Wurf zählt als Kill.
+- **Fairness / Director:** Vom Wurfversuch bis `director.throwGraceFrames` (16) Frames nach dem Wurf startet kein Gegner einen neuen Angriff; vorbereitete CPU-Eingabefolgen und Rücken-Schläge, die noch nicht gestartet sind, werden verworfen, Tokens und Warnungen bleiben stehen. Begründung: Der Spieler steckt in der Wurfanimation und kann nicht blocken, ohne Pause würde die Menge jeden Wurf bestrafen; die kurze Frist danach gibt ihm eine faire Chance zu reagieren, danach ist der Druck sofort wieder da. Schon laufende Angriffe gehen weiter (ihr Startup war vor dem Wurf sichtbar), ein Treffer bricht den Wurf wie im Versus ab und der Gegner fällt ohne Schaden. Eine Unverwundbarkeit für den Werfer gibt es bewusst nicht, sonst wäre der Wurf ein Ausweichmanöver.
+- Präsentation: Der geworfene Gegner hängt wie im Versus an den Händen des Spielers, Wurf-Effekte und -Sounds (Griff, Flug, Aufprall) laufen jetzt auch im Survival. `data-survival` hat zwei Felder mehr (gehaltene Gegner, abgeschüttelte Würfe).
+- Keine Änderung am Versus-Verhalten und an den Spieldaten: `ENGINE_VERSION` und Datenhash bleiben (Survival hat keine Replays).
+- Tests: `survival-throws.test.ts` (Wurf gegen jeden Gegnertyp, Rückwurf, Hitstun, nächstes Ziel, Boss-Immunität, Gegner werfen nie, K.O. per Wurf, Abbruch durch Treffer, Director-Pause über mehrere Seeds). `smoke:survival` wirft einen Gegner und lässt den Miniboss einen Wurf abschütteln.
+
 ## 2026-11-25 · Wirbel: erster Special-Move
 
 - **Neu: Wirbel** (`special_spin`). Mit voller Special-Leiste startet **zurück (4) + LP + LK + MK** (P1: A + R + F + B, P2: → + Num7 + Num4 + Num2, Gamepad: zurück + X + A + B) einen 360°-Drehtritt mit dem hinteren Bein: Fersenstoß gerade nach hinten, dann mit dem Rücken zum Gegner ein Schwung vorne auf Hüfthöhe. 9 / 11 / 22 Frames (42 gesamt), keine Unverwundbarkeit. Ein Treffer pro Seite (Treffergruppen `back` 50 und `front` 60 Schaden), beide MID. Die Leiste wird beim Start geleert, auch bei einem Fehlschlag; die Revenge-Leiste bleibt unberührt. Ohne volle Leiste, in der Hocke oder in der Luft wirken die Tasten exakt wie bisher.
