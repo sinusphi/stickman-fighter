@@ -63,4 +63,6 @@ export interface GameState {
    * attacks into the back always connect. Unset in versus, training and replays.
    */
   noRearGuard?: boolean;
+  /** Versus games: every round opens with the round intro (simulation/intro), except in training. */
+  roundIntro?: true;
 }

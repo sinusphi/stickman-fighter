@@ -263,6 +263,8 @@ export function swingCues(moveId: string): SwingCue[] {
 /** Whooshes whose cue frame the attack reached in this step (whiffs included). */
 export function newSwingSounds(game: GameState, previous: GameState): SwingSound[] {
   const sounds: SwingSound[] = [];
+  // The intro's fist salute is a greeting, not a strike: no whoosh.
+  if (game.round.phase === 'intro') return sounds;
   for (const fighter of game.fighters) {
     if (fighter.state !== 'Attack' || !fighter.moveId) continue;
     const before = previous.fighters[fighter.id];

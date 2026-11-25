@@ -203,5 +203,7 @@ export class Hud {
     this.text('arena-mode', labels.arenaMode);
     const canvas = this.el('game');
     canvas.dataset.frame = String(game.frame); canvas.dataset.ready = 'true';
+    // Round phase and intro step for smoke tests, e.g. "intro|approach" or "fighting|fight".
+    canvas.dataset.round = `${game.round.phase}|${game.round.intro?.step ?? ''}`;
   }
 }

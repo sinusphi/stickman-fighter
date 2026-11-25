@@ -10,6 +10,7 @@ import { t } from '../platform/i18n';
 import { animationTrails, samplePose, sampleYaw } from './skeleton';
 import { STAGE_VIEW } from './stages';
 import { newResourceFills, RESOURCE_NAMES, type ResourceName } from '../platform/resource-ready';
+import { saluteContact } from '../simulation/intro';
 
 /*
  * Presentation only. Hit sparks, screen shake, dust, speed lines, the KO flash
@@ -132,6 +133,25 @@ export class HitEffects {
     for (const f of game.fighters) this.observeFighter(f, previous.fighters[f.id]);
     this.observeCombos(game);
     this.observeResources(game, previous);
+    this.observeSalute(game, previous);
+  }
+
+  /** Round intro: the fists touch at the salute peak (see simulation/intro). */
+  private observeSalute(game: GameState, previous: GameState): void {
+    const contact = saluteContact(game);
+    if (contact && !saluteContact(previous)) this.spawnSaluteTouch(screenX(contact.x), screenY(contact.y));
+  }
+
+  /** Fist salute: a tiny flash, a small ring and a few short sparks. Very subtle, no shake. */
+  spawnSaluteTouch(x: number, y: number): void {
+    if (!this.settings.effects) return;
+    const r = this.random;
+    this.spawn(ParticleKind.Flash, x, y, 0, 0, 6, 6, Tint.Light);
+    this.spawn(ParticleKind.Halo, x, y, 0, 0, 4, 12, Tint.Special, 1.12);
+    for (let i = 0; i < 4; i++) {
+      const angle = (i % 2 ? -1 : 1) * r.range(0.9, 1.5), side = i < 2 ? 1 : -1;
+      this.spawn(ParticleKind.Ray, x, y, side * Math.cos(angle) * 1.6, Math.sin(angle) * 1.6, r.range(3, 5), Math.round(r.range(6, 9)), Tint.Light);
+    }
   }
 
   /**

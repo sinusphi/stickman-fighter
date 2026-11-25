@@ -1,6 +1,7 @@
 import { pickHitSample, pickBlockSample, pickSwingSample, sampleFiles, samplesEnabled, type SoundManifest, type ContactSound, type HitKind, type HitStyle, type HitZone, type StrikeSound, type SwingSound } from './hit-sound';
 import soundManifest from '../data/sounds.json';
 import soundMetadata from '../data/sound-meta.json';
+import { ANNOUNCER_GAIN, announcerPaths, type AnnouncerCue } from './announcer';
 
 /** Sample tuning: linear gains; only overlapping synth noise is attenuated. */
 export const SAMPLE_HIT_GAIN = 0.9, SYNTH_SLAP_MIX = 0.5;
@@ -294,6 +295,10 @@ export class HitAudio {
   private readonly last: Partial<Record<'hit' | 'block' | 'swing', string>> = {};
   private loadStarted = false;
   private unlocked = false;
+  /** Announcer recordings that exist (see platform/announcer); missing cues stay silent. */
+  private readonly announcer = new Map<AnnouncerCue, AudioBuffer>();
+  private announcerLoadStarted = false;
+  private announcerWanted = false;
 
   constructor(options: AudioOptions = {}) {
     this.manifest = options.manifest ?? soundManifest;
@@ -363,6 +368,45 @@ export class HitAudio {
     if (context) this.charge(context, START_PRESETS[resource], pan, 0);
   }
 
+  /** Announcer cue ("ready up", "fight"); silent while its recording is missing or still loading. */
+  playAnnouncer(cue: AnnouncerCue): void {
+    const buffer = this.announcer.get(cue);
+    if (!buffer) { this.preloadAnnouncer(); return; }
+    const context = this.ready(2);
+    if (!context) return;
+    this.voice(context, 2, ANNOUNCER_GAIN, 0, 0, 1, (voice, output, track) => {
+      const source = track(context.createBufferSource()); voice.sources.push(source);
+      source.buffer = buffer; source.connect(output);
+      const start = context.currentTime;
+      return [{ source, start, end: start + buffer.duration }];
+    });
+  }
+
+  /** Asks for the announcer recordings; they load with the samples once the context runs. */
+  preloadAnnouncer(): void {
+    this.announcerWanted = true;
+    const context = this.context;
+    if (this.unlocked && context?.state === 'running') this.loadAnnouncer(context);
+  }
+
+  /** Once per instance: the first existing, decodable file per cue. Every failure is local. */
+  private loadAnnouncer(context: AudioContext): void {
+    if (this.announcerLoadStarted || typeof globalThis.fetch !== 'function' || typeof context.decodeAudioData !== 'function') return;
+    this.announcerLoadStarted = true;
+    for (const cue of ['readyUp', 'fight'] as const) {
+      void (async () => {
+        for (const path of announcerPaths(cue)) {
+          try {
+            const response = await fetch(`${import.meta.env.BASE_URL}${path}`);
+            if (!response.ok) continue;
+            const buffer = await context.decodeAudioData(await response.arrayBuffer());
+            if (buffer.duration > 0) { this.announcer.set(cue, buffer); return; }
+          } catch { /* Missing file (or a dev-server HTML fallback): try the next extension. */ }
+        }
+      })();
+    }
+  }
+
   /** Running context with a free (or stolen) voice slot, otherwise null. */
   private ready(priority: Priority): AudioContext | null {
     if (this.muted) return null;
@@ -388,6 +432,7 @@ export class HitAudio {
 
   /** Once per instance, only after a gesture and a running context. Every failure is local. */
   private loadSamples(context: AudioContext): void {
+    if (this.announcerWanted) this.loadAnnouncer(context);
     if (this.loadStarted || !this.samplesOn || typeof globalThis.fetch !== 'function' || typeof context.decodeAudioData !== 'function') return;
     this.loadStarted = true;
     for (const path of sampleFiles(this.manifest)) {
