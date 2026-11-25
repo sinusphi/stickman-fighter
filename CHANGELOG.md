@@ -1,5 +1,17 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-25 · Runden-Intro
+
+- **Neu:** Jede Versus-Runde (auch VS CPU und Demo, nicht Training, nicht Survival) beginnt mit einem Intro. Neue Rundenphase `'intro'` in `src/simulation/rounds.ts` mit den Schritten `ready` → `approach` → `salute`, danach `fighting` (Schritt `fight` hält nur noch das Banner). Logik in `src/simulation/intro.ts`.
+- **Ablauf:** „READY UP!“ / „BEREITMACHEN!“ an den bisherigen Startpositionen (`INTRO_READY_FRAMES` 60). Dann laufen beide mit Gehgeschwindigkeit aufeinander zu (Walk-Animation, rund 37 Frames, je ~105 px), bis der Faustgruß-Abstand erreicht ist. Faustgruß: beide spielen `standing_lp` (`INTRO_SALUTE_FRAMES` 20, die Animation dauert 18), die Fäuste berühren sich auf dem Höhepunkt (Move-Frame 9) mit kleinem Funken und Ring, ohne Screenshake. Danach „FIGHT!“ / „LOS!“ (`INTRO_FIGHT_FRAMES` 40), Eingaben frei, Timer läuft ab hier.
+- **Abstand aus den Daten:** Faustspitze = Hand-Gelenk plus Kapselradius der Hand-Kapseln von `standing_lp` aus der Kontaktgeometrie, skaliert und gerundet wie zur Laufzeit; Höhepunkt = Frame mit der größten Reichweite. Ergibt 74,9 px pro Seite, Abstand 38352 Subpixel (149,8 px). Startabstand bleibt 360 px, der Anlauf ist also deutlich sichtbar. Die Figuren stehen nach dem Intro dort, wo sie gegrüßt haben (knapp außerhalb der LP-Reichweite).
+- **Kein Kampf im Intro:** Der Kampfschritt läuft im Intro gar nicht, also keine Hitbox, kein Schaden, keine Leiste, kein Swing-Sound. Eingaben sind gesperrt; eine durchs Intro gehaltene Taste zählt bei FIGHT nicht als Druck, gehaltene Richtungen wirken sofort. Die CPU wartet (wie bisher außerhalb von `fighting`).
+- **Ansager:** rein präsentational (`src/platform/announcer.ts`), Hooks `ready_up` und `fight` zentral konfigurierbar. Gespielt wird `public/sounds/announcer/<name>.ogg|mp3|wav|m4a`, falls vorhanden, sonst bleibt es beim Text. Es werden noch keine Aufnahmen mitgeliefert.
+- **Modi:** `createGame({ intro: true })` markiert ein Versus-Spiel (`roundIntro`); Resets und neue Runden spielen das Intro, Training nie. Tests und Survival-Sichten bleiben ohne Intro.
+- **Replays:** `ENGINE_VERSION` 1.14.0, ältere Replays werden abgewiesen. Replays enthalten das Intro, Snapshots im Intro werden validiert (Phase, Schritt, Frames, voller Timer, kein Training).
+- **Smokes:** neuer `smoke:intro` (Ablauf, gesperrte Eingaben, Faustgruß-Höhepunkt per Einzelschritt, Timer, DE-Banner, Training, Replay, Demo, Ansager-Requests). Alle übrigen Smokes laden die App mit dem neuen Testschalter `?intro=off` (`TEST_URL` in `scripts/smoke-env.mjs`, `SERVER_URL` ohne Query). Das Canvas trägt `data-round` (Phase und Intro-Schritt).
+- Tests: `intro.test.ts` (Phasenfolge und Längen, Abstand aus der Kontaktgeometrie, Faustspitzen berühren sich exakt, beide Seiten gespiegelt und vertauscht, kein Schaden/keine Eingaben, gehaltene Taste, Timer erst ab FIGHT, Ansager-Cues, Determinismus, Replay, Snapshot-Validierung, Training).
+
 ## 2026-11-25 · Rennen
 
 - **Neu:** Rennen. Zweimal schnell vorwärts tippen und beim zweiten Druck halten: Die Figur rennt mit `runSpeed` 1380 (rund 1,8-fache Gehgeschwindigkeit, neuer Wert in `rules.json`). Tippfenster 12 Frames vom Loslassen des ersten Tipps bis zum zweiten Druck (`RUN_TAP_FRAMES` in `src/input/run.ts`); dazwischen ist nur Neutral erlaubt. Erkannt wird auf der bereinigten, blickrichtungsrelativen Richtungshistorie, also nach SOCD und für Tastatur, D-Pad und Stick identisch. Tippen und sofort loslassen bleibt normales Gehen/Stehen.
