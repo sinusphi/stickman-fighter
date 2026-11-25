@@ -69,6 +69,7 @@
     "smoke:revenge-combo": "node scripts/run-smokes.mjs revenge-combo",
     "generate:special-spin": "node scripts/generate-special-spin.mjs",
     "smoke:special-spin": "node scripts/run-smokes.mjs special-spin",
+    "smoke:intro": "node scripts/run-smokes.mjs intro",
     "smoke:survival-layout": "node scripts/run-smokes.mjs survival-layout",
     "balance:survival": "node scripts/survival-balance.mjs"
   },
