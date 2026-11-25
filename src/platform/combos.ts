@@ -2,6 +2,7 @@ import moves from '../data/moves.json';
 import { t, type TranslationKey } from './i18n';
 
 export const comboLabelKeys: Record<string, TranslationKey> = {
+  revenge_combo: 'combo.revenge',
   tornado_spin_combo: 'combo.tornadoSpin',
   spin_high_middle_combo: 'combo.spinHighMiddle',
   middle_high_low_combo: 'combo.middleHighLow',
@@ -33,6 +34,7 @@ export const comboMarkup = `
       <strong ${comboLabelKeys[move.id]?tx(comboLabelKeys[move.id]):`>${move.id}`}</strong>
       <div class="combo-command"><span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span> + <span class="mono">${move.command.buttons.join(' + ')}</span></div>
       <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: ${move.command.buttons.map(button=>`<kbd data-owner="${player}" data-control="${button}">${button}</kbd>`).join(' + ')}</span>`).join('')}</div>
+      ${(move.command as { resource?: string }).resource?`<p class="hint" ${tx('combo.revengeHint')}</p>`:''}
     </li>`).join('')}
   </ul>
   <strong class="combo-section" ${tx('combo.throws')}</strong>

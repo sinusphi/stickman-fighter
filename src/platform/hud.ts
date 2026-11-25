@@ -24,6 +24,8 @@ export interface HudContext {
   survival?: SurvivalHud;
 }
 export interface SurvivalHud {
+  /** Controls slot (P1/P2) the survival player uses. */
+  side?: 0 | 1;
   time: string; best: string; enemies: number; kills: number; playerMaxHp: number; enemyMaxHp: number;
   /** Boss line: seconds until the next boss, or the number of the boss being fought (0 = none). */
   bossIn: string; boss: number;
@@ -31,14 +33,16 @@ export interface SurvivalHud {
   energy: number;
 }
 
-export interface HudModes { trainingCpu: boolean; cpuActive: boolean; demoActive: boolean; cpuPresent: boolean }
+/** cpuSide: the fighter a single CPU opponent controls (VS CPU as P2 puts it on fighter 0). */
+export interface HudModes { trainingCpu: boolean; cpuActive: boolean; demoActive: boolean; cpuPresent: boolean; cpuSide: 0 | 1 }
 
 export function hudModes(c: Pick<HudContext, 'game' | 'cpu' | 'playback'>): HudModes {
   const training = c.game.training;
   const trainingCpu = training.enabled && training.dummy === 'cpu';
   const cpuActive = c.cpu.enabled && !training.enabled && !c.playback;
   const demoActive = c.cpu.demo && !training.enabled && !c.playback;
-  return { trainingCpu, cpuActive, demoActive, cpuPresent: cpuActive || trainingCpu || demoActive };
+  const cpuSide: 0 | 1 = cpuActive && c.cpu.humanSide === 1 ? 0 : 1;
+  return { trainingCpu, cpuActive, demoActive, cpuPresent: cpuActive || trainingCpu || demoActive, cpuSide };
 }
 
 const difficultyName = (difficulty: Difficulty) => t(`difficulty.${difficulty}`);
@@ -50,15 +54,17 @@ export function hudLabels(c: HudContext) {
   const { game, cpu, playback } = c;
   const m = hudModes(c);
   const s = c.survival;
-  const level = difficultyName(cpu.difficulty).toUpperCase();
+  const level = difficultyName(m.cpuSide === 0 ? cpu.playerOneDifficulty : cpu.difficulty).toUpperCase();
   const demoLevels = `${difficultyName(cpu.playerOneDifficulty).toUpperCase()} VS ${level}`;
   return {
     cpuButton: m.trainingCpu ? t('cpu.trainingDummy') : game.training.enabled ? t('cpu.trainingPriority') : playback ? t('cpu.replayPriority') : `CPU: ${t(m.cpuActive ? 'common.on' : 'common.off')} · F8`,
+    sideButton: t('side.label', { side: cpu.humanSide === 1 ? 'P2' : 'P1' }),
+    cpuLevel: level,
     demoButton: game.training.enabled ? t('demo.trainingPriority') : playback ? t('demo.replayPriority') : `Demo: ${t(m.demoActive ? 'common.on' : 'common.off')} · F9`,
-    p1: m.demoActive && !s ? 'CPU 01' : 'PLAYER 01',
-    p2: s ? t('survival.enemies', { count: s.enemies }) : m.demoActive ? 'CPU 02' : m.cpuPresent ? 'CPU' : 'PLAYER 02',
+    p1: s ? (s.side === 1 ? 'PLAYER 02' : 'PLAYER 01') : m.demoActive ? 'CPU 01' : m.cpuActive && m.cpuSide === 0 ? 'CPU' : 'PLAYER 01',
+    p2: s ? t('survival.enemies', { count: s.enemies }) : m.demoActive ? 'CPU 02' : m.cpuPresent && m.cpuSide === 1 ? 'CPU' : 'PLAYER 02',
     matchStatus: `${s ? 'SURVIVAL' : playback ? 'REPLAY' : m.trainingCpu ? 'TRAINING · CPU · ' + level : game.training.enabled ? 'TRAINING' : m.demoActive ? 'DEMO · ' + demoLevels : m.cpuActive ? 'VS CPU · ' + level : 'LOCAL VERSUS'} · ${rules.hz} HZ`,
-    cpuDebug: m.demoActive ? c.cpuDebug.map((intent, i) => describeIntent(i + 1, intent)).join('\n') : m.cpuPresent ? describeIntent(2, c.cpuDebug[1]) : '',
+    cpuDebug: m.demoActive ? c.cpuDebug.map((intent, i) => describeIntent(i + 1, intent)).join('\n') : m.cpuPresent ? describeIntent(m.cpuSide + 1, c.cpuDebug[m.cpuSide]) : '',
     arenaMode: s ? `${c.stageCaption} / ${t('survival.mode', { kills: s.kills })} · ${s.boss ? t('survival.boss', { n: s.boss }) : t('survival.bossIn', { time: s.bossIn })} · ${t('survival.energy', { energy: s.energy })}` : playback ? `REPLAY / ${playback.index} : ${playback.total}`
       : c.recordingFrames !== null ? `REC / ${c.recordingFrames} FRAMES`
       : m.trainingCpu ? `TRAINING / CPU · ${level}`
@@ -124,12 +130,17 @@ export class Hud {
     this.text('sound', t(c.muted ? 'sound.off' : 'sound.on'));
     this.attr('sound', 'title', t(c.muted ? 'sound.unmute' : 'sound.mute'));
     this.attr('sound', 'aria-pressed', String(!c.muted));
-    const autoBlock = game.inputConfig.autoBlock?.every(Boolean) ?? false;
+    // Survival: only the player's own auto block counts (enemies never auto block).
+    const autoBlock = c.survival ? game.inputConfig.autoBlock?.[0] === true : game.inputConfig.autoBlock?.every(Boolean) ?? false;
     this.text('auto-block', t(autoBlock ? 'autoBlock.on' : 'autoBlock.off'));
     this.attr('auto-block', 'title', t(autoBlock ? 'autoBlock.disable' : 'autoBlock.enable'));
     this.attr('auto-block', 'aria-pressed', String(autoBlock));
     const survival = !!c.survival;
+    this.toggle('hud', 'is-survival', survival);
     this.flag('cpu', 'disabled', game.training.enabled || !!playback || survival);
+    this.flag('side', 'disabled', game.training.enabled || !!playback || survival || m.demoActive);
+    this.text('side', labels.sideButton);
+    this.attr('side', 'aria-pressed', String(c.cpu.humanSide === 1));
     this.flag('demo', 'disabled', game.training.enabled || !!playback || survival);
     this.flag('cpu-level-0', 'disabled', !!playback || game.training.enabled || survival);
     this.flag('cpu-level', 'disabled', !!playback || (game.training.enabled && !m.trainingCpu) || survival);

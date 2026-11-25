@@ -13,7 +13,7 @@ const POSE_CONTACT_BUTTONS = ['HP', 'MK', 'LMK', 'HK', 'RHK'];
 const POSE_CONTACT_SPECIALS = [
   'spin_mk', 'spin_hk', 'tornado_mk', 'forward_spin_hk', 'tornado_spin_combo', 'dwit_chagi',
   'left_turn_kick', 'double_high_kick', 'spin_high_middle_combo', 'middle_high_low_combo', 'middle_high_punch_combo',
-  'punch_kick_combo', 'kick_punch_combo',
+  'punch_kick_combo', 'kick_punch_combo', 'revenge_combo',
 ];
 
 export function isPoseContactMove(move: MoveShape): boolean {
@@ -30,8 +30,14 @@ const STRIKE_JOINTS: Readonly<Record<string, Readonly<Record<string, string>>>> 
   tornado_spin_combo: { spin: 'leftFoot', default: 'rightFoot' },
   punch_kick_combo: { punch: 'leftHand', default: 'rightFoot' },
   kick_punch_combo: { punch: 'leftHand', default: 'rightFoot' },
+  revenge_combo: { jab: 'leftHand', hook: 'leftHand', punch: 'leftHand', rightMiddle: 'rightFoot', rightHigh: 'rightFoot', default: 'leftFoot' },
 };
 
+/** Joint of a hit group when its move maps its groups to limbs, otherwise undefined. */
+export function mappedStrikeJoint(moveId: string, hitGroup: string): string | undefined {
+  const joints = STRIKE_JOINTS[moveId];
+  return joints ? joints[hitGroup] ?? joints.default : undefined;
+}
 /** Joint that carries a hit group's strike capsule; `trailJoint` is the animation's own strike joint. */
 export function strikeJoint(moveId: string, hitGroup: string, trailJoint: string): string {
   const joints = STRIKE_JOINTS[moveId];

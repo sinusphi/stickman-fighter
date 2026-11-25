@@ -10,7 +10,7 @@ import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
-import { newContactSounds, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
+import { newContactSounds, newRevengeStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
 import { newResourceFills } from './platform/resource-ready';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
@@ -28,7 +28,7 @@ import { loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles
 import { neutralInput } from './input/types';
 import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
 import { SurvivalSession, loadBest, saveBest } from './survival/session';
-import { formatSurvival, snapshotSurvival, type SurvivalState } from './survival/state';
+import { formatSurvival, inFront, snapshotSurvival, type SurvivalState } from './survival/state';
 import { survivalFocus, survivalHudGame, survivalViews, type SurvivalView } from './survival/views';
 import { renderSurvival } from './render/survival';
 
@@ -66,6 +66,11 @@ async function main(): Promise<void> {
   let survival: SurvivalSession | null = null;
   let survivalPrevious: SurvivalState | null = null;
   let survivalBest = loadBest(storage);
+  // Controls slot the survival player uses (P1 or P2 keys/pad), fixed per run from the side setting.
+  let survivalSide: 0 | 1 = 0;
+  // The survival player is fighter 0 internally; it gets the auto block of its controls slot.
+  const survivalConfig = (config: GameState['inputConfig']): GameState['inputConfig'] =>
+    ({ ...structuredClone(config), autoBlock: [config.autoBlock?.[survivalSide] ?? false, false] });
   const feedback = new HitFeedback();
   // Presentation only: sparks, shake, dust and the combo counter follow the game states.
   const effects = new HitEffects(loadEffectSettings());
@@ -82,6 +87,7 @@ async function main(): Promise<void> {
     for (const flight of throws.flights) audio.playSwing(flight);
     for (const slam of throws.slams) audio.playContact(slam);
     for (const fill of newResourceFills(game, previous)) audio.playResourceReady(fill.resource, panOf(game.fighters[fill.fighter].x), fill.delay / rules.hz);
+    for (const start of newRevengeStarts(game, previous)) audio.playRevengeStart(start.pan);
   };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
@@ -113,12 +119,12 @@ async function main(): Promise<void> {
     const before = snapshotSurvival(session.state);
     survivalPrevious = before;
     const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
-    for (const event of events) if (event.type === 'inputConfig') { game.inputConfig = structuredClone(event.config); session.setInputConfig(event.config); }
+    for (const event of events) if (event.type === 'inputConfig') { game.inputConfig = structuredClone(event.config); session.setInputConfig(survivalConfig(event.config)); }
     if (events.some(e => e.type === 'reset')) {
-      session.reset(matchSeed(), game.inputConfig); survivalPrevious = snapshotSurvival(session.state); effects.reset(); return;
+      session.reset(matchSeed(), survivalConfig(game.inputConfig)); survivalPrevious = snapshotSurvival(session.state); effects.reset(); return;
     }
     const wasOver = session.state.over;
-    session.step(inputs[0]);
+    session.step(inputs[survivalSide]);
     const now = views(session.state), then = views(before);
     effects.updateCrowd(now, then, !loop.paused);
     // Sounds per [player, enemy] view; the player's own swings only once.
@@ -128,6 +134,8 @@ async function main(): Promise<void> {
       const swingView = index === 0 ? view.game : { ...view.game, fighters: [old.fighters[0], view.game.fighters[1]] as GameState['fighters'] };
       for (const swing of newSwingSounds(swingView, old)) audio.playSwing(swing);
       for (const contact of newContactSounds(view.game, old)) audio.playContact(contact);
+      // The player is fighter 0 of every view: its Revenge start sounds once.
+      if (index === 0) for (const start of newRevengeStarts(swingView, old)) if (start.fighter === 0) audio.playRevengeStart(start.pan);
     });
     if (!wasOver && session.state.over && session.state.survivedFrames > survivalBest) {
       survivalBest = session.state.survivedFrames; saveBest(storage, survivalBest);
@@ -142,7 +150,8 @@ async function main(): Promise<void> {
       survival = null; survivalPrevious = null;
       queue({ type: 'reset' }); message(t('message.survivalLeft'));
     } else {
-      survival = new SurvivalSession(matchSeed(), game.inputConfig);
+      survivalSide = cpuSettings.humanSide;
+      survival = new SurvivalSession(matchSeed(), survivalConfig(game.inputConfig));
       survivalPrevious = snapshotSurvival(survival.state);
       message(t('message.survivalStarted'));
     }
@@ -173,8 +182,11 @@ async function main(): Promise<void> {
       const trainingCpu = game.training.enabled && game.training.dummy === 'cpu';
       const demoActive = cpuSettings.demo && !game.training.enabled;
       const cpuControlsOpponent = trainingCpu || (!game.training.enabled && cpuSettings.enabled) || demoActive;
-      if (demoActive) inputs[0] = restarting ? neutralInput() : cpus[0].next(game);
-      if (cpuControlsOpponent) inputs[1] = restarting ? neutralInput() : cpus[1].next(game);
+      // VS CPU as P2: the human steers fighter 1 with the P2 controls (arrows + numpad / P2 pad); the CPU takes fighter 0.
+      const humanAsP2 = cpuSettings.enabled && cpuSettings.humanSide === 1 && !game.training.enabled && !demoActive;
+      if (humanAsP2) inputs[0] = restarting ? neutralInput() : cpus[0].next(game);
+      else if (demoActive) inputs[0] = restarting ? neutralInput() : cpus[0].next(game);
+      if (cpuControlsOpponent && !humanAsP2) inputs[1] = restarting ? neutralInput() : cpus[1].next(game);
       else if ((cpuSettings.enabled || cpuSettings.demo) && game.training.enabled) inputs[1] = neutralInput();
       if (recording) {
         recording.frames.push(structuredClone({ inputs,events }));
@@ -212,6 +224,10 @@ async function main(): Promise<void> {
     if (playback || game.training.enabled) return;
     cpuSettings.enabled=!cpuSettings.enabled;cpuSettings.demo=false;saveCpuSettings(storage,cpuSettings);reset();
   }
+  function toggleSide(): void {
+    if (playback || game.training.enabled || cpuSettings.demo) return;
+    cpuSettings.humanSide=cpuSettings.humanSide===1?0:1;saveCpuSettings(storage,cpuSettings);reset();
+  }
   function toggleDemo(): void {
     if (playback || game.training.enabled) return;
     cpuSettings.demo=!cpuSettings.demo;cpuSettings.enabled=false;saveCpuSettings(storage,cpuSettings);reset();
@@ -242,11 +258,11 @@ async function main(): Promise<void> {
     pause:togglePause, step:singleStep, reset,
     boxes:()=>showBoxes=!showBoxes, inputs:()=>showInputs=!showInputs, states:()=>showStates=!showStates,
     training:toggleTraining, dummy:changeDummy, record:toggleRecord, play:toggleReplay,
-    cpu:toggleCpu, demo:toggleDemo, survival:toggleSurvival,
+    cpu:toggleCpu, side:toggleSide, demo:toggleDemo, survival:toggleSurvival,
     sound:()=>{audio.setMuted(!audio.isMuted());audio.unlock();},
   };
   // Versus-only tools stay inactive during a survival run.
-  const versusOnly = new Set(['training','dummy','record','play','cpu','demo']);
+  const versusOnly = new Set(['training','dummy','record','play','cpu','side','demo']);
   const run = (id: string) => { if (survival && versusOnly.has(id)) return; actions[id](); updateUI(); };
   for (const id of Object.keys(actions)) button(id).onclick=()=>run(id);
   button('export-replay').onclick=()=>{ const replay=recording??lastReplay; if(replay)saveJson('stickman-replay.json',replay); };
@@ -287,7 +303,7 @@ async function main(): Promise<void> {
     const s = survival?.state;
     hud.update({
       game: s ? survivalHudGame(s) : game,
-      survival: s ? { time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: survivalFocus(s)?.maxHp ?? 1, bossIn: formatSurvival(s.flow.bossTimer).slice(0, -3), boss: s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0, energy: s.energy.total } : undefined,
+      survival: s ? { side: survivalSide, time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: survivalFocus(s)?.maxHp ?? 1, bossIn: formatSurvival(s.flow.bossTimer).slice(0, -3), boss: s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0, energy: s.energy.total } : undefined,
       paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
@@ -300,12 +316,21 @@ async function main(): Promise<void> {
   function exposeSurvival(): void {
     const s = survival?.state, data = canvas.dataset;
     if (!s) { delete data.survival; return; }
-    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}`;
+    // Nearest enemy in front (px, -1 = none) and landed hits of the player's current attack.
+    const front = s.enemies.filter(e => !e.dead && !e.entering && inFront(s.player, e.fighter)).map(e => Math.round(Math.abs(e.fighter.x - s.player.x) / rules.unit));
+    const hits = Math.max(0, ...s.enemies.map(e => e.playerHits.length));
+    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${front.length ? Math.min(...front) : -1}|${hits}`;
+  }
+  const hudElement = document.getElementById('hud')!;
+  /** Bottom of the DOM HUD in logical canvas pixels, so canvas overlays (boss bar) stay clear of it. */
+  function survivalLayout(): { hudBottom: number } {
+    const box = canvas.getBoundingClientRect(), hudBox = hudElement.getBoundingClientRect();
+    return { hudBottom: box.width ? (hudBox.bottom - box.top) * 960 / box.width : 0 };
   }
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
     fitCanvas(canvas);
-    if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest);
+    if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest,survivalLayout());
     else render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
     preview(time,palette);
     pollSettings();updateUI();exposeSurvival();requestAnimationFrame(frame);

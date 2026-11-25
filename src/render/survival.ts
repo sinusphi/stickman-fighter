@@ -9,6 +9,7 @@ import { drawFigure, drawTrail } from './figure';
 import { fighterDepths } from './depth';
 import { MIRROR_YAW_ANIMATIONS, animationId, animationTrails, animations, fighterPose, isKneeTrail, sampleHeadYaw, sampleRotationTrail, sampleTrails, sampleTurn } from './skeleton';
 import type { HitEffects } from './effects';
+import { EdgeTracker, type EdgeMark } from './edge-marks';
 import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type StageId } from './stages';
 
 /*
@@ -16,7 +17,8 @@ import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type
  * it. Same figure pipeline as the versus renderer (poses, trails, depth,
  * shadows, effects), for any number of fighters. The player's turn is drawn
  * as a short horizontal squash through the front view, flipping at its middle.
- * Back attackers flash and carry a "!" during their warning.
+ * Back attackers flash and carry a "!" during their warning. Enemies stuck
+ * outside the canvas get an arrow at its edge (see edge-marks).
  */
 
 const ground = STAGE_VIEW.ground, U = rules.unit;
@@ -57,7 +59,15 @@ function enemyColor(enemy: Enemy): string {
   return set[(uid - 1) % set.length];
 }
 
-export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, previous: SurvivalState, alpha: number, paused: boolean, palette: Palette, stage: StageId = DEFAULT_STAGE, effects?: HitEffects, best = 0): void {
+/** Page layout the canvas drawing has to keep clear of. */
+export interface SurvivalLayout {
+  /** Bottom edge of the DOM HUD over the canvas, in logical canvas pixels. */
+  hudBottom: number;
+}
+
+const edges = new EdgeTracker();
+
+export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, previous: SurvivalState, alpha: number, paused: boolean, palette: Palette, stage: StageId = DEFAULT_STAGE, effects?: HitEffects, best = 0, layout?: SurvivalLayout): void {
   const ctx = canvas.getContext('2d')!;
   const scale = (canvas.width || 960) / 960;
   if (scale !== 1) ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -123,10 +133,20 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   if (camera) ctx.restore();
   effects?.drawOverlay(ctx, palette);
 
-  drawBossBar(ctx, state, palette);
+  const marks = edges.update(state);
+  drawEdgeMarks(ctx, state, marks, palette);
+  // Smoke tests read the arrows: left|right|warned.
+  let warned = 0, left = 0;
+  for (const mark of marks) { if (mark.warn) warned++; if (mark.side < 0) left++; }
+  const edgeData = `${left}|${marks.length - left}|${warned}`;
+  if (canvas.dataset.edge !== edgeData) canvas.dataset.edge = edgeData;
+  const clear = drawBossBar(ctx, state, palette, layout?.hudBottom ?? 0, canvas);
   drawEnergyGain(ctx, state, lerp(player.f, player.old)[0], palette);
 
+  // Banners keep below the HUD and the boss bar (their top edge sits about 30 px above the first line).
+  const shift = Math.max(0, clear + 8 - (BANNER_Y - 30));
   const banner = (text: string, y: number, font: string, halo: number) => {
+    y += shift;
     ctx.font = font; ctx.lineJoin = 'round'; ctx.strokeStyle = palette.arena; ctx.lineWidth = halo; ctx.strokeText(text, 480, y);
     ctx.fillStyle = palette.text; ctx.fillText(text, 480, y);
   };
@@ -141,11 +161,23 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   ctx.textAlign = 'left'; ctx.lineJoin = 'miter';
 }
 
-/** Health bar of a living miniboss at the top of the arena. */
-function drawBossBar(ctx: CanvasRenderingContext2D, state: SurvivalState, palette: Palette): void {
+/** Topmost bar position; the bar moves further down when the DOM HUD reaches lower (narrow windows). */
+const BOSS_BAR_Y = 98;
+/** Room between the HUD's bottom edge and the bar (its label sits above the bar). */
+const BOSS_BAR_GAP = 22;
+
+/** Baseline of the first PAUSE / game over banner line when nothing is in the way. */
+const BANNER_Y = 150;
+
+/** Health bar of a living miniboss at the top of the arena, below the DOM HUD. Returns the lowest y it or the HUD occupies. */
+function drawBossBar(ctx: CanvasRenderingContext2D, state: SurvivalState, palette: Palette, hudBottom: number, canvas: HTMLCanvasElement): number {
   const boss = state.enemies.find(e => e.boss > 0 && !e.dead);
-  if (!boss) return;
-  const width = 300, x = 480 - width / 2, y = 98, ratio = Math.max(0, Math.min(1, boss.fighter.hp / boss.maxHp));
+  const y = Math.max(BOSS_BAR_Y, Math.ceil(hudBottom) + BOSS_BAR_GAP), width = 300, x = 480 - width / 2;
+  // Smoke tests check the bar (label included) against the HUD: x|top|width|height in canvas pixels.
+  const barData = boss ? `${x - 3}|${y - 18}|${width + 6}|${18 + 14}` : '';
+  if ((canvas.dataset.bossBar ?? '') !== barData) { if (barData) canvas.dataset.bossBar = barData; else delete canvas.dataset.bossBar; }
+  if (!boss) return hudBottom;
+  const ratio = Math.max(0, Math.min(1, boss.fighter.hp / boss.maxHp));
   ctx.save();
   ctx.fillStyle = palette.arena; ctx.globalAlpha = .65; ctx.fillRect(x - 3, y - 3, width + 6, 16);
   ctx.globalAlpha = 1; ctx.fillStyle = enemyColor(boss); ctx.fillRect(x, y, width * ratio, 10);
@@ -154,6 +186,7 @@ function drawBossBar(ctx: CanvasRenderingContext2D, state: SurvivalState, palett
   const label = t('survival.bossBar', { n: boss.boss });
   ctx.strokeText(label, 480, y - 7); ctx.fillStyle = palette.text; ctx.fillText(label, 480, y - 7);
   ctx.restore();
+  return y + 14;
 }
 
 /** Floating "+N" above the player for a short time after an energy gain. */
@@ -172,6 +205,38 @@ function drawEnergyGain(ctx: CanvasRenderingContext2D, state: SurvivalState, x: 
 function blinkHidden(enemy: Enemy, state: SurvivalState): boolean {
   const left = state.config.enemies.koRemoveFrames - enemy.koFrames;
   return left < BLINK_FRAMES && Math.floor(left / 3) % 2 === 0;
+}
+
+/** Arrow height above the ground (above the heads, so a cut figure never hides it) and spacing of stacked arrows. */
+const EDGE_Y = 150, EDGE_STACK = 26;
+
+/** Arrows at the canvas edge for enemies outside it; a warned back attacker's arrow pulses with a "!". */
+function drawEdgeMarks(ctx: CanvasRenderingContext2D, state: SurvivalState, marks: readonly EdgeMark[], palette: Palette): void {
+  if (!marks.length) return;
+  ctx.save(); ctx.lineJoin = 'round';
+  for (const mark of marks) {
+    const enemy = state.enemies.find(e => e.uid === mark.uid);
+    if (!enemy) continue;
+    const pulse = mark.warn ? 1 + .2 * Math.abs(Math.sin(state.frame * .35)) : 1;
+    const size = (mark.boss ? 1.35 : 1) * pulse, color = mark.warn ? palette.revenge : enemyColor(enemy);
+    const x = mark.side < 0 ? 4 : 956, y = ground - EDGE_Y - mark.slot * EDGE_STACK;
+    ctx.save(); ctx.translate(x, y); ctx.scale(-mark.side * size, size);
+    // Badge in the arena colour with a text-coloured rim, the arrow in the enemy's colour;
+    // its tip touches the edge and points out of the canvas towards the enemy.
+    ctx.beginPath(); ctx.roundRect(-2, -10, 22, 20, 5);
+    ctx.globalAlpha = .82; ctx.fillStyle = palette.arena; ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = mark.warn ? palette.revenge : palette.text; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(15, -7); ctx.lineTo(15, 7); ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+    if (mark.warn) {
+      ctx.font = 'bold 18px Arial'; ctx.textAlign = 'center';
+      const tx = x - mark.side * (30 * size), ty = y + 7;
+      ctx.strokeStyle = palette.arena; ctx.lineWidth = 4; ctx.strokeText('!', tx, ty);
+      ctx.fillStyle = palette.revenge; ctx.fillText('!', tx, ty);
+    }
+  }
+  ctx.restore();
 }
 
 /** Pulsing "!" above a back attacker's head. */

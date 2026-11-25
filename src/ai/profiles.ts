@@ -24,7 +24,8 @@ export function validateProfiles(value: unknown): Record<Difficulty, CpuProfile>
   return profiles;
 }
 export const PROFILES = validateProfiles(data);
-export interface CpuSettings { enabled: boolean; demo: boolean; difficulty: Difficulty; playerOneDifficulty: Difficulty }
+/** humanSide: which fighter the human controls in VS CPU (the CPU takes the other one). */
+export interface CpuSettings { enabled: boolean; demo: boolean; difficulty: Difficulty; playerOneDifficulty: Difficulty; humanSide: 0 | 1 }
 export const SETTINGS_KEY = 'stickman-cpu-v1';
 export function loadCpuSettings(storage: Pick<Storage, 'getItem'>): CpuSettings {
   try {
@@ -34,9 +35,10 @@ export function loadCpuSettings(storage: Pick<Storage, 'getItem'>): CpuSettings 
       demo:typeof value.demo === 'boolean' ? value.demo : false,
       difficulty:value.difficulty,
       playerOneDifficulty:Object.hasOwn(PROFILES,value.playerOneDifficulty) ? value.playerOneDifficulty : 'medium',
+      humanSide:value.humanSide === 1 ? 1 : 0,
     };
   } catch { /* Disabled or corrupt storage must not prevent playing. */ }
-  return { enabled:false, demo:false, difficulty:'medium', playerOneDifficulty:'medium' };
+  return { enabled:false, demo:false, difficulty:'medium', playerOneDifficulty:'medium', humanSide:0 };
 }
 export function saveCpuSettings(storage: Pick<Storage, 'setItem'>, value: CpuSettings): void {
   try { storage.setItem(SETTINGS_KEY, JSON.stringify(value)); } catch { /* Private browsing / quota. */ }

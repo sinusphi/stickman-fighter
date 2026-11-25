@@ -35,8 +35,10 @@ export function buildKnowledge(moves: Record<string, CompiledMove>): MoveKnowled
       boxes, reach:boxes.length ? Math.max(...boxes.map(b => b.x+b.width)) : 0, lastActive };
   });
 }
-/** Strike repertoire of the utility brain. Throws have no hitboxes; the brain picks them by grab range instead. */
-export const KNOWLEDGE = buildKnowledge(Object.fromEntries(Object.entries(PLAYABLE_MOVES).filter(([, move]) => !move.throw)));
+/** Strike repertoire of the utility brain. Throws have no hitboxes; the brain picks them by grab range instead.
+ * Full-bar moves (`command.resource`, the Revenge combo) stay out for now: a CPU
+ * with a full bar would hit survival players with unblockable seven-hit chains. */
+export const KNOWLEDGE = buildKnowledge(Object.fromEntries(Object.entries(PLAYABLE_MOVES).filter(([, move]) => !move.throw && !move.command.resource)));
 export const MOVE_INFO = Object.fromEntries(buildKnowledge(MOVES).map(m => [m.id, m]));
 const hurt = Object.fromEntries(Object.entries(bodies).map(([s,b]) => [s,b.hurtboxes.map(scaledBox)]));
 /** Tests the perceived current geometry, never a simulated future game state. */

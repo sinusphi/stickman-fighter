@@ -212,6 +212,25 @@ export class HitEffects {
     }
   }
 
+  /**
+   * Revenge combo start: a hot flash at the body, a fast ring, sparks bursting
+   * forward and a short shake. Shake follows the shake switch; with effects
+   * switched off no particle is spawned.
+   */
+  spawnRevengeStart(x: number, y: number, facing: number): void {
+    this.addShake(4);
+    if (!this.settings.effects) return;
+    const r = this.random;
+    this.spawn(ParticleKind.Flash, x, y, 0, 0, 30, 9, Tint.Revenge);
+    this.spawn(ParticleKind.Halo, x, y, 0, 0, 14, 14, Tint.Revenge, 1.18);
+    this.spawn(ParticleKind.Ring, x, y + BODY_CENTRE, 0, 0, 16, 16, Tint.Revenge);
+    for (let i = 0; i < 10; i++) {
+      const angle = r.range(-0.9, 0.9), speed = r.range(3, 6.5);
+      this.spawn(ParticleKind.Ray, x + facing * 8, y + r.range(-20, 20), facing * Math.cos(angle) * speed, Math.sin(angle) * speed,
+        r.range(6, 11), Math.round(r.range(8, 13)), i % 3 === 0 ? Tint.Light : Tint.Revenge);
+    }
+  }
+
   // ------------------------------------------------------------- events ----
   private observeContacts(game: GameState, previous: GameState): void {
     const contact = game.lastContact, fresh = contact && (!previous.lastContact || previous.lastContact.frame !== contact.frame || previous.lastContact.attacker !== contact.attacker) ? contact : null;
@@ -291,6 +310,9 @@ export class HitEffects {
   private observeFighter(f: Fighter, old: Fighter | undefined, dramaticKo = true): void {
     if (!old) return;
     const x = screenX(f.x), feet = screenY(0);
+    // Start of a full-bar move (Revenge combo); a chord upgrade keeps the attackId.
+    if (f.state === 'Attack' && f.moveId && MOVES[f.moveId]?.command.resource &&
+      !(old.state === 'Attack' && old.moveId === f.moveId && old.attackId === f.attackId)) this.spawnRevengeStart(x, screenY(f.y) - BODY_CENTRE, f.attackFacing);
     // Landing from a jump, a knockdown or an aerial KO.
     if (old.y < 0 && f.y === 0) {
       const heavy = f.state === 'Knockdown' || f.state === 'KO';

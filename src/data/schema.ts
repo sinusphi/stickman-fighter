@@ -1,5 +1,6 @@
 import rules from './rules.json';
 import type { Resources } from '../simulation/types';
+type ResourceName = keyof Resources;
 import rawMoves from './moves.json';
 import poses from './poses.json';
 import type { Animation, Rotation } from '../render/animation-types';
@@ -44,11 +45,15 @@ export interface ThrowData {
 export interface CancelWindow { fromFrame: number; toFrame: number; on: ('hit' | 'block' | 'whiff')[]; type: 'chain' | 'target' | 'special' | 'super'; targetMoveIds: string[] }
 export interface Move {
   schemaVersion: number; id: string; stance: Stance; button: Button;
-  command: { type: 'normal' | 'motion' | 'hold'; directions: number[]; buttons: Button[]; trigger: 'pressed' | 'released'; priority: number; motionId?: string };
+  /** `resource`: the command is only available with that bar completely full and empties it on start (whiff included). */
+  command: { type: 'normal' | 'motion' | 'hold'; directions: number[]; buttons: Button[]; trigger: 'pressed' | 'released'; priority: number; motionId?: string; resource?: ResourceName };
   animation: string; startup: number; active: number; recovery: number; damage: number; hitLevel: HitLevel;
   hitstun: number; blockstun: number; pushbackHit: number; pushbackBlock: number; hitstop: number;
   advance?: { frames: number; distance: number };
   groundHitReaction?: 'middlePunch'; slideSpeed?: number;
+  /** Landed hits put a crouching defender into standing hitstun (the renderer already
+   * draws every hitstun standing), so later strikes of a combo meet the standing body. */
+  standingHitstun?: boolean;
   airHitReaction: 'knockdown'; multiHit: boolean; hitGroups: HitGroup[];
   cancelWindows: CancelWindow[]; combo: { scalingPermille: number; juggleCost: number; juggleLimit: number };
   throw?: ThrowData;
@@ -104,7 +109,7 @@ export function validatePoses(value: unknown): void {
     const tracks=animation.keyframes[0].rotations??[];
     assert(animation.trails===undefined || Array.isArray(animation.trails),`${id}: zusätzliche Bewegungsspuren.`);
     const trails=[...(animation.trail?[animation.trail]:[]),...(animation.trails??[])];
-    assert(trails.length<=5,`${id}: zu viele Bewegungsspuren.`);
+    assert(trails.length<=8,`${id}: zu viele Bewegungsspuren.`);
     for(const trail of trails)assert((trail.directional===undefined || typeof trail.directional==='boolean') && joints.has(trail.joint) && integer(trail.fromFrame) && integer(trail.toFrame) && trail.toFrame>=trail.fromFrame && trail.toFrame<animation.durationFrames && Number.isFinite(trail.historyFrames) && trail.historyFrames>0 && trail.historyFrames<=30,`${id}: Bewegungsspur.`);
     let previous=-1;
     for(const key of animation.keyframes) {
@@ -140,6 +145,7 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
     assert(move.advance===undefined || integer(move.advance.frames,1) && move.advance.frames<=move.startup+(move.multiHit?move.active:0) && integer(move.advance.distance) && move.stance!=='airborne',`${move.id}: Vorwärtsschritt.`);
     assert(move.groundHitReaction===undefined || move.groundHitReaction==='middlePunch',`${move.id}: Bodenreaktion.`);
     assert(move.slideSpeed===undefined || integer(move.slideSpeed),`${move.id}: Rutschgeschwindigkeit.`);
+    assert(move.standingHitstun===undefined || move.standingHitstun===true,`${move.id}: stehender Hitstun.`);
     assert(move.command && ['normal','motion','hold'].includes(move.command.type) && ['pressed','released'].includes(move.command.trigger) && move.command.buttons.every(b => BUTTONS.includes(b)) && move.command.directions.every(d=>integer(d,1)&&d<=9), `${move.id}: Command.`);
     if(move.command.type==='hold') {
       // Structural rules instead of a whitelist, so new combos need no schema change.
@@ -148,9 +154,12 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
       const {directions,buttons}=move.command;
       const lead=NORMAL_PRIORITY.find(b=>buttons.includes(b));
       assert(move.stance==='standing' && move.command.trigger==='pressed' && directions.length===1 && [4,6].includes(directions[0]) &&
-        buttons.length>=1 && buttons.length<=2 && new Set(buttons).size===buttons.length && lead===move.button,
-        `${move.id}: Hold-Command nur im Stand mit Richtung 4 oder 6 und ein oder zwei verschiedenen Tasten; \`button\` muss die Taste mit der höchsten Priorität (rules.normalPriority) sein.`);
+        buttons.length>=1 && buttons.length<=3 && new Set(buttons).size===buttons.length && lead===move.button,
+        `${move.id}: Hold-Command nur im Stand mit Richtung 4 oder 6 und ein bis drei verschiedenen Tasten; \`button\` muss die Taste mit der höchsten Priorität (rules.normalPriority) sein.`);
     }
+    // Resource moves are standing chords (no single-button shortcut to a full-bar move).
+    assert(move.command.resource===undefined || ['revenge','special'].includes(move.command.resource) && move.command.type==='hold' && move.command.buttons.length>=2,
+      `${move.id}: Ressourcen-Moves sind Hold-Chords mit Revenge oder Special.`);
     assert(Array.isArray(move.cancelWindows) && Array.isArray(move.hitGroups) && move.hitGroups.length > 0 && move.hitGroups.every(g => typeof g.id === 'string' && integer(g.maxHitsPerTarget,1)), `${move.id}: Hit-/Cancel-Gruppen.`);
     assert(move.hitGroups.every(g=>(g.hitLevel===undefined || ['LOW','MID','HIGH'].includes(g.hitLevel)) && (g.damage===undefined || integer(g.damage))),`${move.id}: Treffergruppen-Level oder Schaden.`);
     assert(move.hitGroups.every(g=>GROUP_FRAME_DATA.every(key=>g[key]===undefined || integer(g[key]))),`${move.id}: Frame-Data der Treffergruppe.`);

@@ -1,5 +1,6 @@
 import { MOVES, type CompiledMove, type HitGroup, type HitLevel } from '../data/schema';
 import rules from '../data/rules.json';
+import { mappedStrikeJoint } from '../data/pose-contact-moves';
 import type { Fighter, GameState } from '../simulation/types';
 
 /* Pure sound selection: no Web Audio access, no simulation RNG, no game-state writes. */
@@ -108,9 +109,11 @@ function groupOf(move: CompiledMove, groupId?: string): HitGroup {
 function kindOf(move: CompiledMove, group: HitGroup): HitKind {
   if (move.throw) return 'throw';
   if (group.id === 'knee') return 'knee';
-  // Mixed combos name their groups after the striking limb.
+  // Mixed combos name their groups after the striking limb, or map them to it.
   if (group.id === 'punch') return 'punch';
   if (group.id === 'kick') return 'kick';
+  const joint = mappedStrikeJoint(move.id, group.id);
+  if (joint) return joint.endsWith('Hand') ? 'punch' : 'kick';
   return move.button.endsWith('P') ? 'punch' : 'kick';
 }
 function strengthOf(damage: number): HitStrength {
@@ -272,4 +275,20 @@ export function newSwingSounds(game: GameState, previous: GameState): SwingSound
     }
   }
   return sounds;
+}
+
+/**
+ * Fighters that started a full-bar move (`command.resource`, the Revenge combo)
+ * in this step, with their stereo position. A chord upgrade switches the move
+ * in place (same attackId), so the move id is compared as well.
+ */
+export function newRevengeStarts(game: GameState, previous: GameState): { fighter: number; pan: number }[] {
+  const starts: { fighter: number; pan: number }[] = [];
+  for (const f of game.fighters) {
+    const before = previous.fighters[f.id];
+    if (f.state !== 'Attack' || !f.moveId || !MOVES[f.moveId]?.command.resource) continue;
+    if (before && before.state === 'Attack' && before.moveId === f.moveId && before.attackId === f.attackId) continue;
+    starts.push({ fighter: f.id, pan: panOf(f.x) });
+  }
+  return starts;
 }

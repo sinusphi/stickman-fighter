@@ -1,4 +1,5 @@
 import rules from '../data/rules.json';
+import { MOVES } from '../data/schema';
 import { captureInput } from '../input/commands';
 import { buttonBit, neutralInput, type RawInput } from '../input/types';
 import { createFighter, createRound } from '../simulation/factory';
@@ -175,6 +176,11 @@ function knockDown(f: Fighter, side: number): void {
   f.airAttackUsed = true;
 }
 
+/** The player is in a full-bar move (command.resource) whose hits must all land. */
+function committedCombo(p: Fighter): boolean {
+  return p.state === 'Attack' && !!p.moveId && !!MOVES[p.moveId]?.command.resource;
+}
+
 /**
  * Stagger bookkeeping after the combat of one pair. Every landed hit fills the
  * enemy's poise (more for combo hits); a full poise knocks it down. Returns
@@ -187,7 +193,8 @@ function applyHit(state: SurvivalState, e: Enemy, hpBefore: number, stateBefore:
   e.hitFrame = state.frame;
   e.poise += e.chain > 1 ? c.stagger.comboHit : c.stagger.perHit;
   if (f.state === 'Knockdown') { e.poise = 0; e.chain = 0; }
-  else if (f.state === 'Hitstun' && e.poise >= e.poiseMax) {
+  // A full-bar combo (Revenge) is not cut short by stagger; its finisher knocks down by itself.
+  else if (f.state === 'Hitstun' && e.poise >= e.poiseMax && !committedCombo(state.player)) {
     knockDown(f, Math.sign(f.x - state.player.x) || -state.player.facing); e.poise = 0; e.chain = 0;
   }
   return c.energy.perHit + (e.chain > 1 ? c.energy.perComboHit : 0);
