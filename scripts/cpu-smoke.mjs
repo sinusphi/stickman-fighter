@@ -74,6 +74,23 @@ try {
   await expect(page.locator('#cpu-level-0')).toHaveValue('easy');await expect(page.locator('#cpu-level')).toHaveValue('hard');
   await page.keyboard.press('F9');await expect(page.locator('#demo')).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('#p1-label')).toHaveText('PLAYER 01');await expect(page.locator('#p2-label')).toHaveText('PLAYER 02');
+  // Side switch: as P2 the human uses the P2 keys (arrows + numpad), the CPU (CPU 1 level) takes fighter 0.
+  await page.keyboard.press('F8');await page.locator('#side').click();
+  await expect(page.locator('#side')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#p1-label')).toHaveText('CPU');await expect(page.locator('#p2-label')).toHaveText('PLAYER 02');
+  await expect(page.locator('#arena-mode')).toHaveText('THE DOJO / VS CPU · EASY');
+  await page.keyboard.press('p');await page.keyboard.press('F6');await page.keyboard.down('KeyD');await page.keyboard.down('ArrowLeft');
+  await page.locator('#step').evaluate(b=>{for(let i=0;i<5;i++)b.click();});
+  await page.keyboard.up('KeyD');await page.keyboard.up('ArrowLeft');await page.keyboard.press('F6');
+  downloadPromise=page.waitForEvent('download');await page.locator('#export-replay').click();download=await downloadPromise;
+  const sideReplay=JSON.parse(await readFile(await download.path(),'utf8'));
+  expect(sideReplay.frames.every(f=>f.inputs[1].left&&!f.inputs[1].right)).toBe(true);
+  expect(sideReplay.frames.every(f=>!f.inputs[0].buttons&&!f.inputs[0].left&&!f.inputs[0].right)).toBe(true);
+  await page.reload();await page.locator('#game[data-ready="true"]').waitFor();
+  await expect(page.locator('#side')).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('F9');await expect(page.locator('#side')).toBeDisabled();
+  await page.keyboard.press('F9');await page.locator('#side').click();
+  await expect(page.locator('#side')).toHaveAttribute('aria-pressed','false');
   expect(errors).toEqual([]);
   await writeFile(`${output}/result.json`,JSON.stringify({browser:name,frames:replay.frames.length,hp,samples,errors},null,2)+'\n');
   console.log(`${name}: VS CPU and two-CPU demo hotkeys, separate levels, persistence, physical-input suppression, training, pause/step, live fight and replay passed.`,hp);

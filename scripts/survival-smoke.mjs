@@ -71,6 +71,31 @@ try {
   await expect(page.locator('#match-status')).toContainText('LOCAL VERSUS');
   await expect(page.locator('#survival')).toHaveAttribute('aria-pressed', 'false');
   await expect.poll(async () => await read(page)).toBeNull();
+
+  // Side P2: the run is steered with the P2 controls (arrows), auto block works for the player.
+  await page.locator('#side').click();
+  await expect(page.locator('#side')).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('F10');
+  await expect(page.locator('#match-status')).toContainText('SURVIVAL');
+  await expect(page.locator('#p1-label')).toContainText('PLAYER 02');
+  const autoBlock = page.locator('#auto-block'), autoWas = await autoBlock.getAttribute('aria-pressed');
+  if (autoWas !== 'true') await autoBlock.click();
+  await expect(autoBlock).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#pause').click();
+  let turnedP2 = false;
+  for (let attempt = 0; attempt < 6 && !turnedP2; attempt++) {
+    await step(40);
+    const before = await read(page), key = before.facing === 1 ? 'ArrowLeft' : 'ArrowRight';
+    await page.keyboard.down(key); await step(1); await page.keyboard.up(key); await step(2);
+    await page.keyboard.down(key); await step(1); await page.keyboard.up(key); await step(13);
+    turnedP2 = (await read(page)).turns > before.turns;
+  }
+  if (!turnedP2) throw Error('P2-Steuerung dreht den Survival-Spieler nicht.');
+  await page.locator('#pause').click();
+  if (autoWas !== 'true') await autoBlock.click();
+  await page.keyboard.press('F10');
+  await page.locator('#side').click();
+  await expect(page.locator('#side')).toHaveAttribute('aria-pressed', 'false');
   if (errors.length) throw Error(`Seitenfehler: ${errors.join(' | ')}`);
   console.log(`Survival Smoke ok — Bilder in ${output}`);
 } finally { await browser.close(); }

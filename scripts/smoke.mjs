@@ -46,8 +46,9 @@ try {
   await page.keyboard.up('d');
   await page.keyboard.press('r');
   await expect(page.locator('#hp-1')).toHaveText('970 / 1000');
-  await expect(page.locator('#resource-value-0-special')).toHaveText('3 / 100');
-  await expect(page.locator('#resource-value-1-revenge')).toHaveText('3 / 100');
+  // 30 damage: Special +round(30·7/100), Revenge +round(30·25/100) (rules.resources).
+  await expect(page.locator('#resource-value-0-special')).toHaveText('2 / 100');
+  await expect(page.locator('#resource-value-1-revenge')).toHaveText('8 / 100');
   await page.keyboard.press('F1');await page.keyboard.press('F2');
   await page.keyboard.press('p');
   const paused=Number(await page.locator('#game').getAttribute('data-frame'));

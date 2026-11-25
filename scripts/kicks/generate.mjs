@@ -88,8 +88,9 @@ try {
     const strike = strikes.find(s => frame >= s.from && frame <= s.to);
     const isActive = Boolean(strike);
     const isKnee = Boolean(strike?.joint.endsWith('Knee'));
+    // `hurtJoint` lets a mixed punch/kick chain name the limb that is out between its strikes.
     const joint = isKnee ? strike.joint.replace('Knee', 'Foot') : kneeStrikes.length ? def.kickFoot
-      : strike?.joint ?? (frame < (strikes[1]?.from ?? Infinity) - 8 ? strikes[0].joint : strikes.at(-1).joint);
+      : strike?.joint ?? def.hurtJoint?.(frame) ?? (frame < (strikes[1]?.from ?? Infinity) - 8 ? strikes[0].joint : strikes.at(-1).joint);
     const knee = joint.replace('Foot', 'Knee').replace('Hand', 'Elbow');
     const capsule = !strike ? null : isKnee ? kneeCapsule(pose, strike.joint.startsWith('right') ? 'right' : 'left') : strikeCapsule(pose, joint);
     const hitboxes = capsule ? capsuleBoxes(capsule).map(box => ({ ...box, hitGroup: strike.group })) : [];
@@ -107,13 +108,15 @@ try {
   const move = {
     ...structuredClone(template), id,
     button: def.button,
-    command: { type: 'hold', directions: [def.direction ?? 4], buttons: def.buttons ?? [def.button], trigger: 'pressed', priority: def.buttons ? 20 : 10 },
+    command: { type: 'hold', directions: [def.direction ?? 4], buttons: def.buttons ?? [def.button], trigger: 'pressed', priority: def.priority ?? (def.buttons ? 20 : 10),
+      ...(def.resource ? { resource: def.resource } : {}) },
     animation: id, startup, active, recovery, ...def.hit,
     multiHit: strikes.length > 1,
     hitGroups: strikes.map(s => ({ id: s.group, maxHitsPerTarget: 1, ...s.hit })),
     cancelWindows: [],
     frameRanges: ranges,
   };
+  if (def.standingHitstun) move.standingHitstun = true; else delete move.standingHitstun;
   // Definitions use rig units; simulation displacement uses scaled fixed-point pixels.
   if (def.advance) move.advance = { frames: def.advance.frames, distance: Math.round(def.advance.distance * FIGURE_SCALE * 256) };
   else delete move.advance;
