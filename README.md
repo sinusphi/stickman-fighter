@@ -23,7 +23,7 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 - 37 standing, crouching, airborne, spin, tornado, and combo attacks, plus two throws (hip throw and shoulder throw with side switch)
 - Revenge combo: with a full Revenge bar, a seven-hit comeback combo
 - Wirbel: with a full Special bar, a 360° spin kick that hits behind and in front
-- Blocking, jumping, best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
+- Blocking, jumping, running (double tap forward), best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
 - Hit effects: sparks, screen shake, dust, speed lines, KO flash, and a combo counter (switchable in the settings)
 - Survival mode: endless enemies from both sides, the survived time is the score
 - Training mode, hitbox display, frame stepping, and animation preview
@@ -60,6 +60,7 @@ Open the address shown in the terminal, usually <http://127.0.0.1:5173>.
 | Pause | P | P | — |
 
 Directions are relative to the opponent: **6** forward, **4** back, **2** crouch, and **7/8/9** jump. 
+**Run:** tap forward twice quickly (within 12 frames) and hold it on the second press; this works the same on keyboard, D-pad and stick. Releasing forward stops at once; crouching, jumping (normal forward jump), attacking, blocking (back), getting hit or touching the opponent also ends the run. There is no special run attack. 
 Throws: **6 + Throw** hip throw, **4 + Throw** shoulder throw (the opponent lands behind you). They only grab a standing or crouching opponent within arm's reach, cannot be blocked, and a missed grab has a long recovery. Numpad 0 is the code `Numpad0` (the "0 / Ins" key, regardless of NumLock), not the separate Insert key. 
 Use **Backspace** to restart a match. Controls can be reassigned in the game.
 
@@ -90,7 +91,7 @@ The Special bar fills with your own hits (a trickle on blocked ones). With a ful
 
 Press **F10** (or the Survival button) to start, F10 again returns to versus. You start in the middle of the arena (with the P1 controls, or the P2 controls if the side button is set to P2; auto block applies to your side) while enemies keep walking in from the left and the right. The run only ends when your energy is empty; the survived time is the score, and the best time is kept in the browser. **Backspace** starts a new run.
 
-- Your facing stays fixed: walking backwards does not turn you around. **Double-tap backwards** to turn (a short turn animation; no attacks meanwhile). A single back press can still open a command move.
+- Your facing stays fixed: walking backwards does not turn you around. **Double-tap backwards** to turn (a short turn animation; no attacks meanwhile). A single back press can still open a command move. Running (double tap **forward** and hold) works along your facing as in versus; enemies do not run.
 - Only a few enemies in front of you attack at the same time, the others lurk at a distance. Enemies behind you rarely attack, and every attack from behind is announced: the attacker flashes and shows a **!**. Attacks into your back cannot be blocked.
 - The finisher of the five-hit combo knocks the opponent down in every mode; in survival, other heavy hits also knock the basic enemy down.
 - **Throws:** only you throw, the enemies do not. Hip and shoulder throw work as in versus and seize the closest enemy in reach, in survival also one that is in hitstun. Every throw knocks down and gives energy like a normal hit; the bars fill as in versus. Heavy enemies can be thrown, minibosses shrug every throw off (the attempt whiffs). While you throw and shortly after, no enemy starts a new attack; an attack that is already running can still break the throw.

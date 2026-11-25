@@ -22,7 +22,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - 37 Angriffe im Stand, in der Hocke und in der Luft sowie Dreh-, Tornado- und Komboangriffe, dazu zwei Würfe (Hüftwurf und Schulterwurf mit Seitenwechsel)
 - Revenge-Kombo: mit voller Revenge-Leiste eine Comeback-Kombo mit sieben Treffern
 - Wirbel: mit voller Special-Leiste ein 360°-Drehtritt, der hinten und vorne trifft
-- Blocken, Springen, Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
+- Blocken, Springen, Rennen (Doppeltipp vorwärts), Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
 - Treffereffekte: Funken, Screen-Shake, Staub, Speed-Lines, K.-o.-Blitz und Kombo-Zähler (in den Einstellungen abschaltbar)
 - Survival-Modus: endlos Gegner von beiden Seiten, die überlebte Zeit ist der Highscore
 - Trainingsmodus, Kampfboxanzeige, Einzelschritt und Animationsvorschau
@@ -58,7 +58,7 @@ Anschließend die im Terminal angezeigte Adresse öffnen, normalerweise <http://
 | Wurf (mit 6 oder 4) | C | Numpad 0 | LB |
 | Pause | P | P | — |
 
-Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hocken und **7/8/9** springen. Würfe: **6 + Wurf** Hüftwurf, **4 + Wurf** Schulterwurf (der Gegner landet hinter dir). Sie greifen nur einen stehenden oder hockenden Gegner in Armreichweite, sind nicht blockbar, und ein Fehlgriff hat eine lange Recovery. Numpad 0 ist der Code `Numpad0` (die Taste „0 / Einfg“, unabhängig von NumLock), nicht die separate Einfg-Taste. Mit **Backspace** wird ein Match neu gestartet. Die Belegung kann im Spiel geändert werden.
+Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hocken und **7/8/9** springen. **Rennen:** zweimal schnell vorwärts tippen (innerhalb von 12 Frames) und beim zweiten Druck halten; das funktioniert mit Tastatur, D-Pad und Stick gleich. Loslassen stoppt sofort; Hocken, Springen (normaler Vorwärtssprung), Angreifen, Blocken (zurück), ein Treffer oder Kontakt mit dem Gegner beenden das Rennen ebenfalls. Einen eigenen Lauf-Angriff gibt es nicht. Würfe: **6 + Wurf** Hüftwurf, **4 + Wurf** Schulterwurf (der Gegner landet hinter dir). Sie greifen nur einen stehenden oder hockenden Gegner in Armreichweite, sind nicht blockbar, und ein Fehlgriff hat eine lange Recovery. Numpad 0 ist der Code `Numpad0` (die Taste „0 / Einfg“, unabhängig von NumLock), nicht die separate Einfg-Taste. Mit **Backspace** wird ein Match neu gestartet. Die Belegung kann im Spiel geändert werden.
 
 
 ## Revenge-Kombo
@@ -87,7 +87,7 @@ Die Special-Leiste füllt sich mit deinen eigenen Treffern (geblockte geben nur 
 
 **F10** (oder der Survival-Button) startet den Modus, erneut F10 führt zurück in den Versus. Du startest in der Mitte der Arena (mit der P1-Belegung, oder mit der P2-Belegung, wenn der Seiten-Button auf P2 steht; der Auto-Block deiner Seite gilt), von links und rechts laufen immer wieder Gegner herein. Der Lauf endet erst, wenn deine Energie leer ist; die überlebte Zeit ist der Highscore, die Bestzeit merkt sich der Browser. **Backspace** startet einen neuen Lauf.
 
-- Deine Blickrichtung bleibt fest: Rückwärtslaufen dreht dich nicht um. **Doppeltipp nach hinten** dreht dich um (kurze Drehanimation, währenddessen kein Angriff). Ein einzelner Druck nach hinten kann weiterhin einen Command-Move einleiten.
+- Deine Blickrichtung bleibt fest: Rückwärtslaufen dreht dich nicht um. **Doppeltipp nach hinten** dreht dich um (kurze Drehanimation, währenddessen kein Angriff). Ein einzelner Druck nach hinten kann weiterhin einen Command-Move einleiten. Rennen (Doppeltipp **vorwärts** und halten) funktioniert entlang deiner Blickrichtung wie im Versus; Gegner rennen nicht.
 - Nur wenige Gegner vor dir greifen gleichzeitig an, die anderen lauern auf Abstand. Gegner im Rücken greifen selten an, und jeder Angriff von hinten wird angekündigt: Der Angreifer blinkt und zeigt ein **!**. Angriffe in den Rücken lassen sich nicht blocken.
 - Der Finisher der Fünfer-Combo wirft den Gegner in allen Modi um; im Survival werfen auch andere schwere Treffer den Basisgegner um.
 - **Würfe:** Nur du wirfst, die Gegner nicht. Hüft- und Schulterwurf funktionieren wie im Versus und greifen den nächsten Gegner in Armreichweite, im Survival auch einen, der gerade im Hitstun steckt. Jeder Wurf wirft um und bringt Energie wie ein normaler Treffer, die Leisten füllen sich wie im Versus. Schwere Gegner sind werfbar, Minibosse schütteln jeden Wurf ab (der Versuch läuft ins Leere). Während du wirfst und kurz danach startet kein Gegner einen neuen Angriff; ein schon laufender Angriff kann den Wurf aber noch abbrechen.
