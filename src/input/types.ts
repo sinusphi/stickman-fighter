@@ -6,7 +6,8 @@ export const buttonBit = (button: Button): number => 1 << BUTTONS.indexOf(button
 export type Direction = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type SocdMode = 'neutral' | 'positive' | 'lastInputWins';
 export interface SocdConfig { horizontal: SocdMode; vertical: SocdMode }
-export interface RawInput { left: boolean; right: boolean; up: boolean; down: boolean; buttons: number; taps?: number }
+/** `noRun` marks input that may never start a run (CPU-driven fighters); it is recorded with replays. */
+export interface RawInput { left: boolean; right: boolean; up: boolean; down: boolean; buttons: number; taps?: number; noRun?: boolean }
 export const neutralInput = (): RawInput => ({ left: false, right: false, up: false, down: false, buttons: 0 });
 export interface InputFrame { frame: number; direction: Direction; pressed: number; held: number; released: number }
 export interface InputHistory { frames: (InputFrame | null)[]; cursor: number; length: number }
@@ -19,4 +20,6 @@ export interface InputState {
   pending: { button: Button; expires: number; motions: string[] } | null;
   motions: string[];
   display: (InputFrame & { duration: number })[];
+  /** Forward double tap recognised and forward still held (see input/run). */
+  run: boolean;
 }

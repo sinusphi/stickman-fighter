@@ -3,6 +3,7 @@ import rules from '../data/rules.json';
 import bodies from '../data/bodies.json';
 import type { Fighter } from './types';
 import { MOVES } from '../data/schema';
+import { stopRun } from './movement';
 
 export interface Box { x: number; y: number; width: number; height: number }
 export type Stance = 'standing' | 'crouching' | 'airborne';
@@ -27,6 +28,8 @@ export function resolvePushboxes(fighters: [Fighter, Fighter]): void {
   // A throw holds both bodies together; simulation/throws keeps them apart and on stage.
   if (a.state === 'Thrown' || b.state === 'Thrown') return;
   if (!overlaps(pushbox(a), pushbox(b))) return;
+  // Running into the opponent pushes like a walk for this frame and ends the run.
+  stopRun(a); stopRun(b);
   const [left, right] = a.x <= b.x ? [a, b] : [b, a];
   const l = pushbox(left), r = pushbox(right);
   const depth = l.x + l.width - r.x;

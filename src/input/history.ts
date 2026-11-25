@@ -3,7 +3,7 @@ import { neutralInput, type InputFrame, type InputHistory, type InputState } fro
 
 export function createInputState(): InputState {
   return { history: { frames: Array(rules.historySize).fill(null), cursor: 0, length: 0 }, previous: neutralInput(), horizontalLast: 0, verticalLast: 0,
-    current: { frame: -1, direction: 5, pressed: 0, held: 0, released: 0 }, pending: null, motions: [], display: [] };
+    current: { frame: -1, direction: 5, pressed: 0, held: 0, released: 0 }, pending: null, motions: [], display: [], run: false };
 }
 export function pushHistory(history: InputHistory, frame: InputFrame): void {
   history.frames[history.cursor] = frame;

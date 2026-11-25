@@ -16,7 +16,7 @@ import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/t
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.12.0';
+export const ENGINE_VERSION = '1.13.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }
@@ -50,7 +50,7 @@ function validMove(state: string, moveId: string | null, moveFrame: number): boo
   return moveId === null && moveFrame <= MAX_MOVE_DURATION;
 }
 export function validRaw(raw: RawInput): boolean {
-  return !!raw && ['up','down','left','right'].every(k=>typeof raw[k as 'up']==='boolean') && int(raw.buttons,0,BUTTON_MASK) && (raw.taps===undefined || int(raw.taps,0,BUTTON_MASK));
+  return !!raw && ['up','down','left','right'].every(k=>typeof raw[k as 'up']==='boolean') && int(raw.buttons,0,BUTTON_MASK) && (raw.taps===undefined || int(raw.taps,0,BUTTON_MASK)) && (raw.noRun===undefined || typeof raw.noRun==='boolean');
 }
 function validFrame(frame: InputFrame): boolean { return !!frame && int(frame.frame,-1) && int(frame.direction,1,9) && [frame.pressed,frame.held,frame.released].every(n=>int(n,0,BUTTON_MASK)); }
 function validConfig(config: GameState['inputConfig']): boolean { return !!config && ['neutral','positive','lastInputWins'].includes(config.socd?.horizontal) && ['neutral','positive','lastInputWins'].includes(config.socd?.vertical) && int(config.bufferFrames,1,30) && (config.autoBlock === undefined || (Array.isArray(config.autoBlock) && config.autoBlock.length === 2 && config.autoBlock.every(value=>typeof value === 'boolean'))); }
@@ -63,7 +63,7 @@ function checkSnapshot(value: unknown): asserts value is GameState {
   assert(state.training && typeof state.training.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(state.training.dummy),'Trainingszustand.');
   assert(state.round && ['fighting','roundOver','matchOver'].includes(state.round.phase) && int(state.round.timer,0,rules.hz*rules.roundSeconds) && int(state.round.number,1) && int(state.round.transition,0,rules.roundTransition) && state.round.wins?.length===2 && state.round.wins.every(n=>int(n,0,2)) && [null,0,1].includes(state.round.winner) && [null,'KO','TIME OVER','DOUBLE KO','DRAW'].includes(state.round.reason), 'Rundenzustand.');
   assert(state.fighters?.length===2,'Zwei Figuren erforderlich.');
-  const states = ['Idle','Walk','Crouch','CrouchWalk','JumpSquat','Airborne','Landing','Attack','Hitstun','Blockstun','Knockdown','KO','Thrown'];
+  const states = ['Idle','Walk','Run','Crouch','CrouchWalk','JumpSquat','Airborne','Landing','Attack','Hitstun','Blockstun','Knockdown','KO','Thrown'];
   for (const [index,f] of state.fighters.entries()) {
     validateResources(f.resources);
     assert(f.id===index && states.includes(f.state) && [-1,1].includes(f.facing) && [-1,1].includes(f.attackFacing),'Figurenzustand oder Blickrichtung.');
@@ -76,7 +76,7 @@ function checkSnapshot(value: unknown): asserts value is GameState {
     assert(validMove(f.state,f.moveId,f.moveFrame),'Move oder Move-Frame.');
     assert(Array.isArray(f.hitTargets) && f.hitTargets.every(id=>typeof id==='string') && (f.advantage==='pending' || f.advantage==='n/a' || int(f.advantage,-10000,10000)),'Kontaktzustand.');
     const input=f.input;
-    assert(input && validRaw(input.previous) && validFrame(input.current) && [-1,0,1].includes(input.horizontalLast) && [-1,0,1].includes(input.verticalLast),'Input-Zustand.');
+    assert(input && validRaw(input.previous) && validFrame(input.current) && [-1,0,1].includes(input.horizontalLast) && [-1,0,1].includes(input.verticalLast) && typeof input.run==='boolean','Input-Zustand.');
     assert(input.history?.frames?.length===rules.historySize && int(input.history.cursor,0,rules.historySize-1) && int(input.history.length,0,rules.historySize) && input.history.frames.every(f=>f===null || validFrame(f)), 'Input-Ringpuffer.');
     for(let i=0;i<input.history.length;i++) assert(input.history.frames[(input.history.cursor-1-i+rules.historySize)%rules.historySize]!==null,'Lücke im Input-Ringpuffer.');
     assert(input.pending===null || (!!input.pending && BUTTONS.includes(input.pending.button) && int(input.pending.expires) && Array.isArray(input.pending.motions) && input.pending.motions.every(m=>typeof m==='string')),'Gepufferter Command.');

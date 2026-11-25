@@ -1,6 +1,7 @@
 import { cleanInput } from './socd';
 import { pushHistory, readHistory } from './history';
 import { parseMotions } from './motions';
+import { detectRunTap } from './run';
 import { buttonBit, type Button, type InputState, type RawInput, type SocdConfig } from './types';
 import rules from '../data/rules.json';
 
@@ -13,7 +14,10 @@ export function captureInput(state: InputState, raw: RawInput, facing: number, f
   const last = state.display.at(-1);
   if (last && last.direction===direction && last.held===raw.buttons && !state.current.pressed && !state.current.released) last.duration++;
   else { state.display.push({...state.current,duration:1}); if(state.display.length>rules.displayHistorySize)state.display.shift(); }
-  state.motions = parseMotions(readHistory(state.history));
+  const history = readHistory(state.history);
+  state.motions = parseMotions(history);
+  if (direction !== 6) state.run = false;
+  else if (!raw.noRun && detectRunTap(history)) state.run = true;
   if (state.pending && combatFrame > state.pending.expires) state.pending = null;
   const button = priority.find(b => state.current.pressed & buttonBit(b));
   if (button) state.pending = { button, expires: combatFrame + bufferFrames - 1, motions: [...state.motions] };

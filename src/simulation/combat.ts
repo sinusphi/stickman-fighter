@@ -26,7 +26,7 @@ export function advanceAttack(f: Fighter): void {
   } else f.landingRecovery = Math.min(move.recovery, move.duration - f.moveFrame);
 }
 export function standingHoldEligible(f: Fighter): boolean {
-  return (f.state==='Idle' || f.state==='Walk') && f.y===0 && !f.crouching;
+  return (f.state==='Idle' || f.state==='Walk' || f.state==='Run') && f.y===0 && !f.crouching;
 }
 /** Frames after a single kick started in which its chord partners may still arrive. */
 export const CHORD_WINDOW_FRAMES = 3;

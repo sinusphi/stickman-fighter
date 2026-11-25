@@ -25721,6 +25721,386 @@
         "rightKnee": 103.5,
         "rightFoot": 9.772430388406434
       }
+    },
+    "Run_step_0": {
+      "root": [
+        0,
+        -41.5
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 147.0,
+        "rightShoulder": 153.0,
+        "leftElbow": -9.979164512327497,
+        "leftHand": -99.76037891350913,
+        "rightElbow": -24.551420684408964,
+        "rightHand": -141.29473394751125,
+        "leftKnee": 41.52739177979768,
+        "leftFoot": 44.04967828511194,
+        "rightKnee": 94.4229299350904,
+        "rightFoot": 44.04967828511194
+      }
+    },
+    "Run_step_1": {
+      "root": [
+        0,
+        -41.59488677077162
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 145.2661517344203,
+        "rightShoulder": 154.7338482655797,
+        "leftElbow": -9.28562520609562,
+        "leftHand": -100.453918219741,
+        "rightElbow": -25.244959990640837,
+        "rightHand": -140.60119464127936,
+        "leftKnee": 41.91711352200382,
+        "leftFoot": 53.372995842688674,
+        "rightKnee": 88.31803597564122,
+        "rightFoot": 69.63265077425162
+      }
+    },
+    "Run_step_2": {
+      "root": [
+        0,
+        -41.83953153078664
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 140.25249630068458,
+        "rightShoulder": 159.74750369931542,
+        "leftElbow": -7.280163032601335,
+        "leftHand": -102.45938039323529,
+        "rightElbow": -27.250422164135124,
+        "rightHand": -138.59573246778507,
+        "leftKnee": 44.5467712036362,
+        "leftFoot": 59.02176147926244,
+        "rightKnee": 78.26020354073626,
+        "rightFoot": 99.70186461688752
+      }
+    },
+    "Run_step_3": {
+      "root": [
+        0,
+        -42.130762941093835
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 132.50234105991765,
+        "rightShoulder": 167.49765894008235,
+        "leftElbow": -4.180100936294562,
+        "leftHand": -105.55944248954206,
+        "rightElbow": -30.3504842604419,
+        "rightHand": -135.4956703714783,
+        "leftKnee": 48.66336664458856,
+        "leftFoot": 62.207052981002114,
+        "rightKnee": 64.8277223800671,
+        "rightFoot": 122.19392782509725
+      }
+    },
+    "Run_step_4": {
+      "root": [
+        0,
+        -42.34576318804292
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 122.85553558850557,
+        "rightShoulder": 177.14446441149443,
+        "leftElbow": -0.3213787477297263,
+        "leftHand": -109.41816467810689,
+        "rightElbow": -34.209206449006736,
+        "rightHand": -131.63694818291347,
+        "leftKnee": 53.7470426953584,
+        "leftFoot": 63.70258472964829,
+        "rightKnee": 42.24489369581072,
+        "rightFoot": 133.94765907166925
+      }
+    },
+    "Run_step_5": {
+      "root": [
+        0,
+        -42.39386258653123
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 112.35746094488536,
+        "rightShoulder": 187.6425390551146,
+        "leftElbow": 3.877851109718357,
+        "leftHand": -113.61739453555498,
+        "rightElbow": -38.40843630645481,
+        "rightHand": -127.4377183254654,
+        "leftKnee": 59.479758879068505,
+        "leftFoot": 63.97673335957519,
+        "rightKnee": 19.903770932920903,
+        "rightFoot": 128.68672198284142
+      }
+    },
+    "Run_step_6": {
+      "root": [
+        0,
+        -42.254776707231585
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 102.14574641110498,
+        "rightShoulder": 197.85425358889503,
+        "leftElbow": 7.962536923230511,
+        "leftHand": -117.70208034906713,
+        "rightElbow": -42.493122119966976,
+        "rightHand": -123.35303251195323,
+        "leftKnee": 65.76172056591955,
+        "leftFoot": 63.12898311716722,
+        "rightKnee": 14.493903007924112,
+        "rightFoot": 108.77808805762969
+      }
+    },
+    "Run_step_7": {
+      "root": [
+        0,
+        -41.98716070546255
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 93.3269897079763,
+        "rightShoulder": 206.67301029202372,
+        "leftElbow": 11.490039604481987,
+        "leftHand": -121.22958303031861,
+        "rightElbow": -46.02062480121845,
+        "rightHand": -119.82552983070175,
+        "leftKnee": 72.67673864227095,
+        "leftFoot": 60.86718658864495,
+        "rightKnee": 21.274623346504775,
+        "rightFoot": 82.45382601452083
+      }
+    },
+    "Run_step_8": {
+      "root": [
+        0,
+        -41.70387332884491
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 86.85683996139235,
+        "rightShoulder": 213.14316003860765,
+        "leftElbow": 14.078099503115563,
+        "leftHand": -123.81764292895218,
+        "rightElbow": -48.60868469985202,
+        "rightHand": -117.23746993206818,
+        "leftKnee": 80.4279276692016,
+        "leftFoot": 56.565854388072,
+        "rightKnee": 32.43691569193968,
+        "rightFoot": 56.33094838337597
+      }
+    },
+    "Run_step_9": {
+      "root": [
+        0,
+        -41.52438224123471
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 83.43643829111289,
+        "rightShoulder": 216.5635617088871,
+        "leftElbow": 15.446260171227351,
+        "leftHand": -125.18580359706397,
+        "rightElbow": -49.97684536796381,
+        "rightHand": -115.8693092639564,
+        "leftKnee": 89.34027303422079,
+        "leftFoot": 49.28036893059028,
+        "rightKnee": 40.88972764609557,
+        "rightFoot": 41.627852923556716
+      }
+    },
+    "Run_step_10": {
+      "root": [
+        0,
+        -41.52438224123471
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 83.43643829111288,
+        "rightShoulder": 216.56356170888714,
+        "leftElbow": 15.446260171227351,
+        "leftHand": -125.18580359706397,
+        "rightElbow": -49.97684536796382,
+        "rightHand": -115.86930926395638,
+        "leftKnee": 93.01709208000096,
+        "leftFoot": 53.448991725002756,
+        "rightKnee": 41.379358035188936,
+        "rightFoot": 49.28036893059028
+      }
+    },
+    "Run_step_11": {
+      "root": [
+        0,
+        -41.70387332884491
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 86.85683996139235,
+        "rightShoulder": 213.14316003860765,
+        "leftElbow": 14.078099503115565,
+        "leftHand": -123.81764292895218,
+        "rightElbow": -48.60868469985202,
+        "rightHand": -117.23746993206818,
+        "leftKnee": 83.3599075406355,
+        "leftFoot": 85.48820679979885,
+        "rightKnee": 43.00621794272641,
+        "rightFoot": 56.565854388072
+      }
+    },
+    "Run_step_12": {
+      "root": [
+        0,
+        -41.98716070546255
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 93.32698970797628,
+        "rightShoulder": 206.67301029202372,
+        "leftElbow": 11.490039604481995,
+        "leftHand": -121.22958303031862,
+        "rightElbow": -46.02062480121846,
+        "rightHand": -119.82552983070174,
+        "leftKnee": 72.38997224062167,
+        "leftFoot": 111.99846947344864,
+        "rightKnee": 46.45607476908411,
+        "rightFoot": 60.86718658864495
+      }
+    },
+    "Run_step_13": {
+      "root": [
+        0,
+        -42.254776707231585
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 102.14574641110497,
+        "rightShoulder": 197.85425358889503,
+        "leftElbow": 7.962536923230519,
+        "leftHand": -117.70208034906715,
+        "rightElbow": -42.49312211996698,
+        "rightHand": -123.35303251195322,
+        "leftKnee": 54.74038263505844,
+        "leftFoot": 129.81403377983233,
+        "rightKnee": 51.109296316913245,
+        "rightFoot": 63.128983117167195
+      }
+    },
+    "Run_step_14": {
+      "root": [
+        0,
+        -42.39386258653123
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 112.35746094488535,
+        "rightShoulder": 187.6425390551146,
+        "leftElbow": 3.877851109718363,
+        "leftHand": -113.61739453555498,
+        "rightElbow": -38.40843630645482,
+        "rightHand": -127.43771832546538,
+        "leftKnee": 29.516159195145118,
+        "leftFoot": 133.62421054838435,
+        "rightKnee": 56.54350776135632,
+        "rightFoot": 63.97673335957519
+      }
+    },
+    "Run_step_15": {
+      "root": [
+        0,
+        -42.34576318804292
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 122.85553558850556,
+        "rightShoulder": 177.14446441149445,
+        "leftElbow": -0.32137874772972097,
+        "leftHand": -109.4181646781069,
+        "rightElbow": -34.20920644900674,
+        "rightHand": -131.63694818291347,
+        "leftKnee": 15.071713540881627,
+        "leftFoot": 120.00771235811241,
+        "rightKnee": 62.55037257499332,
+        "rightFoot": 63.70258472964829
+      }
+    },
+    "Run_step_16": {
+      "root": [
+        0,
+        -42.130762941093835
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 132.50234105991765,
+        "rightShoulder": 167.49765894008237,
+        "leftElbow": -4.180100936294557,
+        "leftHand": -105.55944248954206,
+        "rightElbow": -30.350484260441917,
+        "rightHand": -135.4956703714783,
+        "leftKnee": 16.927079989098143,
+        "leftFoot": 95.99739987038336,
+        "rightKnee": 69.12958037440933,
+        "rightFoot": 62.207052981002114
+      }
+    },
+    "Run_step_17": {
+      "root": [
+        0,
+        -41.839531530786644
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 140.25249630068458,
+        "rightShoulder": 159.74750369931542,
+        "leftElbow": -7.280163032601331,
+        "leftHand": -102.45938039323529,
+        "rightElbow": -27.25042216413513,
+        "rightHand": -138.59573246778507,
+        "leftKnee": 26.694781024629457,
+        "leftFoot": 68.90114895335327,
+        "rightKnee": 76.43146731710138,
+        "rightFoot": 59.021761479262416
+      }
+    },
+    "Run_step_18": {
+      "root": [
+        0,
+        -41.59488677077162
+      ],
+      "angles": {
+        "neck": -60,
+        "head": 12,
+        "leftShoulder": 145.2661517344203,
+        "rightShoulder": 154.7338482655797,
+        "leftElbow": -9.28562520609562,
+        "leftHand": -100.453918219741,
+        "rightElbow": -25.244959990640844,
+        "rightHand": -140.60119464127936,
+        "leftKnee": 37.58254410154841,
+        "leftFoot": 46.388330096739274,
+        "rightKnee": 84.7098906353075,
+        "rightFoot": 53.372995842688674
+      }
     }
   },
   "animations": {
@@ -36230,6 +36610,114 @@
           "fromFrame": 13,
           "toFrame": 21,
           "historyFrames": 3
+        }
+      ]
+    },
+    "Run": {
+      "durationFrames": 20,
+      "loop": true,
+      "grounded": true,
+      "interpolation": "angles",
+      "keyframes": [
+        {
+          "frame": 0,
+          "pose": "Run_step_0",
+          "easing": "linear"
+        },
+        {
+          "frame": 1,
+          "pose": "Run_step_1",
+          "easing": "linear"
+        },
+        {
+          "frame": 2,
+          "pose": "Run_step_2",
+          "easing": "linear"
+        },
+        {
+          "frame": 3,
+          "pose": "Run_step_3",
+          "easing": "linear"
+        },
+        {
+          "frame": 4,
+          "pose": "Run_step_4",
+          "easing": "linear"
+        },
+        {
+          "frame": 5,
+          "pose": "Run_step_5",
+          "easing": "linear"
+        },
+        {
+          "frame": 6,
+          "pose": "Run_step_6",
+          "easing": "linear"
+        },
+        {
+          "frame": 7,
+          "pose": "Run_step_7",
+          "easing": "linear"
+        },
+        {
+          "frame": 8,
+          "pose": "Run_step_8",
+          "easing": "linear"
+        },
+        {
+          "frame": 9,
+          "pose": "Run_step_9",
+          "easing": "linear"
+        },
+        {
+          "frame": 10,
+          "pose": "Run_step_10",
+          "easing": "linear"
+        },
+        {
+          "frame": 11,
+          "pose": "Run_step_11",
+          "easing": "linear"
+        },
+        {
+          "frame": 12,
+          "pose": "Run_step_12",
+          "easing": "linear"
+        },
+        {
+          "frame": 13,
+          "pose": "Run_step_13",
+          "easing": "linear"
+        },
+        {
+          "frame": 14,
+          "pose": "Run_step_14",
+          "easing": "linear"
+        },
+        {
+          "frame": 15,
+          "pose": "Run_step_15",
+          "easing": "linear"
+        },
+        {
+          "frame": 16,
+          "pose": "Run_step_16",
+          "easing": "linear"
+        },
+        {
+          "frame": 17,
+          "pose": "Run_step_17",
+          "easing": "linear"
+        },
+        {
+          "frame": 18,
+          "pose": "Run_step_18",
+          "easing": "linear"
+        },
+        {
+          "frame": 19,
+          "pose": "Run_step_0",
+          "easing": "linear"
         }
       ]
     }

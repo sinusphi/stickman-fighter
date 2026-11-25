@@ -13,6 +13,7 @@
   "winsRequired": 2,
   "forwardSpeed": 768,
   "backwardSpeed": 512,
+  "runSpeed": 1380,
   "crouchForwardSpeed": 256,
   "jumpSquat": 5,
   "jumpVelocity": -2560,

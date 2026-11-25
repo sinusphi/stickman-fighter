@@ -109,7 +109,7 @@ export function bossFell(state: SurvivalState): void {
   if (c.upgrades.enabled) state.upgrades.dueAt = state.frame + c.duel.cleanupFrames + c.upgrades.delayFrames;
 }
 
-const FREE_STATES: readonly FighterState[] = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'];
+const FREE_STATES: readonly FighterState[] = ['Idle', 'Walk', 'Run', 'Crouch', 'CrouchWalk'];
 
 /**
  * Opens a due choice at the end of a step: as soon as the player stands free,

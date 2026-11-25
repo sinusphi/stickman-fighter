@@ -22,7 +22,7 @@ import type { Fighter, GameState } from './types';
  */
 
 /** States in which a fighter can be grabbed: on the ground and able to act. */
-export const THROWABLE_STATES: readonly Fighter['state'][] = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'];
+export const THROWABLE_STATES: readonly Fighter['state'][] = ['Idle', 'Walk', 'Run', 'Crouch', 'CrouchWalk'];
 export function isThrowable(f: Fighter): boolean { return f.y === 0 && THROWABLE_STATES.includes(f.state); }
 
 /** Grab range in local (unscaled) box units: from the standing pushbox front edge forward. */

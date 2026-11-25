@@ -122,8 +122,8 @@ export interface SurvivalState {
 
 const U = rules.unit;
 const THROW_BIT = buttonBit('THROW');
-/** States in which the player may turn: standing free or walking. */
-export const TURNABLE_STATES: readonly Fighter['state'][] = ['Idle', 'Walk'];
+/** States in which the player may turn: standing free, walking or running. */
+export const TURNABLE_STATES: readonly Fighter['state'][] = ['Idle', 'Walk', 'Run'];
 
 /** Survival grab rule: everything a versus throw may seize, plus enemies in hitstun on the ground. */
 export function survivalGrabbable(f: Fighter): boolean {
@@ -310,7 +310,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   state.enemies.forEach((e, i) => {
     // Enemies never throw.
     const input = enemyInputs[i] ?? neutralInput();
-    captureInput(e.fighter.input, { ...input, buttons: input.buttons & ~THROW_BIT }, e.fighter.facing, state.frame, state.combatFrame, state.inputConfig.socd, state.inputConfig.bufferFrames);
+    captureInput(e.fighter.input, { ...input, buttons: input.buttons & ~THROW_BIT, noRun: true }, e.fighter.facing, state.frame, state.combatFrame, state.inputConfig.socd, state.inputConfig.bufferFrames);
   });
   state.frame++;
   for (const e of state.enemies) { e.pair.frame = state.frame; e.pair.combatFrame = state.combatFrame; e.pair.hitstop = state.hitstop; }

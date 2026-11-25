@@ -4,7 +4,7 @@ import type { TrainingState } from '../debug/training';
 import type { HitLevel } from '../data/schema';
 
 export type Facing = -1 | 1;
-export type FighterState = 'Idle' | 'Walk' | 'Crouch' | 'CrouchWalk' | 'JumpSquat' | 'Airborne' | 'Landing' | 'Attack' | 'Hitstun' | 'Blockstun' | 'Knockdown' | 'KO' | 'Thrown';
+export type FighterState = 'Idle' | 'Walk' | 'Run' | 'Crouch' | 'CrouchWalk' | 'JumpSquat' | 'Airborne' | 'Landing' | 'Attack' | 'Hitstun' | 'Blockstun' | 'Knockdown' | 'KO' | 'Thrown';
 
 export interface Resource { current: number; max: number; gainPerHit: number; gainPerBlock: number }
 export type Resources = Record<'revenge' | 'special', Resource>;

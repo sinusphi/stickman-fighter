@@ -210,7 +210,7 @@ it('clears queues in hitstop, stun, KO, training, round/match over and resets',(
     else if(mode==='training')g.training.enabled=true;
     else if(mode==='reset') {cpu.reset(3);step(g,undefined,[{type:'reset'}]);}
     else g.fighters[1].state=mode as 'Hitstun';
-    expect(cpu.next(g),mode).toEqual(neutralInput());
+    expect(cpu.next(g),mode).toEqual({...neutralInput(),noRun:true});
     if(mode!=='reset') {g.frame++;g.hitstop=0;g.round.phase='fighting';g.training.enabled=false;g.fighters[1].state='Idle';}
     expect(cpu.next(g).buttons,mode).toBe(0);
   }
@@ -246,7 +246,7 @@ it('chooses anti-air only from geometrically reachable moves',()=>{
 it('retains the committed intent for the frame overlay after attack hitstop',()=>{
   const g=createGame(),cpu=new CpuPlayer('hard',1,()=>({decide:()=>({...attack('standing_lp'),reason:'punish',score:.82})}));
   for(let i=0;i<15;i++)step(g,[neutralInput(),cpu.next(g)]);
-  g.hitstop=1;expect(cpu.next(g)).toEqual(neutralInput());step(g);
+  g.hitstop=1;expect(cpu.next(g)).toEqual({...neutralInput(),noRun:true});step(g);
   cpu.next(g);expect(cpu.debug).toMatchObject({kind:'attack',moveId:'standing_lp',score:.82,reason:'punish'});
 });
 

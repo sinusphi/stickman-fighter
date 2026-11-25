@@ -73,7 +73,7 @@ interface Slot {
   shuffle: number;
   shuffleUntil: number;
 }
-const READY_STATES = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'];
+const READY_STATES = ['Idle', 'Walk', 'Run', 'Crouch', 'CrouchWalk'];
 /** The player's throw attempt before its grab frame. */
 function throwAttempt(state: SurvivalState): boolean {
   const p = state.player, move = p.state === 'Attack' && p.moveId ? MOVES[p.moveId] : undefined;

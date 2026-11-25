@@ -37,7 +37,12 @@ export class CpuPlayer {
   }
   /** Drops a queued input sequence, e.g. when an outside director takes control away. */
   interrupt(): void { this.controller.clear(); this.lastDecision=-Infinity; this.event=''; }
+  /** CPU input never starts a run (see input/run); the flag travels with replays. */
   next(game: GameState): RawInput {
+    const input=this.decide(game); input.noRun=true;
+    return input;
+  }
+  private decide(game: GameState): RawInput {
     if(game.frame<=this.lastFrame || game.round.number!==this.lastRound) {
       this.perception.reset();this.controller.clear();this.lastDecision=-Infinity;this.event='';
     }

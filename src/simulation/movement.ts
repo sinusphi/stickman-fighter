@@ -2,7 +2,7 @@ import { MOVES, advanceAt } from '../data/schema';
 import rules from '../data/rules.json';
 import type { Fighter, FighterState } from './types';
 
-const groundActionable: FighterState[] = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'];
+const groundActionable: FighterState[] = ['Idle', 'Walk', 'Run', 'Crouch', 'CrouchWalk'];
 export function isGroundActionable(f: Fighter): boolean { return groundActionable.includes(f.state); }
 export function isActionable(f: Fighter): boolean { return isGroundActionable(f) || (f.state === 'Airborne' && !f.airAttackUsed); }
 export function transition(f: Fighter, state: FighterState, remaining = 0): void {
@@ -13,6 +13,13 @@ export function recoverGround(f: Fighter): void {
   const direction = f.input.current.direction;
   f.crouching = direction <= 3;
   transition(f, f.crouching ? 'Crouch' : direction === 4 || direction === 6 ? 'Walk' : 'Idle');
+}
+/** Contact with the opponent ends a run: the fighter walks on and needs a new double tap. */
+export function stopRun(f: Fighter): void {
+  if (f.state !== 'Run') return;
+  f.input.run = false;
+  transition(f, 'Walk');
+  f.vx = f.facing * rules.forwardSpeed;
 }
 export function moveFighter(f: Fighter, stationary = false): boolean {
   f.stateFrame++;
@@ -35,6 +42,8 @@ export function moveFighter(f: Fighter, stationary = false): boolean {
     if (--f.remaining <= 0) { transition(f, 'Airborne'); f.vx = f.jumpX; f.vy = rules.jumpVelocity; f.crouching = false; }
   }
   const readyBeforeMovement = isGroundActionable(f);
+  // Attacks, stun, jumps and throws end a run; it needs a fresh double tap afterwards.
+  if (!readyBeforeMovement) f.input.run = false;
   if (readyBeforeMovement) {
     const direction = f.input.current.direction;
     f.vx = 0;
@@ -44,10 +53,12 @@ export function moveFighter(f: Fighter, stationary = false): boolean {
     } else {
       const crouching = direction <= 3;
       const horizontal = stationary || crouching ? 0 : (direction - 1) % 3 - 1;
-      const next: FighterState = crouching ? 'Crouch' : horizontal ? 'Walk' : 'Idle';
+      // A run only holds while forward stays pressed (input.run clears on any other direction).
+      const running = horizontal > 0 && f.input.run;
+      const next: FighterState = crouching ? 'Crouch' : running ? 'Run' : horizontal ? 'Walk' : 'Idle';
       if (f.state !== next) transition(f, next);
       f.crouching = crouching;
-      f.vx = horizontal * f.facing * (horizontal > 0 ? rules.forwardSpeed : rules.backwardSpeed) || 0;
+      f.vx = horizontal * f.facing * (running ? rules.runSpeed : horizontal > 0 ? rules.forwardSpeed : rules.backwardSpeed) || 0;
       f.x += f.vx;
     }
   }

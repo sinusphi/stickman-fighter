@@ -16,7 +16,7 @@ const previewKeys: Record<string, Parameters<typeof t>[0]> = {
   Idle:'preview.idle', Crouch:'preview.crouch', JumpSquat:'preview.jumpSquat',
   Airborne:'preview.airborne', Blockstun:'preview.block', CrouchBlock:'preview.crouchBlock',
   Hitstun:'preview.hitstun', Knockdown:'preview.knockdown',
-  Walk:'preview.walk', WalkBackward:'preview.walkBack', CrouchWalk:'preview.crouchWalk',
+  Walk:'preview.walk', Run:'preview.run', WalkBackward:'preview.walkBack', CrouchWalk:'preview.crouchWalk',
   HitMiddlePunch:'preview.hitPunch', HitLOW:'preview.hitLow', HitMID:'preview.hitMid',
   HitHIGH:'preview.hitHigh', Landing:'preview.landing', KO:'preview.ko',
 };
@@ -59,7 +59,7 @@ function animationLabel(id: string): string {
 // Explicit categories and button order, with a fallback for new renderer clips.
 const previewButtonOrder=['lp','mp','hp','lk','lmk','hk','rlk','mk','rhk'];
 const previewGroups: {key: Parameters<typeof t>[0]; ids: string[]}[] = [
-  {key:'preview.groupMovement',ids:['Idle','Walk','WalkBackward','Crouch','CrouchWalk','JumpSquat','Airborne','Landing']},
+  {key:'preview.groupMovement',ids:['Idle','Walk','Run','WalkBackward','Crouch','CrouchWalk','JumpSquat','Airborne','Landing']},
   ...(['standing','crouching','airborne'] as const).map(stance=>({key:`preview.${stance}` as Parameters<typeof t>[0],ids:previewButtonOrder.map(button=>`${stance}_${button}`)})),
   {key:'preview.groupSpecials',ids:[...new Set(['jumping_uppercut','left_turn_kick','dwit_chagi','spin_mk','forward_spin_hk','spin_hk','tornado_mk',...specialMoves.map(move=>move.animation)])]},
   {key:'combo.summary',ids:comboMoves.map(move=>move.animation)},

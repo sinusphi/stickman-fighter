@@ -50,4 +50,6 @@ export const comboMarkup = `
       <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: <kbd data-owner="${player}" data-control="THROW">THROW</kbd></span>`).join('')}</div>
     </li>`).join('')}
   </ul>
+  <strong class="combo-section" ${tx('combo.movement')}</strong>
+  <p class="hint" ${tx('combo.runHelp')}</p>
 </details>`;
