@@ -11,6 +11,10 @@
  * little about what a player achieves. The numbers are meant for before/after
  * comparisons of tuning changes in src/survival/config.ts with the same
  * seeds, profiles and time limit.
+ *
+ * Upgrade choices: the bot takes the `prefer`red upgrade whenever it is
+ * offered, otherwise a random card (own seeded stream). Without `prefer` it
+ * always picks at random; `upgrades: false` switches the offers off.
  */
 import rules from '../src/data/rules.json';
 import { CpuPlayer } from '../src/ai';
@@ -18,7 +22,7 @@ import { directionInput } from '../src/ai/controller';
 import type { CpuProfile, Difficulty } from '../src/ai/profiles';
 import { Rng } from '../src/ai/rng';
 import { neutralInput, type RawInput } from '../src/input/types';
-import { SURVIVAL, type SurvivalConfig } from '../src/survival/config';
+import { SURVIVAL, type SurvivalConfig, type UpgradeId } from '../src/survival/config';
 import { SurvivalSession } from '../src/survival/session';
 import { alive, inFront, TURNABLE_STATES, type Enemy, type SurvivalState } from '../src/survival/state';
 
@@ -182,6 +186,8 @@ export interface RunResult {
   energyLost: number;
   turns: number;
   botTurns: number;
+  /** Upgrades picked, in order. */
+  upgrades: UpgradeId[];
 }
 
 export interface RunOptions {
@@ -189,11 +195,22 @@ export interface RunOptions {
   profile: BotProfileId;
   maxFrames: number;
   config?: SurvivalConfig;
+  /** Upgrade offers on (default) or off. */
+  upgrades?: boolean;
+  /** Upgrade the bot always takes when it is offered. */
+  prefer?: UpgradeId;
+}
+
+/** Config for a balance run: offers switched off when `upgrades` is false. */
+export function balanceConfig(config: SurvivalConfig, upgrades = true): SurvivalConfig {
+  return upgrades ? config : { ...config, upgrades: { ...config.upgrades, enabled: false } };
 }
 
 /** One complete survival run of the bot. Same options, same result. */
-export function runSurvival({ seed, profile, maxFrames, config = SURVIVAL }: RunOptions): RunResult {
+export function runSurvival({ seed, profile, maxFrames, config: base = SURVIVAL, upgrades = true, prefer }: RunOptions): RunResult {
+  const config = balanceConfig(base, upgrades);
   const session = new SurvivalSession(seed, undefined, config);
+  const picker = new Rng((seed ^ 0x6c8e9cf5) | 0);
   const bot = new SurvivalBot(BOT_PROFILES[profile], (seed ^ 0x5eed) | 0, config);
   const kills: Record<string, number> = {};
   for (const id of Object.keys(config.types)) kills[id] = 0;
@@ -205,7 +222,11 @@ export function runSurvival({ seed, profile, maxFrames, config = SURVIVAL }: Run
 
   while (!session.state.over && session.state.survivedFrames < maxFrames) {
     const s = session.state, hp = s.player.hp, gainedBefore = s.energy.total, combatFrame = s.combatFrame;
-    session.step(bot.next(s));
+    const offer = s.upgrades.offer;
+    if (offer) {
+      const wanted = prefer ? offer.indexOf(prefer) : -1;
+      session.choose(wanted >= 0 ? wanted : Math.floor(picker.next() * offer.length));
+    } else session.step(bot.next(s));
     const now = session.state, gained = now.energy.total - gainedBefore;
     const loss = Math.max(0, gained - (now.player.hp - hp));
     if (loss > 0) {
@@ -232,6 +253,7 @@ export function runSurvival({ seed, profile, maxFrames, config = SURVIVAL }: Run
     seed, profile, survivedFrames: s.survivedFrames, timeout: !s.over, kills,
     bossReached: s.flow.bosses, bossesKilled, death: s.over ? last ?? { type: 'unknown', side: 'unknown', boss: 0 } : null,
     minutes, energyGained: s.energy.total, energyLost: lost, turns: s.turns, botTurns: bot.turnsStarted,
+    upgrades: [...s.upgrades.picks],
   };
 }
 
@@ -255,10 +277,10 @@ export function deathLabel(d: DeathCause | null): string {
 export function runsCsv(results: readonly RunResult[], types: readonly string[]): string {
   const maxMinutes = Math.max(0, ...results.map(r => r.minutes.length));
   const header = ['profile', 'seed', 'survived_s', 'timeout', ...types.map(t => `kills_${t}`), 'kills_boss', 'boss_reached', 'bosses_killed',
-    'death_type', 'death_side', 'death_boss', 'energy_gained', 'energy_lost', 'turns', 'bot_turns',
+    'death_type', 'death_side', 'death_boss', 'energy_gained', 'energy_lost', 'turns', 'bot_turns', 'upgrades',
     ...Array.from({ length: maxMinutes }, (_, i) => `hp_min${i + 1}`)];
   return csv([header, ...results.map(r => [r.profile, r.seed, seconds(r.survivedFrames), r.timeout ? 1 : 0, ...types.map(t => r.kills[t] ?? 0), r.kills.boss ?? 0,
-    r.bossReached, r.bossesKilled, r.death?.type ?? '', r.death?.side ?? '', r.death?.boss ?? '', r.energyGained, r.energyLost, r.turns, r.botTurns,
+    r.bossReached, r.bossesKilled, r.death?.type ?? '', r.death?.side ?? '', r.death?.boss ?? '', r.energyGained, r.energyLost, r.turns, r.botTurns, r.upgrades.join(' '),
     ...Array.from({ length: maxMinutes }, (_, i) => r.minutes[i]?.hpEnd ?? '')])]);
 }
 
@@ -296,6 +318,10 @@ export function summaryMarkdown(profile: string, results: readonly RunResult[], 
   const deaths = results.flatMap(r => r.death ? [r.death] : []);
   const backShare = deaths.length ? deaths.filter(d => d.side === 'back').length / deaths.length : 0;
   lines.push('', `Deaths from behind: ${(100 * backShare).toFixed(1)} % · deaths in a boss duel: ${deaths.filter(d => d.boss > 0).length}`, '');
+
+  const picks = results.flatMap(r => r.upgrades);
+  lines.push(`Upgrades picked: ${(picks.length / Math.max(1, n)).toFixed(2)} per run` +
+    (picks.length ? ` · ${countList(picks).map(([k, c]) => `${k}: ${c}`).join(', ')}` : ''), '');
 
   const gained = results.map(r => r.energyGained), lostAll = results.map(r => r.energyLost);
   lines.push(`Energy per run: gained median ${fmt(median(gained))}, lost median ${fmt(median(lostAll))}`, '');

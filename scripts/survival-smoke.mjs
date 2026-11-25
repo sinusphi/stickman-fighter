@@ -1,7 +1,11 @@
 // Survival mode: start with F10, enemies spawn and attack, double tap backwards
 // turns the player, back attackers show their warning, Backspace starts a new
 // run, the player throws an enemy (6 + C), the first miniboss shows up after
-// 30 s of run time (HUD, boss bar) and shrugs a throw off, F10 returns to versus. Screenshots in test-results/survival.
+// 30 s of run time (HUD, boss bar) and shrugs a throw off, F10 returns to versus.
+// Upgrades (with `?survival-test=weak-boss`: an early 1-hp miniboss): the fallen
+// boss opens the choice with three cards, the run stands still, a digit key or
+// the player's own controls (← → plus an attack button) pick, the badge shows
+// up and the damage upgrade reaches the player. Screenshots in test-results/survival.
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
@@ -126,6 +130,61 @@ try {
   await page.keyboard.press('F10');
   await page.locator('#side').click();
   await expect(page.locator('#side')).toHaveAttribute('aria-pressed', 'false');
+
+  // ---- Upgrades after a miniboss (weak test boss: 1 hp, after 2 s).
+  const upgrades = async () => {
+    const value = await page.locator('#game').getAttribute('data-upgrades');
+    if (value === null) return null;
+    const [offer, cursor, picks, damage] = value.split('|');
+    return { offer: offer ? offer.split(',') : [], cursor: Number(cursor), picks: picks ? picks.split(',') : [], damage: Number(damage) };
+  };
+  const tap = async (key, ms = 60) => { await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
+  /** Fells the weak boss with jabs (walking up to it) and waits for the choice. */
+  const reachChoice = async () => {
+    await expect.poll(async () => (await read(page))?.boss ?? 0, { timeout: 8000 }).toBeGreaterThan(0);
+    for (let i = 0; i < 200 && (await read(page)).boss; i++) { await tap('d', 70); await tap('r', 50); await page.waitForTimeout(40); }
+    const fallen = await read(page);
+    if (fallen.boss || fallen.bosses !== 1) throw Error('Der schwache Test-Miniboss ist nicht gefallen.');
+    await expect.poll(async () => (await upgrades()).offer.length, { timeout: 8000 }).toBe(3);
+    return upgrades();
+  };
+  await page.goto(`${TEST_URL}/?survival-test=weak-boss`);
+  await page.locator('#game[data-ready="true"]').waitFor();
+  await page.keyboard.press('F10');
+  await expect(page.locator('#match-status')).toContainText('SURVIVAL');
+  const first = await reachChoice();
+  expect(new Set(first.offer).size).toBe(3);
+  expect(first.picks).toEqual([]);
+  // The run stands still while the cards are open.
+  const frozen = await page.locator('#timer').textContent();
+  await page.waitForTimeout(700);
+  expect(await page.locator('#timer').textContent()).toBe(frozen);
+  await page.locator('#game').screenshot({ path: `${output}/upgrade-choice.png` });
+  // Digit key 3 takes the third card at once.
+  await page.keyboard.press('Digit3');
+  await expect.poll(async () => (await upgrades()).picks, { timeout: 2000 }).toEqual([first.offer[2]]);
+  expect((await upgrades()).offer).toEqual([]);
+  await expect(page.locator('#notice')).toContainText('Upgrade');
+  await expect.poll(async () => await page.locator('#timer').textContent(), { timeout: 3000 }).not.toBe(frozen);
+  await page.locator('#game').screenshot({ path: `${output}/upgrade-badge.png` });
+
+  // New run: same seed is not guaranteed (match seed), but the flow repeats; this time with the controls.
+  await page.keyboard.press('Backspace');
+  await expect.poll(async () => (await upgrades())?.picks.length ?? -1, { timeout: 3000 }).toBe(0);
+  const second = await reachChoice();
+  // Held/mashed presses right after opening are ignored (short lock), then → moves, ← moves back, an attack button picks.
+  await page.waitForTimeout(600);
+  const start = (await upgrades()).cursor;
+  expect(start).toBe(1);
+  await tap('d'); await expect.poll(async () => (await upgrades()).cursor).toBe(2);
+  await tap('a'); await page.waitForTimeout(100); await tap('a'); await expect.poll(async () => (await upgrades()).cursor).toBe(0);
+  await page.locator('#game').screenshot({ path: `${output}/upgrade-cursor.png` });
+  await tap('r', 120);
+  await expect.poll(async () => (await upgrades()).picks, { timeout: 2000 }).toEqual([second.offer[0]]);
+  if (second.offer[0] === 'damage') expect((await upgrades()).damage).toBeGreaterThan(1000);
+  await page.keyboard.press('F10');
+  await expect.poll(async () => await upgrades()).toBeNull();
+
   if (errors.length) throw Error(`Seitenfehler: ${errors.join(' | ')}`);
   console.log(`Survival Smoke ok — Bilder in ${output}`);
 } finally { await browser.close(); }

@@ -4,6 +4,7 @@ import { buttonBit, neutralInput, type RawInput } from '../../src/input/types';
 import { SURVIVAL } from '../../src/survival/config';
 import { SurvivalSession } from '../../src/survival/session';
 import { bossSpec, budgetAt, gainFactor, pickType } from '../../src/survival/spawner';
+import { chooseUpgrade } from '../../src/survival/upgrades';
 import { alive, createSurvival, inFront, random, snapshotSurvival, spawnEnemy, stepSurvival, type Enemy, type SurvivalState } from '../../src/survival/state';
 
 const U = rules.unit, HZ = rules.hz;
@@ -166,11 +167,15 @@ describe('survival: miniboss timer', () => {
     expect(gone).toBeGreaterThan(0);
     expect(s.flow.bossTimer).toBeGreaterThan(SURVIVAL.boss.intervalFrames - 3);
     let second = -1, most = 0;
+    let picked = 0;
     for (let i = 0; i < SURVIVAL.boss.intervalFrames + 300 && second < 0; i++) {
+      // The upgrade choice after the boss pauses the run; the survived time stands still meanwhile.
+      if (s.upgrades.offer) { chooseUpgrade(s, 0); picked++; }
       stepSurvival(s, neutralInput()); most = Math.max(most, bosses(s).length);
       if (bosses(s).length) second = s.survivedFrames;
     }
     expect(Math.abs(second - gone - SURVIVAL.boss.intervalFrames)).toBeLessThanOrEqual(1);
+    expect(picked).toBe(1);
     expect(most).toBe(1);
     const b2 = bosses(s)[0];
     expect(b2.boss).toBe(2);

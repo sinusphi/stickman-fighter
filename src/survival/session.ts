@@ -4,6 +4,8 @@ import { SURVIVAL, SURVIVAL_BEST_KEY } from './config';
 import { Director } from './director';
 import { EnemyPilot } from './pilot';
 import { createSurvival, stepSurvival, type Enemy, type SurvivalState } from './state';
+import { chooseUpgrade } from './upgrades';
+import type { UpgradeId } from './config';
 
 /**
  * One survival run: deterministic simulation plus the AI side (director and
@@ -40,8 +42,16 @@ export class SurvivalSession {
     return pilot;
   }
 
+  /** True while the run waits for an upgrade pick (nothing moves). */
+  get choosing(): boolean { return this.state.upgrades.offer !== null; }
+
+  /** Takes card `index` (0-based) of the open upgrade choice; null when there is none. */
+  choose(index: number): UpgradeId | null { return chooseUpgrade(this.state, index); }
+
   step(player: RawInput): void {
     const state = this.state;
+    // Paused for the upgrade choice: neither the director nor the pilots run.
+    if (state.upgrades.offer) return;
     this.director.update(state);
     const inputs = state.enemies.map(e => this.pilot(e).next(state, e));
     stepSurvival(state, player, inputs);

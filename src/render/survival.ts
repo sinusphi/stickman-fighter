@@ -3,8 +3,10 @@ import rules from '../data/rules.json';
 import type { HitLevel } from '../data/schema';
 import type { Fighter } from '../simulation/types';
 import type { Palette } from '../platform/theme';
-import { t } from '../platform/i18n';
+import { getLanguage, t, type TranslationKey } from '../platform/i18n';
+import type { UpgradeId } from '../survival/config';
 import { formatSurvival, type Enemy, type SurvivalState } from '../survival/state';
+import { activeUpgrades } from '../survival/upgrades';
 import { drawFigure, drawTrail } from './figure';
 import { thrownOffset } from './canvas';
 import { fighterDepths } from './depth';
@@ -19,7 +21,9 @@ import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type
  * shadows, effects), for any number of fighters. The player's turn is drawn
  * as a short horizontal squash through the front view, flipping at its middle.
  * Back attackers flash and carry a "!" during their warning. Enemies stuck
- * outside the canvas get an arrow at its edge (see edge-marks).
+ * outside the canvas get an arrow at its edge (see edge-marks). Picked
+ * upgrades show as small badges below the player's HUD; an open upgrade choice
+ * covers the arena with three cards.
  */
 
 const ground = STAGE_VIEW.ground, U = rules.unit;
@@ -68,7 +72,7 @@ export interface SurvivalLayout {
 
 const edges = new EdgeTracker();
 
-export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, previous: SurvivalState, alpha: number, paused: boolean, palette: Palette, stage: StageId = DEFAULT_STAGE, effects?: HitEffects, best = 0, layout?: SurvivalLayout): void {
+export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, previous: SurvivalState, alpha: number, paused: boolean, palette: Palette, stage: StageId = DEFAULT_STAGE, effects?: HitEffects, best = 0, layout?: SurvivalLayout, cursor = 0): void {
   const ctx = canvas.getContext('2d')!;
   const scale = (canvas.width || 960) / 960;
   if (scale !== 1) ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -147,6 +151,7 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   const clear = drawBossBar(ctx, state, palette, layout?.hudBottom ?? 0, canvas);
   drawEnergyGain(ctx, state, lerp(player.f, player.old)[0], palette);
   drawShrug(ctx, state, palette);
+  drawUpgradeBadges(ctx, state, palette, layout?.hudBottom ?? 0);
 
   // Banners keep below the HUD and the boss bar (their top edge sits about 30 px above the first line).
   const shift = Math.max(0, clear + 8 - (BANNER_Y - 30));
@@ -162,8 +167,109 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
     const record = state.survivedFrames >= best && best > 0;
     banner(record ? t('survival.newBest') : t('survival.best', { time: formatSurvival(Math.max(best, state.survivedFrames)) }), 178, '12px monospace', 4);
     banner(t('survival.restart'), 198, '11px monospace', 4);
+    const picked = upgradeList(state);
+    if (picked) banner(t('survival.upgrades', { list: picked }), 220, '11px monospace', 4);
   }
   ctx.textAlign = 'left'; ctx.lineJoin = 'miter';
+  if (state.upgrades.offer && !paused) drawUpgradeOffer(ctx, state, state.upgrades.offer, cursor, palette, clear);
+}
+
+// ------------------------------------------------------------ upgrades ---
+
+const upgradeKey = (id: UpgradeId, part: 'name' | 'short' | 'text') => `upgrade.${id}.${part}` as TranslationKey;
+
+const percentOf = (effect: object): number => 'percent' in effect && typeof effect.percent === 'number' ? effect.percent : 0;
+
+/** Card text of an upgrade with the values of one stack. */
+export function upgradeText(state: SurvivalState, id: UpgradeId): string {
+  const e = state.config.upgrades.effects;
+  const seconds = (e.backWarning.frames / rules.hz).toFixed(1);
+  return t(upgradeKey(id, 'text'), {
+    amount: id === 'stability' ? e.stability.amount : e.maxEnergy.amount, heal: e.maxEnergy.heal,
+    percent: id === 'guard' ? e.guard.chipPercent : percentOf(e[id]), energy: e.guard.energy,
+    seconds: getLanguage() === 'de' ? seconds.replace('.', ',') : seconds,
+  });
+}
+
+/** Picked upgrades as short codes, e.g. "DMG×2 · HP+"; empty when none. */
+export function upgradeList(state: SurvivalState): string {
+  return activeUpgrades(state).map(u => t(upgradeKey(u.id, 'short')) + (u.stacks > 1 ? `×${u.stacks}` : '')).join(' · ');
+}
+
+/** Badges keep left of the boss bar (it starts at x 327); a further row starts below. */
+const BADGE_RIGHT = 300, BADGE_ROW = 20;
+
+/** Small badges of the picked upgrades below the player's side of the DOM HUD (short code and stacks; maxed ones get a coloured rim). */
+function drawUpgradeBadges(ctx: CanvasRenderingContext2D, state: SurvivalState, palette: Palette, hudBottom: number): void {
+  const active = activeUpgrades(state);
+  if (!active.length) return;
+  ctx.save();
+  ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  let x = 10, y = Math.max(60, Math.ceil(hudBottom)) + 14;
+  for (const u of active) {
+    const label = t(upgradeKey(u.id, 'short')) + (u.stacks > 1 ? `×${u.stacks}` : ''), width = ctx.measureText(label).width + 10;
+    if (x > 10 && x + width > BADGE_RIGHT) { x = 10; y += BADGE_ROW; }
+    ctx.beginPath(); ctx.roundRect(x, y - 8, width, 16, 4);
+    ctx.globalAlpha = .78; ctx.fillStyle = palette.arena; ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = u.stacks >= u.max ? palette.special : palette.muted; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = palette.text; ctx.fillText(label, x + 5, y + .5);
+    x += width + 5;
+  }
+  ctx.restore();
+}
+
+const CARD_W = 214, CARD_H = 132, CARD_GAP = 18;
+
+/** Upgrade choice: three cards over a dimmed arena; the cursor card is highlighted. */
+function drawUpgradeOffer(ctx: CanvasRenderingContext2D, state: SurvivalState, offer: readonly UpgradeId[], cursor: number, palette: Palette, clear: number): void {
+  ctx.save();
+  ctx.globalAlpha = .62; ctx.fillStyle = palette.arena; ctx.fillRect(0, 0, 960, 420); ctx.globalAlpha = 1;
+  ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.textBaseline = 'alphabetic';
+  const titleY = Math.max(126, clear + 28), top = titleY + 18;
+  const label = (text: string, x: number, y: number, font: string, color: string, halo = 4) => {
+    ctx.font = font; ctx.strokeStyle = palette.arena; ctx.lineWidth = halo; ctx.strokeText(text, x, y);
+    ctx.fillStyle = color; ctx.fillText(text, x, y);
+  };
+  label(t('survival.upgradeTitle'), 480, titleY, 'bold 22px Arial', palette.text, 6);
+  const total = offer.length * CARD_W + (offer.length - 1) * CARD_GAP, left = 480 - total / 2;
+  offer.forEach((id, index) => {
+    const x = left + index * (CARD_W + CARD_GAP), selected = index === cursor, y = top - (selected ? 4 : 0);
+    const cfg = state.config.upgrades.effects[id], now = state.upgrades.stacks[id];
+    ctx.beginPath(); ctx.roundRect(x, y, CARD_W, CARD_H, 8);
+    ctx.fillStyle = palette.arena; ctx.globalAlpha = .94; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = selected ? palette.special : palette.muted; ctx.lineWidth = selected ? 2.5 : 1; ctx.stroke();
+    // Key badge.
+    ctx.beginPath(); ctx.roundRect(x + 10, y + 10, 22, 22, 5);
+    ctx.fillStyle = selected ? palette.special : palette.muted; ctx.fill();
+    ctx.font = 'bold 14px monospace'; ctx.fillStyle = palette.arena; ctx.fillText(String(index + 1), x + 21, y + 26);
+    label(t(upgradeKey(id, 'name')), x + CARD_W / 2 + 12, y + 27, 'bold 15px Arial', palette.text);
+    ctx.font = '10px monospace'; ctx.fillStyle = palette.muted;
+    ctx.fillText(t('survival.upgradeLevel', { n: now + 1, max: cfg.max }), x + CARD_W / 2, y + 48);
+    ctx.font = '12px Arial'; ctx.fillStyle = palette.text;
+    wrap(ctx, upgradeText(state, id), CARD_W - 24).forEach((line, i) => { ctx.fillText(line, x + CARD_W / 2, y + 70 + i * 15); });
+    // Stack pips: picked so far, the one this card adds, the rest.
+    const pip = 9, pipsX = x + CARD_W / 2 - (cfg.max * (pip + 5) - 5) / 2;
+    for (let i = 0; i < cfg.max; i++) {
+      ctx.beginPath(); ctx.arc(pipsX + i * (pip + 5) + pip / 2, y + CARD_H - 14, pip / 2, 0, Math.PI * 2);
+      if (i < now) { ctx.fillStyle = palette.text; ctx.fill(); }
+      else if (i === now) { ctx.fillStyle = palette.special; ctx.fill(); }
+      else { ctx.strokeStyle = palette.muted; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+  });
+  label(t('survival.upgradeHint'), 480, top + CARD_H + 24, '11px monospace', palette.muted);
+  ctx.restore();
+}
+
+/** Greedy word wrap for the card texts. */
+function wrap(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(next).width > width) { lines.push(line); line = word; } else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 /** Topmost bar position; the bar moves further down when the DOM HUD reaches lower (narrow windows). */

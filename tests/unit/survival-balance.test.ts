@@ -33,6 +33,19 @@ describe('survival balance run', () => {
     expect(summaryMarkdown('defensive', results, { seedStart: 1, maxFrames })).toContain('Median');
   });
 
+  it('picks upgrades after bosses, deterministically, preferred ones first', () => {
+    const long = 150 * rules.hz;
+    const a = runSurvival({ seed: 2, profile: 'aggressive', maxFrames: long });
+    expect(a.bossesKilled).toBeGreaterThan(0);
+    expect(a.upgrades.length).toBe(a.bossesKilled);
+    expect(runSurvival({ seed: 2, profile: 'aggressive', maxFrames: long }).upgrades).toEqual(a.upgrades);
+    expect(runSurvival({ seed: 2, profile: 'aggressive', maxFrames: long, upgrades: false }).upgrades).toEqual([]);
+    // Preferred: taken whenever offered, so over a few seeds it shows up more often than with random picks.
+    const count = (prefer?: 'damage') => [1, 2, 3, 4].flatMap(seed => runSurvival({ seed, profile: 'aggressive', maxFrames: long, prefer }).upgrades).filter(id => id === 'damage').length;
+    expect(count('damage')).toBeGreaterThan(count());
+    expect(summaryMarkdown('aggressive', [a], { seedStart: 2, maxFrames: long })).toContain('Upgrades picked');
+  });
+
   it('interpolates percentiles', () => {
     expect(percentile([10, 20, 30, 40, 50], 0.5)).toBe(30);
     expect(percentile([0, 100], 0.1)).toBe(10);

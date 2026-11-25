@@ -25,12 +25,15 @@ import { Hud } from './platform/hud';
 import rules from './data/rules.json';
 import { CpuPlayer } from './ai';
 import { loadCpuSettings, saveCpuSettings, type Difficulty } from './ai/profiles';
-import { neutralInput } from './input/types';
+import { neutralInput, type RawInput } from './input/types';
 import { onLanguageChange, setupLanguageSwitch, t, translateDocument } from './platform/i18n';
 import { SurvivalSession, loadBest, saveBest } from './survival/session';
 import { formatSurvival, inFront, snapshotSurvival, type SurvivalState } from './survival/state';
 import { survivalFocus, survivalHudGame, survivalViews, type SurvivalView } from './survival/views';
 import { renderSurvival } from './render/survival';
+import { survivalTestConfig } from './survival/config';
+import { playerMaxHp } from './survival/upgrades';
+import { UpgradeChoice } from './platform/upgrade-choice';
 
 /** Upper bound for replay files read into memory (see message.replayTooLarge). */
 const MAX_REPLAY_FILE_BYTES = 64 * 1024 * 1024;
@@ -68,6 +71,10 @@ async function main(): Promise<void> {
   let survivalBest = loadBest(storage);
   // Controls slot the survival player uses (P1 or P2 keys/pad), fixed per run from the side setting.
   let survivalSide: 0 | 1 = 0;
+  // Upgrade choice after a boss: menu input of the survival player (presentation side).
+  const upgradeChoice = new UpgradeChoice();
+  // `?survival-test=weak-boss` (smoke tests): early miniboss with 1 hp.
+  const survivalRules = survivalTestConfig(location.search);
   // The survival player is fighter 0 internally; it gets the auto block of its controls slot.
   const survivalConfig = (config: GameState['inputConfig']): GameState['inputConfig'] =>
     ({ ...structuredClone(config), autoBlock: [config.autoBlock?.[survivalSide] ?? false, false] });
@@ -121,10 +128,14 @@ async function main(): Promise<void> {
     const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
     for (const event of events) if (event.type === 'inputConfig') { game.inputConfig = structuredClone(event.config); session.setInputConfig(survivalConfig(event.config)); }
     if (events.some(e => e.type === 'reset')) {
-      session.reset(matchSeed(), survivalConfig(game.inputConfig)); survivalPrevious = snapshotSurvival(session.state); effects.reset(); return;
+      session.reset(matchSeed(), survivalConfig(game.inputConfig)); survivalPrevious = snapshotSurvival(session.state); effects.reset(); upgradeChoice.reset(); return;
     }
+    // Upgrade choice: the run stands still; the player's controls move the cursor and pick.
+    const offer = session.state.upgrades.offer, pick = upgradeChoice.update(inputs[survivalSide], offer?.length ?? 0);
+    if (pick !== null) pickUpgrade(pick, inputs[survivalSide]);
+    if (session.choosing) return;
     const wasOver = session.state.over;
-    session.step(inputs[survivalSide]);
+    session.step(upgradeChoice.filter(inputs[survivalSide]));
     const now = views(session.state), then = views(before);
     effects.updateCrowd(now, then, !loop.paused);
     // Sounds per [player, enemy] view; the player's own swings only once.
@@ -155,16 +166,23 @@ async function main(): Promise<void> {
     }
     loop.timeScale = 1;
   }
+  /** Takes upgrade card `index` of the open choice (digit key or menu input). */
+  function pickUpgrade(index: number, held: RawInput | null): void {
+    const id = survival?.choose(index);
+    if (!id) return;
+    upgradeChoice.picked(held);
+    message(t('message.upgradePicked', { name: t(`upgrade.${id}.name`) }));
+  }
   function toggleSurvival(): void {
     if (playback || game.training.enabled) return;
     if (recording) { lastReplay = recording; recording = null; }
-    devices.clear(); effects.reset(); loop.timeScale = 1;
+    devices.clear(); effects.reset(); loop.timeScale = 1; upgradeChoice.reset();
     if (survival) {
       survival = null; survivalPrevious = null;
       queue({ type: 'reset' }); message(t('message.survivalLeft'));
     } else {
       survivalSide = cpuSettings.humanSide;
-      survival = new SurvivalSession(matchSeed(), survivalConfig(game.inputConfig));
+      survival = new SurvivalSession(matchSeed(), survivalConfig(game.inputConfig), survivalRules);
       survivalPrevious = snapshotSurvival(survival.state);
       message(t('message.survivalStarted'));
     }
@@ -304,6 +322,9 @@ async function main(): Promise<void> {
   window.addEventListener('keydown',event=>{
     if((event.target as HTMLElement).closest('#animation-preview'))return;
     if(event.repeat || devices.capture || (event.target as HTMLElement).matches('input,select,textarea'))return;
+    // Upgrade choice: the digit keys 1–3 pick a card directly (the run stands still, so bound keys are free meanwhile).
+    const card=/^Digit([1-9])$/.exec(event.code);
+    if(card && survival?.choosing && !loop.paused){event.preventDefault();pickUpgrade(Number(card[1])-1,null);updateUI();return;}
     if(devices.config.players.some(p=>Object.values(p.keys).includes(event.code)))return;
     const action=hotkeys[event.code];if(action){event.preventDefault();run(action);}
   });
@@ -316,7 +337,7 @@ async function main(): Promise<void> {
     const s = survival?.state;
     hud.update({
       game: s ? survivalHudGame(s) : game,
-      survival: s ? { side: survivalSide, time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: s.config.player.hp, enemyMaxHp: survivalFocus(s)?.maxHp ?? 1, bossIn: formatSurvival(s.flow.bossTimer).slice(0, -3), boss: s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0, energy: s.energy.total } : undefined,
+      survival: s ? { side: survivalSide, time: formatSurvival(s.survivedFrames).slice(0, -3), best: formatSurvival(Math.max(survivalBest, s.survivedFrames)).slice(0, -3), enemies: s.enemies.filter(e => !e.dead).length, kills: s.kills, playerMaxHp: playerMaxHp(s), enemyMaxHp: survivalFocus(s)?.maxHp ?? 1, bossIn: formatSurvival(s.flow.bossTimer).slice(0, -3), boss: s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0, energy: s.energy.total } : undefined,
       paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
@@ -328,7 +349,7 @@ async function main(): Promise<void> {
   /** Smoke tests read the survival run from the canvas (presentation only). */
   function exposeSurvival(): void {
     const s = survival?.state, data = canvas.dataset;
-    if (!s) { delete data.survival; return; }
+    if (!s) { delete data.survival; delete data.upgrades; return; }
     // Nearest enemy in front and behind (px, -1 = none), landed hits of the player's
     // current attack (most on one enemy), the number of enemies it struck, enemies
     // held in a throw and shrugged-off throw attempts.
@@ -337,6 +358,9 @@ async function main(): Promise<void> {
     const hits = Math.max(0, ...s.enemies.map(e => e.playerHits.length)), struck = s.enemies.filter(e => e.playerHits.length > 0).length;
     // Throws: enemies held right now and throw attempts a miniboss shrugged off.
     const thrown = s.enemies.filter(e => e.fighter.state === 'Thrown').length;
+    // Upgrades: open cards | menu cursor | picks so far | player damage scale (permille).
+    const upgrades = `${s.upgrades.offer?.join(',') ?? ''}|${upgradeChoice.cursor}|${s.upgrades.picks.join(',')}|${s.player.damageScalePermille}`;
+    if (data.upgrades !== upgrades) data.upgrades = upgrades;
     data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${nearest(distances(true))}|${hits}|${nearest(distances(false))}|${struck}|${thrown}|${s.shrug.count}`;
   }
   const hudElement = document.getElementById('hud')!;
@@ -348,7 +372,7 @@ async function main(): Promise<void> {
   function frame(time: number): void {
     const alpha=loop.advance(time,runFrame);
     fitCanvas(canvas);
-    if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest,survivalLayout());
+    if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest,survivalLayout(),upgradeChoice.cursor);
     else render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
     preview(time,palette);
     pollSettings();updateUI();exposeSurvival();requestAnimationFrame(frame);

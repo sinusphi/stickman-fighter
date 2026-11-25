@@ -4,6 +4,7 @@ import { Rng } from '../ai/rng';
 import type { Facing } from '../simulation/types';
 import { SURVIVAL } from './config';
 import { alive, inFront, type Enemy, type SurvivalState } from './state';
+import { backWarningBonus } from './upgrades';
 
 /*
  * Director: decides which survival enemies may attack.
@@ -26,6 +27,9 @@ import { alive, inFront, type Enemy, type SurvivalState } from './state';
  *    throw. Attacks already running at the grab go on (their startup was
  *    visible before the throw was chosen), tokens and warnings stay, so the
  *    pressure resumes right after the grace period.
+ *  - Upgrade choice: the run stood still meanwhile; after the pick no new
+ *    attack starts for `upgrades.resumeGraceFrames` (same pause as after a
+ *    throw). The Back warning upgrade lengthens `backWarningFrames`.
  *
  * States (`mode`):
  *  - normal:  tokens, back throttling and mixes as described above.
@@ -90,7 +94,7 @@ export class Director {
   mode: DirectorMode = 'normal';
   private backReadyAt = 0;
   private lastAttack = -Infinity;
-  /** No new attack start before this frame (player throw plus grace). */
+  /** No new attack start before this frame (player throw or upgrade pick, plus grace). */
   private throwUntil = -Infinity;
   private locks = new Map<string, { uid: number; frame: number }>();
   private rng: Rng;
@@ -107,6 +111,8 @@ export class Director {
     if (playerThrowing(state)) this.throwUntil = frame + this.config.director.throwGraceFrames;
     // The few startup frames of an attempt pause as well: an attack allowed now would start during the throw.
     else if (throwAttempt(state)) this.throwUntil = Math.max(this.throwUntil, frame + 1);
+    const resumed = state.upgrades.resumedAt;
+    if (resumed !== null) this.throwUntil = Math.max(this.throwUntil, resumed + this.config.upgrades.resumeGraceFrames);
     const turned = this.lastFacing !== null && this.lastFacing !== p.facing;
     const mode = this.modeOf(state);
     if (mode !== this.mode) this.enter(mode, state);
@@ -120,7 +126,7 @@ export class Director {
       if (!slot?.token || !this.attacksFromBehind(slot) || slot.warnAt !== null) continue;
       if (slot.token === 'back' && slot.attacks >= 1) continue;
       if (Math.abs(e.fighter.x - p.x) <= d.backStrikeDistance * rules.unit && READY_STATES.includes(e.fighter.state)) {
-        slot.warnAt = frame; slot.startAt = Math.max(slot.startAt, frame + d.backWarningFrames);
+        slot.warnAt = frame; slot.startAt = Math.max(slot.startAt, frame + d.backWarningFrames + backWarningBonus(state));
       }
     }
   }
@@ -236,7 +242,7 @@ export class Director {
   token(uid: number): Side | null { return this.slots.get(uid)?.token ?? null; }
   side(uid: number): Side | null { return this.slots.get(uid)?.side ?? null; }
   promoted(uid: number): boolean { return this.slots.get(uid)?.promoted ?? false; }
-  /** A player throw (or its grace period) holds every new attack back. */
+  /** A player throw or an upgrade pick (and its grace period) holds every new attack back. */
   throwPause(frame: number): boolean { return frame < this.throwUntil; }
   /** Token held and start delay over. */
   mayAttack(uid: number, frame: number): boolean {

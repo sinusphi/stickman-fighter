@@ -10,6 +10,8 @@ import { advanceThrows, attemptAtGrab, inGrabRange, isThrowable, resolveThrows }
 import type { Facing, Fighter, GameState } from '../simulation/types';
 import { SURVIVAL, type EnemyTier, type SurvivalConfig } from './config';
 import { bossSpec, gainFactor, pickType, typeSpec, type EnemySpec } from './spawner';
+import { random } from './random';
+import { applyUpgrades, bossFell, createUpgrades, gainMultiplier, guardEnergy, guardRefund, offerStep, playerMaxHp, reserveCap, type UpgradeState } from './upgrades';
 
 /*
  * Survival simulation: one player against a changing crowd of enemies.
@@ -29,6 +31,9 @@ import { bossSpec, gainFactor, pickType, typeSpec, type EnemySpec } from './spaw
  * the closest enemy in grab range decides. Enemies in hitstun can be grabbed
  * as well (survival only), a miniboss shrugs every throw off (the attempt
  * whiffs, `shrug` records it for the presentation).
+ *
+ * Upgrades (see upgrades.ts): after a fallen miniboss the run pauses with an
+ * open choice; `stepSurvival` does nothing until `chooseUpgrade` resumes it.
  */
 
 export interface Enemy {
@@ -110,6 +115,8 @@ export interface SurvivalState {
   /** Enemy the player hit last (HUD focus). */
   focus: number | null;
   shrug: ShrugLog;
+  /** Roguelite upgrades: stacks, picks and the open choice. */
+  upgrades: UpgradeState;
   config: SurvivalConfig;
 }
 
@@ -123,28 +130,23 @@ export function survivalGrabbable(f: Fighter): boolean {
   return isThrowable(f) || (f.y === 0 && f.state === 'Hitstun');
 }
 
-/** Mulberry32 on the state's seed; the only randomness of the simulation. */
-export function random(state: { seed: number }): number {
-  state.seed = (state.seed + 0x6d2b79f5) | 0;
-  let t = state.seed;
-  t = Math.imul(t ^ t >>> 15, t | 1);
-  t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-  return ((t ^ t >>> 14) >>> 0) / 4294967296;
-}
+export { random };
 
 export function createSurvival(seed = 1, inputConfig?: GameState['inputConfig'], config: SurvivalConfig = SURVIVAL): SurvivalState {
   const player = createFighter(0);
   player.x = Math.round(rules.stageWidth / 2); player.hp = config.player.hp;
   player.facing = player.attackFacing = 1;
-  return {
+  const state: SurvivalState = {
     frame: 0, combatFrame: 0, seed: seed | 0, player, enemies: [], nextUid: 1,
     flow: { bossTimer: config.boss.firstFrames, bosses: 0, bossDown: null, lastFallen: null, waveTimer: config.waves.firstFrames, waves: 0, waveLeft: 0, waveGap: 0 },
     energy: { total: 0, lastFrame: -Infinity, last: 0, boss: false },
     spawnTimer: config.enemies.firstSpawnFrames, survivedFrames: 0, kills: 0, over: false, hitstop: 0,
     turn: null, tap: { left: false, right: false, lastBack: -Infinity }, turns: 0, playerAttackId: player.attackId,
     inputConfig: structuredClone(inputConfig ?? { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }),
-    focus: null, shrug: { count: 0, frame: -Infinity, uid: 0 }, config,
+    focus: null, shrug: { count: 0, frame: -Infinity, uid: 0 }, upgrades: createUpgrades(config, seed), config,
   };
+  applyUpgrades(state);
+  return state;
 }
 
 function createPair(state: SurvivalState, fighter: Fighter): GameState {
@@ -215,11 +217,11 @@ function applyHit(state: SurvivalState, e: Enemy, hpBefore: number, stateBefore:
   return c.energy.perHit + (e.chain > 1 ? c.energy.perComboHit : 0);
 }
 
-/** Energy for the player. Normal gains stop at full energy, the boss bonus may go up to `energy.reserveCap`. */
+/** Energy for the player. Normal gains stop at full energy, the boss bonus may go up to `energy.reserveCap` (both grow with Max energy). */
 function gainEnergy(state: SurvivalState, amount: number, boss: boolean): void {
   const p = state.player, c = state.config;
   if (p.hp <= 0 || p.state === 'KO') return;
-  const gain = Math.round(amount * gainFactor(c, state.survivedFrames, rules.hz)), cap = boss ? c.energy.reserveCap : c.player.hp;
+  const gain = Math.round(amount * gainFactor(c, state.survivedFrames, rules.hz) * gainMultiplier(state)), cap = boss ? reserveCap(state) : playerMaxHp(state);
   const next = Math.max(p.hp, Math.min(cap, p.hp + gain)), real = next - p.hp;
   if (real <= 0) return;
   p.hp = next;
@@ -294,6 +296,8 @@ function resolveBodies(state: SurvivalState): void {
  */
 export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInputs: readonly RawInput[] = []): void {
   const p = state.player, c = state.config;
+  // An open upgrade choice holds the whole run (no frame passes).
+  if (state.upgrades.offer) return;
   if (state.over) {
     settle(state); state.frame++; state.combatFrame++;
     removeFallen(state);
@@ -334,7 +338,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   const order = state.enemies.filter(e => !e.entering && !e.dead).sort((a, b) => Math.abs(a.fighter.x - p.x) - Math.abs(b.fighter.x - p.x));
   grabStep(state, order);
   for (const e of order) {
-    const hpBefore = e.fighter.hp, stateBefore = e.fighter.state;
+    const hpBefore = e.fighter.hp, stateBefore = e.fighter.state, playerHp = p.hp;
     p.hitTargets = e.playerHits;
     e.pair.hitstop = 0;
     resolveCombat(e.pair);
@@ -342,6 +346,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
     if (e.fighter.hp < hpBefore) state.focus = e.uid;
     const hitGain = applyHit(state, e, hpBefore, stateBefore);
     if (hitGain) gainEnergy(state, hitGain, false);
+    guardStep(state, e, playerHp);
   }
   p.hitTargets = [];
 
@@ -349,7 +354,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
     if (!e.dead && e.fighter.state === 'KO') {
       e.dead = true; state.kills++;
       gainEnergy(state, e.killEnergy, e.boss > 0);
-      if (e.boss) state.flow.bossDown = state.frame; else state.flow.lastFallen = e.tier;
+      if (e.boss) { state.flow.bossDown = state.frame; bossFell(state); } else state.flow.lastFallen = e.tier;
     }
     // Stagger recovers while the enemy is left alone.
     if (e.poise > 0 && state.frame - e.hitFrame > c.stagger.recoverDelayFrames && e.fighter.state !== 'Hitstun') e.poise = Math.max(0, e.poise - c.stagger.recoverPerFrame);
@@ -361,6 +366,19 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
 
   if (!state.over) spawnStep(state);
   state.combatFrame++;
+  offerStep(state);
+}
+
+/**
+ * Guard upgrade: a hit the player blocked in this pair's combat gives part of
+ * its chip damage back plus a small energy gain. A chip that already KO'd the
+ * player stays a KO (the versus combat code decides that, this only follows).
+ */
+function guardStep(state: SurvivalState, e: Enemy, hpBefore: number): void {
+  const p = state.player, contact = e.pair.lastContact;
+  if (!state.upgrades.stacks.guard || !contact?.blocked || contact.defender !== 0 || contact.frame !== state.combatFrame || p.state === 'KO') return;
+  p.hp += guardRefund(state, Math.max(0, hpBefore - p.hp));
+  gainEnergy(state, guardEnergy(state), false);
 }
 
 /** Running throws: the victim follows the table; on the impact the hit counts like any other landed hit. */

@@ -3,6 +3,11 @@
  * runs on the deterministic simulation, without a browser.
  *
  *   npm run balance:survival -- [--runs 100] [--seed 1] [--profile all|defensive|aggressive] [--max-seconds 600]
+ *                               [--upgrades on|off] [--prefer <upgrade id>]
+ *
+ * Upgrades: by default the bot picks a random card after every boss.
+ * `--prefer damage` takes that upgrade whenever it is offered (compare its
+ * effect against `--upgrades off` on the same seeds).
  *
  * Output (test-results/survival-balance/):
  *   summary.md   median / 10th / 90th percentile of the survived time, kills per
@@ -30,17 +35,21 @@ const { values } = parseArgs({
     profile: { type: 'string', default: 'all' },
     'max-seconds': { type: 'string', default: '600' },
     out: { type: 'string', default: 'test-results/survival-balance' },
+    upgrades: { type: 'string', default: 'on' },
+    prefer: { type: 'string' },
     help: { type: 'boolean', default: false },
   },
 });
 if (values.help) {
-  console.log('npm run balance:survival -- [--runs N] [--seed S] [--profile all|defensive|aggressive] [--max-seconds T] [--out DIR]');
+  console.log('npm run balance:survival -- [--runs N] [--seed S] [--profile all|defensive|aggressive] [--max-seconds T] [--upgrades on|off] [--prefer ID] [--out DIR]');
   process.exit(0);
 }
 const runs = Number(values.runs), seedStart = Number(values.seed), maxSeconds = Number(values['max-seconds']);
 if (!Number.isSafeInteger(runs) || runs < 1) throw Error('--runs must be an integer >= 1.');
 if (!Number.isSafeInteger(seedStart)) throw Error('--seed must be an integer.');
 if (!(maxSeconds > 0)) throw Error('--max-seconds must be > 0.');
+if (!['on', 'off'].includes(values.upgrades)) throw Error('--upgrades must be on or off.');
+const upgrades = values.upgrades === 'on', prefer = values.prefer;
 
 const server = await createServer({ server: { middlewareMode: true, ws: false, hmr: false, watch: null }, appType: 'custom', logLevel: 'warn' });
 try {
@@ -50,13 +59,15 @@ try {
   const all = Object.keys(lib.BOT_PROFILES);
   const profiles = values.profile === 'all' ? all : [values.profile];
   for (const p of profiles) if (!all.includes(p)) throw Error(`Unknown profile "${p}" (${all.join(', ')}).`);
+  const upgradeIds = Object.keys(SURVIVAL.upgrades.effects);
+  if (prefer !== undefined && !upgradeIds.includes(prefer)) throw Error(`Unknown upgrade "${prefer}" (${upgradeIds.join(', ')}).`);
   const maxFrames = Math.round(maxSeconds * hz), types = Object.keys(SURVIVAL.types);
 
   const results = [], sections = [];
   for (const profile of profiles) {
     const own = [], started = performance.now();
     for (let i = 0; i < runs; i++) {
-      const r = lib.runSurvival({ seed: seedStart + i, profile, maxFrames });
+      const r = lib.runSurvival({ seed: seedStart + i, profile, maxFrames, upgrades, prefer });
       own.push(r);
       process.stdout.write(`\r${profile}: ${i + 1}/${runs} (seed ${r.seed}: ${(r.survivedFrames / hz).toFixed(1)} s, ${lib.deathLabel(r.death)})        `);
     }
@@ -67,7 +78,7 @@ try {
 
   const header = [
     '# Survival balance', '',
-    `Generated ${new Date().toISOString()} · runs per profile ${runs} · seeds from ${seedStart} · limit ${maxSeconds} s`, '',
+    `Generated ${new Date().toISOString()} · runs per profile ${runs} · seeds from ${seedStart} · limit ${maxSeconds} s · upgrades ${upgrades ? prefer ? `on, prefer ${prefer}` : 'on (random picks)' : 'off'}`, '',
     '> The player bot is not a human. These numbers are only meaningful for before/after',
     '> comparisons of tuning changes in `src/survival/config.ts` (same seeds, profile and limit),',
     '> not as absolute survival times.', '',

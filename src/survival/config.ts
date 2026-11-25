@@ -227,9 +227,63 @@ export const SURVIVAL = {
     /** Chance that a waiting enemy guards when the player attacks it. */
     blockChance: 0.6,
   },
+
+  /**
+   * Roguelite upgrades: after every fallen miniboss (once its cleanup phase is
+   * over) the run pauses and the player picks one of `cards` random upgrades.
+   * The same upgrade may be picked again up to its `max` stacks; maxed ones
+   * are no longer offered. The draw uses its own seeded stream (see
+   * upgrades.ts), so the spawns of a run do not depend on the picks.
+   */
+  upgrades: {
+    /** Off: no offers at all (balance comparisons). */
+    enabled: true,
+    /** Cards per offer (fewer when fewer upgrades are left). */
+    cards: 3,
+    /** Frames after the end of the cleanup phase until the choice opens. */
+    delayFrames: 20,
+    /** The choice waits until the player stands free (no attack, stun, jump); after this many frames it opens anyway. */
+    maxWaitFrames: 90,
+    /** After the pick no enemy starts a new attack for this many frames. */
+    resumeGraceFrames: 40,
+    /** Values per stack. Order = order of the cards and HUD badges. */
+    effects: {
+      /** Full energy grows by `amount`, the pick heals `heal` at once (up to the new full energy). */
+      maxEnergy: { max: 4, amount: 100, heal: 150 },
+      /** Every energy gain (hits, KOs, boss bonus) grows by `percent`. */
+      energyGain: { max: 3, percent: 25 },
+      /** The player's damage grows by `percent` (strikes and throws). */
+      damage: { max: 4, percent: 15 },
+      /** The Revenge bar fills `percent` faster from hits taken. */
+      revenge: { max: 3, percent: 30 },
+      /** The Special bar fills `percent` faster from hits and blocks. */
+      special: { max: 3, percent: 30 },
+      /** A blocked hit costs `chipPercent` less energy and gives `energy` back (a regular gain: time decay and Energy gain apply). */
+      guard: { max: 2, chipPercent: 50, energy: 3 },
+      /**
+       * Stability (see rules.hitStrength) grows by `amount`: 180 holds the
+       * Special spin (160), 210 the punch-combo finisher (200); Revenge (240)
+       * and hits in the air always knock down.
+       */
+      stability: { max: 2, amount: 30 },
+      /** Back attackers warn `frames` longer before they strike. */
+      backWarning: { max: 3, frames: 12 },
+    },
+  },
 };
 
 export type SurvivalConfig = typeof SURVIVAL;
+export type UpgradeId = keyof typeof SURVIVAL.upgrades.effects;
+
+/**
+ * Test switch for browser smokes (`?survival-test=weak-boss`): the first
+ * miniboss comes after two seconds with 1 hp, so a single hit fells it and the
+ * upgrade choice can be reached quickly. Any other value keeps the config.
+ */
+export function survivalTestConfig(search: string, config: SurvivalConfig = SURVIVAL): SurvivalConfig {
+  if (new URLSearchParams(search).get('survival-test') !== 'weak-boss') return config;
+  return { ...config, boss: { ...config.boss, firstFrames: 120, hp: 1 } };
+}
 
 /** localStorage key of the best survived time (frames). */
 export const SURVIVAL_BEST_KEY = 'stickman-survival-best-v1';
