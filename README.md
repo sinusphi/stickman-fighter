@@ -20,6 +20,7 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 ## Features
 
 - Local versus, CPU, and CPU-versus-CPU modes; against the CPU you can play as P1 or P2
+- Round intro in versus: READY UP!, both fighters walk in, a fist salute, then FIGHT!
 - 37 standing, crouching, airborne, spin, tornado, and combo attacks, plus two throws (hip throw and shoulder throw with side switch)
 - Revenge combo: with a full Revenge bar, a seven-hit comeback combo
 - Wirbel: with a full Special bar, a 360° spin kick that hits behind and in front
@@ -64,6 +65,17 @@ Directions are relative to the opponent: **6** forward, **4** back, **2** crouch
 Throws: **6 + Throw** hip throw, **4 + Throw** shoulder throw (the opponent lands behind you). They only grab a standing or crouching opponent within arm's reach, cannot be blocked, and a missed grab has a long recovery. Numpad 0 is the code `Numpad0` (the "0 / Ins" key, regardless of NumLock), not the separate Insert key. 
 Use **Backspace** to restart a match. Controls can be reassigned in the game.
 
+
+## Round intro
+
+Every versus round (also against the CPU and in the demo, not in training or survival) opens with a short intro of about two seconds:
+
+1. **READY UP!** Both fighters stand at their start positions.
+2. Both walk towards each other on their own until the tips of their extended standing LP fists would touch exactly. The distance comes from the move's baked contact geometry, not from a fixed number.
+3. **Fist salute:** both play the standing LP animation without a hitbox, damage or meter gain; the fists meet at the furthest extension with a small spark.
+4. **FIGHT!** Inputs are released and the round timer starts. The fighters stand where they greeted, just outside reach.
+
+Inputs are locked until FIGHT; a button held through the intro does not count as a press. The intro is part of the deterministic simulation and is recorded in replays. Announcer hooks play `public/sounds/announcer/ready_up.*` and `fight.*` (`.ogg`, `.mp3`, `.wav` or `.m4a`) when present; without recordings only the text is shown. The cue names are configured in `src/platform/announcer.ts`. `?intro=off` in the URL skips the intro (used by the browser smoke tests of other features).
 
 ## Revenge combo
 

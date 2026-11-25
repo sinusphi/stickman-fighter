@@ -19,6 +19,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 ## Funktionen
 
 - Lokaler Versus-, CPU- und CPU-gegen-CPU-Modus; gegen die CPU wahlweise als P1 oder P2
+- Runden-Intro im Versus: BEREITMACHEN!, beide Figuren laufen ein, Faustgruß, dann LOS!
 - 37 Angriffe im Stand, in der Hocke und in der Luft sowie Dreh-, Tornado- und Komboangriffe, dazu zwei Würfe (Hüftwurf und Schulterwurf mit Seitenwechsel)
 - Revenge-Kombo: mit voller Revenge-Leiste eine Comeback-Kombo mit sieben Treffern
 - Wirbel: mit voller Special-Leiste ein 360°-Drehtritt, der hinten und vorne trifft
@@ -60,6 +61,17 @@ Anschließend die im Terminal angezeigte Adresse öffnen, normalerweise <http://
 
 Richtungen gelten relativ zum Gegner: **6** vorwärts, **4** zurück, **2** hocken und **7/8/9** springen. **Rennen:** zweimal schnell vorwärts tippen (innerhalb von 12 Frames) und beim zweiten Druck halten; das funktioniert mit Tastatur, D-Pad und Stick gleich. Loslassen stoppt sofort; Hocken, Springen (normaler Vorwärtssprung), Angreifen, Blocken (zurück), ein Treffer oder Kontakt mit dem Gegner beenden das Rennen ebenfalls. Einen eigenen Lauf-Angriff gibt es nicht. Würfe: **6 + Wurf** Hüftwurf, **4 + Wurf** Schulterwurf (der Gegner landet hinter dir). Sie greifen nur einen stehenden oder hockenden Gegner in Armreichweite, sind nicht blockbar, und ein Fehlgriff hat eine lange Recovery. Numpad 0 ist der Code `Numpad0` (die Taste „0 / Einfg“, unabhängig von NumLock), nicht die separate Einfg-Taste. Mit **Backspace** wird ein Match neu gestartet. Die Belegung kann im Spiel geändert werden.
 
+
+## Runden-Intro
+
+Jede Versus-Runde (auch gegen die CPU und in der Demo, nicht im Training und nicht im Survival) beginnt mit einem kurzen Intro von etwa zwei Sekunden:
+
+1. **BEREITMACHEN!** Beide Figuren stehen an ihren Startpositionen.
+2. Beide laufen automatisch aufeinander zu, bis sich die Spitzen der ausgestreckten Fäuste eines Standing-LP genau berühren würden. Der Abstand kommt aus der gebackenen Kontaktgeometrie des Moves, nicht aus einer festen Zahl.
+3. **Faustgruß:** Beide spielen die Standing-LP-Animation ohne Hitbox, Schaden oder Leistenzuwachs; die Fäuste treffen sich auf dem Höhepunkt mit einem kleinen Funken.
+4. **LOS!** Die Eingaben werden freigegeben und der Rundentimer startet. Die Figuren stehen dort, wo sie sich gegrüßt haben, knapp außer Reichweite.
+
+Bis LOS sind die Eingaben gesperrt; eine durchs Intro gehaltene Taste zählt nicht als Druck. Das Intro gehört zur deterministischen Simulation und wird in Replays aufgezeichnet. Ansager-Hooks spielen `public/sounds/announcer/ready_up.*` und `fight.*` (`.ogg`, `.mp3`, `.wav` oder `.m4a`), falls vorhanden; ohne Aufnahmen erscheint nur der Text. Die Cue-Namen stehen in `src/platform/announcer.ts`. `?intro=off` in der URL überspringt das Intro (für die Browser-Smokes anderer Features).
 
 ## Revenge-Kombo
 
