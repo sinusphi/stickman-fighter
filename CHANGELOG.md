@@ -1,5 +1,15 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-25 · Rennen
+
+- **Neu:** Rennen. Zweimal schnell vorwärts tippen und beim zweiten Druck halten: Die Figur rennt mit `runSpeed` 1380 (rund 1,8-fache Gehgeschwindigkeit, neuer Wert in `rules.json`). Tippfenster 12 Frames vom Loslassen des ersten Tipps bis zum zweiten Druck (`RUN_TAP_FRAMES` in `src/input/run.ts`); dazwischen ist nur Neutral erlaubt. Erkannt wird auf der bereinigten, blickrichtungsrelativen Richtungshistorie, also nach SOCD und für Tastatur, D-Pad und Stick identisch. Tippen und sofort loslassen bleibt normales Gehen/Stehen.
+- **Neuer Zustand `Run`:** endet sofort beim Loslassen (zurück zu Idle, ohne Rutschen), bei Hocke, Sprung (normaler Vorwärtssprung), Angriff, Block-Eingabe (zurück), Treffer/Stun/Wurf und beim Kontakt mit dem Gegner (Pushbox-Überlappung: Schub wie beim Gehen, danach Gehen, kein Durchlaufen). Danach braucht es einen neuen Doppeltipp. Aus dem Rennen sind alle normalen Angriffe, Hold-Moves und Würfe möglich, ohne Lauf-Bonus. Eine rennende Figur ist werfbar wie eine gehende.
+- **Survival:** Rennen entlang der festen Blickrichtung wie im Versus; Doppeltipp zurück dreht weiterhin um, auch direkt aus dem Rennen. Gegner rennen nicht.
+- **CPU:** rennt vorerst nicht. CPU-Eingaben tragen `noRun` (wird mit Replays aufgezeichnet), Survival-Gegner ebenso, damit zufällige 6-5-6-Muster der CPU kein Rennen auslösen.
+- **Animation:** eigener Laufzyklus `Run` (20 Frames, Oberkörper weiter vorgeneigt, längere und höhere Schritte mit Fersen-Kick, Armschwung gegen die Beine), erzeugt von `scripts/generate-run-poses.py` (`npm run generate:run`, in `generate:check`), Kontaktgeometrie neu gebacken. In der Animationsvorschau unter Bewegung auswählbar. Hinweis im Kombo-Panel (Abschnitt „Bewegung“, EN/DE).
+- **Replays:** `ENGINE_VERSION` 1.13.0, Datenhash ändert sich (Regeln, Kontaktgeometrie). Ältere Replays werden abgewiesen. Das Rennen ergibt sich deterministisch aus den aufgezeichneten Roh-Eingaben.
+- Tests: `run.test.ts` (Tippfenster und Grenze, Halten vs. Loslassen, Zwischenrichtungen, SOCD, Spieler 2, CPU/`noRun`, alle Abbruchbedingungen, Geschwindigkeit, Angriff ohne Bonus, Replay-Determinismus, Standfuß ohne Rutschen, Survival inkl. Umdrehen und Gegner). Neuer Browser-Smoke `smoke:run` (Tastatur, D-Pad, Stick, Survival, Vorschau, Phasenbild in `test-results/run`).
+
 ## 2026-11-25 · Survival: Upgrades nach jedem Miniboss
 
 - **Neu:** Roguelite-Schleife. Nach jedem besiegten Miniboss (sobald die Cleanup-Phase vorbei ist, plus 20 Frames; die Auswahl wartet, bis der Spieler frei steht, höchstens 90 Frames) hält der Lauf an und der Spieler wählt eine von drei zufälligen Upgrade-Karten: Tasten **1 / 2 / 3** oder mit der eigenen Steuerung ← → und eine Angriffstaste (auch Gamepad). Kurz nach dem Öffnen sind Kampftasten gesperrt, die bestätigende Taste löst beim Weiterspielen keinen Angriff aus. Während der Auswahl steht die Survival-Simulation komplett (kein Frame, kein Director, keine Piloten); nach der Wahl startet 40 Frames lang kein Gegner einen neuen Angriff.
