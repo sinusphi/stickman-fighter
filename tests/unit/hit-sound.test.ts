@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { MOVES } from '../../src/data/schema';
+import { mappedStrikeJoint } from '../../src/data/pose-contact-moves';
 import { classifyHit, describeStrike, newContactSounds, newSwingSounds, swingCues, type ContactSound, type SwingSound } from '../../src/platform/hit-sound';
 import { createGame, snapshot, step } from '../../src/simulation/state';
 import { buttonBit, neutralInput, type Button, type RawInput } from '../../src/input/types';
@@ -17,7 +18,10 @@ it('describes every move and hit group with a valid, damage-based sound', () => 
     expect(['normal', 'spin', 'uppercut']).toContain(sound.style);
     expect(sound.weight).toBeGreaterThanOrEqual(0); expect(sound.weight).toBeLessThanOrEqual(1);
     expect(Math.abs(sound.signature)).toBeLessThanOrEqual(1);
-    if (!move.throw) expect(sound.kind === 'punch').toBe((move.button.endsWith('P') || group.id === 'punch') && group.id !== 'knee' && group.id !== 'kick');
+    // Mixed combos map their groups to limbs (pose-contact-moves); a hand group is a punch.
+    const joint = mappedStrikeJoint(move.id, group.id);
+    if (!move.throw) expect(sound.kind === 'punch').toBe(group.id !== 'knee' && group.id !== 'kick' &&
+      (group.id === 'punch' || (joint ? joint.endsWith('Hand') : move.button.endsWith('P'))));
     identities.add(sound.signature.toFixed(3)); groups++;
   }
   // Every technique keeps its own timbre, even with identical kind/strength/zone.

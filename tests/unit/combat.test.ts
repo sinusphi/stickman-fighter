@@ -19,10 +19,10 @@ function playAttack(button = 'LP', defender = neutralInput()) {
 }
 
 describe('move data', () => {
-  it('provides 27 normals and fourteen hold attacks with contiguous frame data', () => {
+  it('provides 27 normals and fifteen hold attacks with contiguous frame data', () => {
     expect(Object.values(MOVES).filter(m=>m.command.type==='normal')).toHaveLength(27);
     // Throws (tests/unit/throws.test.ts) are hold commands without hitboxes.
-    expect(Object.values(MOVES).filter(m=>m.command.type==='hold' && !m.throw)).toHaveLength(14);
+    expect(Object.values(MOVES).filter(m=>m.command.type==='hold' && !m.throw)).toHaveLength(15);
     for (const move of Object.values(MOVES).filter(m=>!m.throw)) {
       // startup/active describe the main strike; an early knee group has its own window.
       const early=new Set(move.hitGroups.filter(g=>g.activeFrames).map(g=>g.id));

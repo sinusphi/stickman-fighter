@@ -6,7 +6,7 @@ const idle = { kind: 'wait', score: 0, reason: 'observe' } as const;
 function context(overrides: Partial<HudContext> = {}): HudContext {
   return {
     game: createGame(), paused: false, muted: false,
-    cpu: { enabled: false, demo: false, difficulty: 'medium', playerOneDifficulty: 'medium' } as HudContext['cpu'],
+    cpu: { enabled: false, demo: false, difficulty: 'medium', playerOneDifficulty: 'medium', humanSide: 0 } as HudContext['cpu'],
     cpuDebug: [idle, idle], playback: null, recordingFrames: null, replayFrames: 0,
     show: { boxes: false, inputs: false, states: false }, stageCaption: 'THE DOJO', ...overrides,
   };
@@ -39,10 +39,15 @@ function fakeDocument() {
 
 describe('HUD', () => {
   it('derives modes and labels without touching the DOM', () => {
-    expect(hudModes(context())).toEqual({ trainingCpu: false, cpuActive: false, demoActive: false, cpuPresent: false });
-    const vsCpu = context({ cpu: { enabled: true, demo: false, difficulty: 'medium', playerOneDifficulty: 'medium' } as HudContext['cpu'] });
+    expect(hudModes(context())).toEqual({ trainingCpu: false, cpuActive: false, demoActive: false, cpuPresent: false, cpuSide: 1 });
+    const vsCpu = context({ cpu: { enabled: true, demo: false, difficulty: 'medium', playerOneDifficulty: 'medium', humanSide: 0 } as HudContext['cpu'] });
     expect(hudModes(vsCpu).cpuActive).toBe(true);
     expect(hudLabels(vsCpu).p2).toBe('CPU');
+    const asP2 = context({ cpu: { enabled: true, demo: false, difficulty: 'medium', playerOneDifficulty: 'hard', humanSide: 1 } });
+    expect(hudModes(asP2).cpuSide).toBe(0);
+    expect(hudLabels(asP2).p1).toBe('CPU');
+    expect(hudLabels(asP2).p2).toBe('PLAYER 02');
+    expect(hudLabels(asP2).matchStatus).toContain('VS CPU · ' + hudLabels(asP2).cpuLevel);
     expect(hudLabels(context({ playback: { index: 3, total: 9 } })).arenaMode).toBe('REPLAY / 3 : 9');
     expect(hudLabels(context({ recordingFrames: 12 })).arenaMode).toBe('REC / 12 FRAMES');
     expect(hudLabels(context()).arenaMode).toBe('THE DOJO / LOCAL 1V1');
@@ -63,6 +68,24 @@ describe('HUD', () => {
     expect(elements.get('wins-0')!.writes).toBe(1);
     hud.invalidate(); hud.update(c);
     expect(elements.get('wins-0')!.writes).toBe(2);
+  });
+  it('marks the HUD as survival so the longer run time gets its own timer size', () => {
+    const { elements, document } = fakeDocument(), hud = new Hud(document);
+    const survival = { time: '100:00', best: '100:00', enemies: 1, kills: 0, playerMaxHp: 1000, enemyMaxHp: 520, bossIn: '1:00', boss: 0, energy: 0 };
+    hud.update(context({ survival }));
+    expect(elements.get('hud')!.classes.has('is-survival')).toBe(true);
+    expect(elements.get('timer')!.textContent).toBe('100:00');
+    hud.update(context());
+    expect(elements.get('hud')!.classes.has('is-survival')).toBe(false);
+  });
+  it('names the survival player by its controls slot and shows only its own auto block', () => {
+    const survival = { time: '0:00', best: '0:00', enemies: 1, kills: 0, playerMaxHp: 1000, enemyMaxHp: 1000, bossIn: '1:00', boss: 0, energy: 0 };
+    expect(hudLabels(context({ survival })).p1).toBe('PLAYER 01');
+    expect(hudLabels(context({ survival: { ...survival, side: 1 } })).p1).toBe('PLAYER 02');
+    const { elements, document } = fakeDocument();
+    const game = createGame(); game.inputConfig.autoBlock = [true, false];
+    new Hud(document).update(context({ game, survival: { ...survival, side: 1 } }));
+    expect(elements.get('auto-block')!.attributes.get('aria-pressed')).toBe('true');
   });
 });
 

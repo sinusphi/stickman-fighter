@@ -36,15 +36,18 @@ it('gives easy CPU a clear thinking break after every completed attack',()=>{
 });
 it('loads only valid preferences and tolerates blocked storage',()=>{
   const storage={getItem:()=>JSON.stringify({enabled:true,difficulty:'hard'}),setItem:()=>{throw Error('quota');}};
-  expect(loadCpuSettings(storage)).toEqual({enabled:true,demo:false,difficulty:'hard',playerOneDifficulty:'medium'});
-  expect(()=>saveCpuSettings(storage,{enabled:true,demo:true,difficulty:'hard',playerOneDifficulty:'easy'})).not.toThrow();
-  expect(loadCpuSettings({getItem:()=>{throw Error('disabled');}})).toEqual({enabled:false,demo:false,difficulty:'medium',playerOneDifficulty:'medium'});
+  expect(loadCpuSettings(storage)).toEqual({enabled:true,demo:false,difficulty:'hard',playerOneDifficulty:'medium',humanSide:0});
+  expect(()=>saveCpuSettings(storage,{enabled:true,demo:true,difficulty:'hard',playerOneDifficulty:'easy',humanSide:1})).not.toThrow();
+  expect(loadCpuSettings({getItem:()=>{throw Error('disabled');}})).toEqual({enabled:false,demo:false,difficulty:'medium',playerOneDifficulty:'medium',humanSide:0});
   expect(loadCpuSettings({getItem:()=>'{broken'}).enabled).toBe(false);
+  expect(loadCpuSettings({getItem:()=>'{"enabled":true,"difficulty":"easy","humanSide":1}'}).humanSide).toBe(1);
+  expect(loadCpuSettings({getItem:()=>'{"enabled":true,"difficulty":"easy","humanSide":7}'}).humanSide).toBe(0);
   expect(loadCpuSettings({getItem:()=>'{"enabled":true,"difficulty":"__proto__"}'}).enabled).toBe(false);
 });
 it('derives every move, group, scaled edge and advance without an ID allowlist',()=>{
   // Throws are chosen by grab range (UtilityBrain.throwIntent), not by hitbox knowledge.
-  expect(KNOWLEDGE.map(m=>m.id)).toEqual(Object.keys(PLAYABLE_MOVES).filter(id=>!PLAYABLE_MOVES[id].throw));
+  // Full-bar moves (Revenge combo) are deliberately not part of the CPU repertoire.
+  expect(KNOWLEDGE.map(m=>m.id)).toEqual(Object.keys(PLAYABLE_MOVES).filter(id=>!PLAYABLE_MOVES[id].throw && !PLAYABLE_MOVES[id].command.resource));
   const f=createGame().fighters[0];f.x=f.y=0;f.facing=1;
   for(const m of Object.values(MOVES))for(const [frame,boxes] of m.frames.entries())for(const [index,b] of boxes.hitboxes.entries()) {
     expect(scaledBox(b)).toEqual(worldBox({x:b.x,y:b.y,width:b.width,height:b.height},f));
@@ -99,6 +102,8 @@ describe('generic move controller',()=>{
       const g=createGame(),s=g.fighters[1],o=g.fighters[0],controller=new Controller();
       s.x=480*rules.unit;o.x=s.x+facing*300*rules.unit;s.facing=s.attackFacing=facing;
       s.input.previous.buttons=511;s.crouching=true;s.state='Crouch';
+      // Full-bar moves need their bar; the brain never picks them, the controller still could.
+      const resource=PLAYABLE_MOVES[id].command.resource;if(resource)s.resources[resource].current=s.resources[resource].max;
       controller.set(attack(id),observe(g).fighters[1]);
       step(g,[neutralInput(),controller.next(observe(g).fighters[1])]);
       if(crossing){o.x=s.x-facing*300*rules.unit;s.facing=(facing*-1) as -1|1;}

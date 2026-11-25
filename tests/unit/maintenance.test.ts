@@ -20,9 +20,11 @@ describe('hold commands follow structural rules', () => {
     // rules.normalPriority: MK ranks above LK, so LK can never start this chord.
     expect(() => validateMoves(withCommand('LK', ['LK', 'MK']))).toThrow(/Hold-Command/);
   });
-  it('rejects duplicate buttons, three buttons and non-horizontal directions', () => {
+  it('rejects duplicate buttons, four buttons and non-horizontal directions', () => {
     expect(() => validateMoves(withCommand('MK', ['MK', 'MK']))).toThrow(/Hold-Command/);
-    expect(() => validateMoves(withCommand('HK', ['HK', 'MK', 'LK']))).toThrow(/Hold-Command/);
+    // Three-key chords exist (Revenge combo); four never.
+    expect(validateMoves(withCommand('HK', ['HK', 'MK', 'LK']))).toHaveProperty('new_combo');
+    expect(() => validateMoves(withCommand('HK', ['HK', 'MK', 'LK', 'LP']))).toThrow(/Hold-Command/);
     expect(() => validateMoves(withCommand('MK', ['MK'], [2]))).toThrow(/Hold-Command/);
   });
 });
