@@ -1,9 +1,45 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-25 · Survival: Lesbarkeit von HUD und Arena-Rand
+
+- **Timer überlappt nicht mehr:** Die mittlere HUD-Spalte war fest 90 px (mobil 48 px) breit, die Survival-Zeit `m:ss` ist in 42 px Courier aber ~110 px breit („11:02“) und lief über die Energie des Gegners („181 / 520“). Die Spalte wächst jetzt mit dem Inhalt (`minmax(90px, max-content)`, Seitenspalten `minmax(0, 1fr)`), Timer und Bestzeit brechen nicht um. Im Survival ist die Zeit etwas kleiner (36 px, mobil 22 px), damit auch dreistellige Minuten („100:00“) Platz lassen. Namen und Energiewerte bekommen Abstand und kürzen notfalls mit „…“ statt zu überlappen.
+- **Bossleiste unter dem HUD:** Die Miniboss-Leiste im Canvas saß fest auf y = 98 und lag bei mittleren und schmalen Fenstern unter Timer und Bestzeit. Sie rückt jetzt unter die Unterkante des DOM-HUD (in Canvas-Pixel umgerechnet), die Banner PAUSE / Rundenende rücken bei Bedarf mit.
+- **Gegner am Rand – Befund:** Kein Bug. Stehende Gegner werden über `resolvePushboxes`/`clampToStage` immer ganz ins Bild geschoben (Pushbox 0..40 px an der Wand); simuliert über mehrere Seeds lag eine Körpermitte nur beim gewollten Hereinlaufen (`spawnOffset` 40 px, ~14 Frames) außerhalb. Halb angeschnitten stehen bleiben Gegner nur, wenn die Simulation einfriert: Hitstop, Pause oder nach Game Over (dort laufen hereinkommende Gegner nicht weiter).
+- **Neu: Randpfeile.** Ein Gegner, dessen Körpermitte länger als 16 Simulations-Frames außerhalb liegt, bekommt am Bildrand über Kopfhöhe einen kleinen Pfeil in seiner Farbe (Bosse größer, mehrere pro Seite gestapelt). Ein Rücken-Angreifer in seiner Warnung pulsiert in der Revenge-Farbe mit „!“. Ein normales Hereinlaufen bleibt ohne Pfeil.
+- Rein präsentational: keine Änderung an Simulation, `ENGINE_VERSION` oder Datenhash, keine neuen UI-Texte.
+- Tests: `survival-edge.test.ts` (Verzögerung, Stapel, Warnung, K.o., Reset, Zustand unverändert), `hud.test.ts`. Neuer Smoke `smoke:survival-layout` prüft bei acht Fensterbreiten (1440 bis 360 px) mit Miniboss und Worst-Case-Texten („100:00“, „GEGNER 12“, „1520 / 1520“) die tatsächlichen Textboxen (DOM-Ranges) auf Überlappung, Abschneiden und Lage in der Arena, dazu die Bossleiste.
+
+## 2026-11-25 · Seitenwahl gegen die CPU
+
+- **Neu:** Button „Du: P1 / P2“ neben dem CPU-Schalter. Damit wählst du, welchen Kämpfer du im VS-CPU-Modus steuerst. Als P2 übernimmt die CPU Kämpfer 1 (mit der Stufe aus „CPU 1“), du steuerst Kämpfer 2 dann mit der P2-Belegung (Pfeiltasten + Numpad bzw. P2-Gamepad), WASD und die P1-Tasten bleiben wirkungslos.
+- Die Wahl wird mit den CPU-Einstellungen gespeichert (`humanSide`). Im Training, Demo, Replay und Survival ist der Button gesperrt; der Trainings-Dummy bleibt immer P2.
+- HUD: Namen, Modusanzeige, Stufe und CPU-Debugzeile folgen der gewählten Seite.
+- Rein Eingabe-Routing vor der Simulation: keine Änderung an Engine-Version oder Datenhash, Replays speichern die Eingaben pro Kämpfer wie bisher.
+- Tests: `cpu.test.ts`, `hud.test.ts`; `smoke:cpu` prüft Seitenwechsel, Eingabe-Routing im Replay, Persistenz und Sperre im Demo.
+- **Survival als P2:** Die Seitenwahl gilt jetzt auch im Survival. Steht sie beim Start (F10) auf P2, steuerst du den Survival-Kämpfer mit der P2-Belegung (Pfeiltasten + Numpad bzw. P2-Gamepad), das HUD zeigt „PLAYER 02“. Die Seite bleibt für den ganzen Lauf fest; der Button ist im Survival weiter gesperrt.
+- **Auto-Block im Survival:** Der Spieler bekommt den Auto-Block seiner Steuerungsseite (P1 oder P2), Gegner blocken nie automatisch. Der Auto-Block-Button zeigt im Survival jetzt den echten Zustand des Spielers (vorher stand er dort immer auf „Aus“) und wirkt sofort.
+- Wieder reines Eingabe-Routing: keine Änderung an Engine-Version oder Datenhash. `hud.test.ts` und `smoke:survival` decken P2-Steuerung und Auto-Block-Anzeige ab.
+
 ## 1.12.0 · 22.11.2026
 
 - App-Version (`package.json`, `package-lock.json`, README-Badges) **1.11.0 → 1.12.0**, Replay-Engine-Version (`ENGINE_VERSION`) **1.10.0 → 1.11.0**: Das Trefferstärke-/Knockdown-System, `rules.hitStrength` sowie die Rules-Änderungen an Revenge/Special seit 1.11.0 ändern Simulation und Replay-Datenhash. Ältere Replays werden eindeutig abgewiesen.
-- Enthält den Survival-Modus (Teil 1) und die Änderungen der folgenden Einträge bis einschließlich „Special-Leiste von der Revenge-Leiste entkoppelt“.
+- Enthält den Survival-Modus (Teile 1 und 2), die Revenge-Kombo und die Änderungen der folgenden Einträge bis einschließlich „Special-Leiste von der Revenge-Leiste entkoppelt“.
+- Die Revenge-Kombo (neuer Move, Dreier-Chord, `rules.hitStrength.overrides`) ändert Simulation und Datenhash ebenfalls. Engine 1.11.0 war noch nicht ausgeliefert (live: App 1.11.0, Engine 1.10.0; keine Tags), sie gehört deshalb zu Engine 1.11.0, ohne weitere Erhöhung.
+
+## 2026-11-22 · Revenge-Kombo (7 Treffer)
+
+- **Neu: Revenge-Kombo** (`revenge_combo`). Mit voller Revenge-Leiste startet **vorwärts (6) + LK + LMK + HK** (P1: D + F + G + H, P2: ← + Num4 + Num5 + Num6) eine Kombo mit sieben Treffern: Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß. 6 / 61 / 10 Frames (77 gesamt), Schaden 40 + 60 + 65 + 80 + 65 + 80 + 110 = 500. Die Leiste wird beim Start geleert, auch bei einem Fehlschlag. Ohne volle Leiste, in der Hocke oder in der Luft verhalten sich die Tasten exakt wie bisher.
+- **Nicht blockbar, sobald der Jab sitzt:** Der Abstand zwischen zwei Treffern ist immer mindestens 2 Frames kürzer als der Hitstun des vorigen (Unit-Test prüft das gegen die Move-Daten). Pushback gibt es nur beim Finisher. Der Finisher wirft um (Trefferstärke 240 über `revenge_combo:punch`, also auch Survival-Bosse). Wird der Jab geblockt, bleibt der Rest normal blockbar.
+- **Step-in:** Der vordere Fuß setzt mit dem Jab nach vorn, der hintere zieht mit dem Haken nach (Vorschub 18 Rig-Einheiten in 16 Frames). Ohne diesen Schritt würde ein Jab aus voller Reichweite die folgenden Treffer zu kurz lassen. Kein Standfuß rutscht; jeder Wechsel des Standbeins hat eine eigene Gewichtsverlagerung, zwischen den Kicks eines Beins bleibt das Knie oben.
+- **Startabstand** (Mitte zu Mitte): 38–93 px gegen einen stehenden, 38–86 px gegen einen hockenden Gegner. Der Jab ist auf Kinnhöhe des Hockenden gezielt; neues Move-Feld `standingHitstun` richtet einen hockenden Gegner im Hitstun auf (gezeichnet wurde der Hitstun schon immer stehend), damit auch die hohen Kicks treffen. Die Folgetreffer haben 3 px (stehend) bzw. 10 px (hockend) Reserve über die Jab-Reichweite hinaus.
+- **Dreier-Chords:** `CHORD_UPGRADES` kennt jetzt zwei oder drei Tasten. Alle Partnertasten müssen im Fenster (weiter 3 Frames) gedrückt und gehalten sein, die Richtung über die ganze Historie. Neuer Travel-Modus `replace` (Vorschub des Einzel-Moves zurücknehmen und den der Kombo nachholen), damit jede Tastenreihenfolge denselben Weg ergibt. Bestehende Chords und Einzeltritte bleiben unverändert (Tests mit und ohne volle Leiste). Neues Command-Feld `resource` für Moves, die eine volle Leiste brauchen und leeren; Hold-Commands dürfen jetzt bis zu drei Tasten haben.
+- Training: Die Leisten verhalten sich dort wie im Versus (keine Sonderbehandlung), die Kombo also auch.
+- Survival: Stagger bricht die Revenge-Kombo nicht ab, der Finisher wirft selbst um. Leichte Gegner gehen vorher K.o.
+- Die CPU setzt die Kombo vorerst nicht ein (`KNOWLEDGE` ohne Moves mit `command.resource`).
+- Präsentation: Starteffekt (Flash, Ring, Funken nach vorn, kurzer Screenshake) und ein eigener Start-Sound (Synth), Treffer klingen je nach Gliedmaße als Schlag oder Tritt. Kombo-Liste, Animationsvorschau, Move-Tabelle und beide READMEs ergänzt.
+- Generator `scripts/generate-revenge-combo.mjs` (`npm run generate:revenge-combo`, im `generate:check`). Der gemeinsame Kick-Generator kennt dafür `priority`, `resource`, `standingHitstun` und `hurtJoint`; Animationen dürfen bis zu 8 Bewegungsspuren haben.
+- Tests: `tests/unit/revenge-combo.test.ts`, verallgemeinerter Chord-Test in `architecture.test.ts`; Browser-Smoke `npm run smoke:revenge-combo`. `data-survival` liefert für Smokes zusätzlich den Abstand zum nächsten Gegner vorn und die Treffer des aktuellen Spielerangriffs.
+- Fix im Basis-Smoke: Er erwartete noch die Leisten-Zuwächse von vor der Rules-Änderung (Special 2 statt 3, Revenge 8 statt 3 nach einem LP).
 
 ## 2026-11-22 · Survival-Modus, Teil 2: Gegnermix, Miniboss, Energie
 
