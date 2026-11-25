@@ -98,6 +98,16 @@ Die Special-Leiste füllt sich mit deinen eigenen Treffern (geblockte geben nur 
 
 Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gains, Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Wurf-Schonfrist, Schwellwerte, Drehzeit) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
 
+### Balance-Lauf
+
+`npm run balance:survival` misst die Survival-Balance headless: Ein Spieler-Bot spielt viele komplette Läufe auf der deterministischen Simulation durch (ohne Browser) und schreibt `summary.md`, `runs.csv` und `minutes.csv` nach `test-results/survival-balance/`: Median sowie 10./90. Perzentil der überlebten Zeit, Kills pro Gegnertyp, erreichter Boss, Todesursache (letzter Schadensgeber: Typ, vorne/hinten, Boss) und die Energiebilanz je Minute.
+
+```sh
+npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
+```
+
+`--profile` ist `defensive`, `aggressive` oder `all`. Der Bot nutzt die Versus-CPU gegen jeweils einen Gegner und ergänzt Umdrehen per Doppeltipp und Reaktionen auf Rücken-Warnungen. **Er ist kein Mensch:** Die Zahlen taugen für Vorher/Nachher-Vergleiche einer Tuning-Änderung in `src/survival/config.ts` (gleiche Seeds, gleiches Profil, gleiches Limit), nicht als absolute Überlebenszeiten. Derselbe Seed ergibt immer denselben Lauf.
+
 
 ## Moveliste
 
@@ -164,6 +174,7 @@ Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gai
 | `npm run preview` | Produktionsbuild lokal anzeigen |
 | `npm test` | Tests im Beobachtungsmodus ausführen |
 | `npm run check` | Vollständige Prüfung ausführen |
+| `npm run balance:survival` | Headless Survival-Balance-Lauf (Bot, siehe Survival-Modus) |
 
 
 ## Projektstruktur

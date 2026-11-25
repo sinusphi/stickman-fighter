@@ -101,6 +101,16 @@ Press **F10** (or the Survival button) to start, F10 again returns to versus. Yo
 
 All survival tuning values (enemy types, difficulty budget, boss times, energy gains, enemy count, attack tokens, back budget, cooldowns, throw grace period, thresholds, turn time) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
 
+### Balance run
+
+`npm run balance:survival` measures the survival balance headless: a player bot plays many complete runs on the deterministic simulation (no browser) and writes `summary.md`, `runs.csv` and `minutes.csv` to `test-results/survival-balance/`: median and 10th/90th percentile of the survived time, kills per enemy type, boss reached, cause of death (last enemy that dealt damage: type, front/back, boss) and the energy balance per minute.
+
+```sh
+npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
+```
+
+`--profile` is `defensive`, `aggressive` or `all`. The bot reuses the versus CPU against one enemy at a time and adds turning by double tap and reactions to back warnings. **It is not a human:** use the numbers to compare a tuning change in `src/survival/config.ts` before and after (same seeds, profile and limit), not as absolute survival times. The same seed always gives the same run.
+
 
 ## Move list
 
@@ -167,6 +177,7 @@ All survival tuning values (enemy types, difficulty budget, boss times, energy g
 | `npm run preview` | Preview the production build |
 | `npm test` | Run tests in watch mode |
 | `npm run check` | Run the complete validation suite |
+| `npm run balance:survival` | Headless survival balance run (bot, see Survival mode) |
 
 
 ## Project structure
