@@ -98,8 +98,22 @@ Press **F10** (or the Survival button) to start, F10 again returns to versus. Yo
 - The director fills the enemy slots from a difficulty budget that grows with the run time, always with a mix of light and medium types and now and then a heavy one. A fallen light enemy is mostly replaced by a light one. Small waves add a few extra enemies in between.
 - **Miniboss:** the first one appears after 30 seconds of run time. While a boss lives, the boss timer stands still and nobody else attacks (duel: all other enemies just watch from the edge). When the boss has left the arena, the next one follows after 45 seconds, each one tougher. When a boss falls, the waiting enemies attack again at once.
 - **Energy:** every landed hit and every KO gives a little energy back, a miniboss a lot (it may fill the energy above 100 % as a reserve). The gains shrink slowly with the run time.
+- **Upgrades:** after every fallen miniboss (once the counterattack of the waiting enemies is over) the run pauses and you pick one of three random upgrades: keys **1 / 2 / 3**, or ← → and any attack button with your own controls (keyboard or gamepad). The same upgrade can be picked again up to its limit. Picked upgrades show as short badges below your energy bar and are listed on the game-over screen. Right after the pick no enemy starts a new attack for a moment.
 
-All survival tuning values (enemy types, difficulty budget, boss times, energy gains, enemy count, attack tokens, back budget, cooldowns, throw grace period, thresholds, turn time) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
+| Upgrade | Badge | Per pick | Limit |
+|---|---|---|---:|
+| Max energy | HP+ | +100 full energy, heals 150 at once | 4 |
+| Energy gain | GAIN | +25 % energy from hits, KOs and bosses | 3 |
+| Damage | DMG | +15 % damage (strikes and throws) | 4 |
+| Revenge | REV | Revenge bar fills 30 % faster | 3 |
+| Special | SPC | Special bar fills 30 % faster (hits and blocks) | 3 |
+| Guard | GRD | Blocked hits cost 50 % less and give +3 energy | 2 |
+| Stability | STB | +30 stability: the first pick holds the Wirbel (strength 160), the second the finisher of the five-hit combo (200); Revenge and hits in the air still knock you down | 2 |
+| Back sense | BCK | Attacks from behind warn 12 frames (0.2 s) longer | 3 |
+
+  The cards come from the run's own seeded random stream: the same seed offers the same cards, and the picks never change which enemies come. Versus, training and replays are not affected.
+
+All survival tuning values (enemy types, difficulty budget, boss times, energy gains, enemy count, attack tokens, back budget, cooldowns, throw grace period, thresholds, turn time, upgrades) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
 
 ### Balance run
 
@@ -109,7 +123,7 @@ All survival tuning values (enemy types, difficulty budget, boss times, energy g
 npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 ```
 
-`--profile` is `defensive`, `aggressive` or `all`. The bot reuses the versus CPU against one enemy at a time and adds turning by double tap and reactions to back warnings. **It is not a human:** use the numbers to compare a tuning change in `src/survival/config.ts` before and after (same seeds, profile and limit), not as absolute survival times. The same seed always gives the same run.
+`--profile` is `defensive`, `aggressive` or `all`. After every boss the bot picks a random upgrade card; `--prefer <id>` (e.g. `--prefer damage`) takes that upgrade whenever it is offered, `--upgrades off` switches the offers off. Compare an upgrade's effect against `--upgrades off` on the same seeds. The bot reuses the versus CPU against one enemy at a time and adds turning by double tap and reactions to back warnings. **It is not a human:** use the numbers to compare a tuning change in `src/survival/config.ts` before and after (same seeds, profile and limit), not as absolute survival times. The same seed always gives the same run.
 
 
 ## Move list

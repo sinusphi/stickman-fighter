@@ -95,8 +95,22 @@ Die Special-Leiste füllt sich mit deinen eigenen Treffern (geblockte geben nur 
 - Der Director füllt die Gegnerplätze aus einem Schwierigkeitsbudget, das mit der Spielzeit wächst, immer mit einer Mischung aus leichten und mittleren Typen und gelegentlich einem schweren. Ein gefallener leichter Gegner wird meist durch einen leichten ersetzt. Dazwischen kommen kleine Wellen mit ein paar Extra-Gegnern.
 - **Miniboss:** Der erste erscheint nach 30 Sekunden Spielzeit. Solange ein Boss lebt, steht der Boss-Timer still und sonst greift niemand an (Duell: alle anderen schauen vom Rand zu). Hat der Boss die Arena verlassen, folgt der nächste nach 45 Sekunden, jeder härter als der vorige. Fällt ein Boss, greifen die wartenden Gegner sofort wieder an.
 - **Energie:** Jeder Treffer und jedes K.O. gibt etwas Energie zurück, ein Miniboss deutlich mehr (über 100 % hinaus als Reserve). Die Gains sinken mit der Spielzeit langsam.
+- **Upgrades:** Nach jedem besiegten Miniboss (sobald der Gegenangriff der wartenden Gegner vorbei ist) hält der Lauf an und du wählst eines von drei zufälligen Upgrades: Tasten **1 / 2 / 3** oder ← → und eine beliebige Angriffstaste mit deiner eigenen Steuerung (Tastatur oder Gamepad). Dasselbe Upgrade kann bis zu seinem Limit mehrfach gewählt werden. Gewählte Upgrades stehen als kurze Kürzel unter deiner Energieleiste und werden im Endbildschirm aufgelistet. Direkt nach der Wahl startet kurz kein Gegner einen neuen Angriff.
 
-Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gains, Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Wurf-Schonfrist, Schwellwerte, Drehzeit) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
+| Upgrade | Kürzel | Pro Wahl | Limit |
+|---|---|---|---:|
+| Max-Energie | HP+ | +100 volle Energie, heilt sofort 150 | 4 |
+| Energie-Gewinn | GEW | +25 % Energie aus Treffern, K.O.s und Bossen | 3 |
+| Schaden | SCH | +15 % Schaden (Schläge, Tritte, Würfe) | 4 |
+| Revenge | REV | Revenge-Leiste füllt sich 30 % schneller | 3 |
+| Special | SPZ | Special-Leiste füllt sich 30 % schneller (Treffer und Blocks) | 3 |
+| Deckung | DCK | Geblockte Treffer kosten 50 % weniger und geben +3 Energie | 2 |
+| Standfest | STF | +30 Standfestigkeit: die erste Wahl hält den Wirbel aus (Stärke 160), die zweite das Finale der Fünfer-Kombo (200); Revenge und Treffer in der Luft werfen dich weiter um | 2 |
+| Rückensinn | RÜK | Angriffe von hinten warnen 12 Frames (0,2 s) länger | 3 |
+
+  Die Karten kommen aus einem eigenen, geseedeten Zufallsstrom des Laufs: Derselbe Seed bietet dieselben Karten an, und die Wahl ändert nie, welche Gegner kommen. Versus, Training und Replays sind nicht betroffen.
+
+Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gains, Gegnerzahl, Angriffs-Tokens, Rücken-Budget, Cooldowns, Wurf-Schonfrist, Schwellwerte, Drehzeit, Upgrades) stehen in `src/survival/config.ts`, Trefferstärke und Knockdown in `src/data/rules.json` (`hitStrength`).
 
 ### Balance-Lauf
 
@@ -106,7 +120,7 @@ Alle Survival-Werte (Gegnertypen, Schwierigkeitsbudget, Boss-Zeiten, Energie-Gai
 npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 ```
 
-`--profile` ist `defensive`, `aggressive` oder `all`. Der Bot nutzt die Versus-CPU gegen jeweils einen Gegner und ergänzt Umdrehen per Doppeltipp und Reaktionen auf Rücken-Warnungen. **Er ist kein Mensch:** Die Zahlen taugen für Vorher/Nachher-Vergleiche einer Tuning-Änderung in `src/survival/config.ts` (gleiche Seeds, gleiches Profil, gleiches Limit), nicht als absolute Überlebenszeiten. Derselbe Seed ergibt immer denselben Lauf.
+`--profile` ist `defensive`, `aggressive` oder `all`. Nach jedem Boss wählt der Bot eine zufällige Upgrade-Karte; `--prefer <id>` (z. B. `--prefer damage`) nimmt dieses Upgrade, wann immer es angeboten wird, `--upgrades off` schaltet die Angebote ab. Die Wirkung eines Upgrades misst man gegen `--upgrades off` auf denselben Seeds. Der Bot nutzt die Versus-CPU gegen jeweils einen Gegner und ergänzt Umdrehen per Doppeltipp und Reaktionen auf Rücken-Warnungen. **Er ist kein Mensch:** Die Zahlen taugen für Vorher/Nachher-Vergleiche einer Tuning-Änderung in `src/survival/config.ts` (gleiche Seeds, gleiches Profil, gleiches Limit), nicht als absolute Überlebenszeiten. Derselbe Seed ergibt immer denselben Lauf.
 
 
 ## Moveliste
