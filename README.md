@@ -93,12 +93,13 @@ Press **F10** (or the Survival button) to start, F10 again returns to versus. Yo
 - Your facing stays fixed: walking backwards does not turn you around. **Double-tap backwards** to turn (a short turn animation; no attacks meanwhile). A single back press can still open a command move.
 - Only a few enemies in front of you attack at the same time, the others lurk at a distance. Enemies behind you rarely attack, and every attack from behind is announced: the attacker flashes and shows a **!**. Attacks into your back cannot be blocked.
 - The finisher of the five-hit combo knocks the opponent down in every mode; in survival, other heavy hits also knock the basic enemy down.
+- **Throws:** only you throw, the enemies do not. Hip and shoulder throw work as in versus and seize the closest enemy in reach, in survival also one that is in hitstun. Every throw knocks down and gives energy like a normal hit; the bars fill as in versus. Heavy enemies can be thrown, minibosses shrug every throw off (the attempt whiffs). While you throw and shortly after, no enemy starts a new attack; an attack that is already running can still break the throw.
 - Enemies come in several types from very light to heavy (own energy, stability, aggression and reaction time). Every hit staggers an enemy; when its poise is full it falls: a very light enemy after about five hits, after about three hits of a combo. Heavier types take more.
 - The director fills the enemy slots from a difficulty budget that grows with the run time, always with a mix of light and medium types and now and then a heavy one. A fallen light enemy is mostly replaced by a light one. Small waves add a few extra enemies in between.
 - **Miniboss:** the first one appears after 30 seconds of run time. While a boss lives, the boss timer stands still and nobody else attacks (duel: all other enemies just watch from the edge). When the boss has left the arena, the next one follows after 45 seconds, each one tougher. When a boss falls, the waiting enemies attack again at once.
 - **Energy:** every landed hit and every KO gives a little energy back, a miniboss a lot (it may fill the energy above 100 % as a reserve). The gains shrink slowly with the run time.
 
-All survival tuning values (enemy types, difficulty budget, boss times, energy gains, enemy count, attack tokens, back budget, cooldowns, thresholds, turn time) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
+All survival tuning values (enemy types, difficulty budget, boss times, energy gains, enemy count, attack tokens, back budget, cooldowns, throw grace period, thresholds, turn time) are in `src/survival/config.ts`; hit strength and knockdown values are in `src/data/rules.json` (`hitStrength`).
 
 
 ## Move list
