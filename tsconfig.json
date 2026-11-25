@@ -6,5 +6,5 @@
     "noEmit": true, "noUnusedLocals": true, "noUnusedParameters": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "tests/unit", "tests/integration", "scripts/cpu-tournament-lib.ts", "vite.config.ts"]
+  "include": ["src", "tests/unit", "tests/integration", "scripts/cpu-tournament-lib.ts", "scripts/survival-balance-lib.ts", "vite.config.ts"]
 }
