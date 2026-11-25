@@ -23341,6 +23341,1546 @@
         "rightKnee": 220,
         "rightFoot": -65
       }
+    },
+    "revenge_combo_0": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
+    },
+    "revenge_combo_1": {
+      "root": [
+        -0.1481,
+        -47.228
+      ],
+      "angles": {
+        "neck": -77.6667,
+        "head": 15.8148,
+        "leftShoulder": 136,
+        "rightShoulder": -154,
+        "leftElbow": 7.3117,
+        "leftHand": -112.0719,
+        "rightElbow": -28.4085,
+        "rightHand": -137.9591,
+        "leftKnee": 55.8735,
+        "leftFoot": 36.5636,
+        "rightKnee": 103.2166,
+        "rightFoot": 10.4914
+      }
+    },
+    "revenge_combo_2": {
+      "root": [
+        -0.5185,
+        -47.1196
+      ],
+      "angles": {
+        "neck": -86.3333,
+        "head": 6.1852,
+        "leftShoulder": 144,
+        "rightShoulder": -146,
+        "leftElbow": 22.5091,
+        "leftHand": -108.3478,
+        "rightElbow": -4.943,
+        "rightHand": -155.5357,
+        "leftKnee": 45.0889,
+        "leftFoot": 47.7129,
+        "rightKnee": 103.0119,
+        "rightFoot": 11.4187
+      }
+    },
+    "revenge_combo_3": {
+      "root": [
+        -1,
+        -47
+      ],
+      "angles": {
+        "neck": -91,
+        "head": 1,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 27,
+        "leftHand": -98,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 39.8057,
+        "leftFoot": 49.0869,
+        "rightKnee": 103.7206,
+        "rightFoot": 10.9755
+      }
+    },
+    "revenge_combo_4": {
+      "root": [
+        -2,
+        -46.848
+      ],
+      "angles": {
+        "neck": -84.7778,
+        "head": -5.2222,
+        "leftShoulder": 144,
+        "rightShoulder": -146,
+        "leftElbow": 11.1481,
+        "leftHand": -62.3901,
+        "rightElbow": 5.7778,
+        "rightHand": -165,
+        "leftKnee": 46.4939,
+        "leftFoot": 29.6357,
+        "rightKnee": 102.9195,
+        "rightFoot": 13.0228
+      }
+    },
+    "revenge_combo_5": {
+      "root": [
+        -3.3333,
+        -46.6796
+      ],
+      "angles": {
+        "neck": -73.2222,
+        "head": -16.7778,
+        "leftShoulder": 136,
+        "rightShoulder": -154,
+        "leftElbow": -25.1481,
+        "leftHand": -11.7506,
+        "rightElbow": 2.2222,
+        "rightHand": -165,
+        "leftKnee": 57.4421,
+        "leftFoot": 3.6239,
+        "rightKnee": 101.6512,
+        "rightFoot": 15.7524
+      }
+    },
+    "revenge_combo_6": {
+      "root": [
+        -4,
+        -41.5961
+      ],
+      "angles": {
+        "neck": -67,
+        "head": -23,
+        "leftShoulder": 128,
+        "rightShoulder": -162,
+        "leftElbow": -41,
+        "leftHand": 14,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 53.8202,
+        "leftFoot": 5.1251,
+        "rightKnee": 87.1121,
+        "rightFoot": 51.1968
+      }
+    },
+    "revenge_combo_7": {
+      "root": [
+        -3.8,
+        -42.7539
+      ],
+      "angles": {
+        "neck": -67,
+        "head": -23,
+        "leftShoulder": 128,
+        "rightShoulder": -162,
+        "leftElbow": -41,
+        "leftHand": 14,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 56.3004,
+        "leftFoot": 5.1251,
+        "rightKnee": 93.8804,
+        "rightFoot": 40.6852
+      }
+    },
+    "revenge_combo_8": {
+      "root": [
+        -3.0458,
+        -44.1322
+      ],
+      "angles": {
+        "neck": -74.7778,
+        "head": -15.2222,
+        "leftShoulder": 136,
+        "rightShoulder": -154,
+        "leftElbow": -15.2963,
+        "leftHand": -24.6296,
+        "rightElbow": 3.7778,
+        "rightHand": -165,
+        "leftKnee": 59.5083,
+        "leftFoot": 5.1251,
+        "rightKnee": 92.5444,
+        "rightFoot": 42.7026
+      }
+    },
+    "revenge_combo_9": {
+      "root": [
+        -1.6525,
+        -45.6284
+      ],
+      "angles": {
+        "neck": -89.2222,
+        "head": -0.7778,
+        "leftShoulder": 144,
+        "rightShoulder": -146,
+        "leftElbow": 39.2963,
+        "leftHand": -96.3704,
+        "rightElbow": 10.2222,
+        "rightHand": -165,
+        "leftKnee": 63.4285,
+        "leftFoot": 5.1251,
+        "rightKnee": 83.1938,
+        "rightFoot": 55.9315
+      }
+    },
+    "revenge_combo_10": {
+      "root": [
+        0,
+        -46.8
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 65,
+        "leftHand": -135,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": 64.9569,
+        "leftFoot": 10.0619,
+        "rightKnee": 77.8888,
+        "rightFoot": 61.2478
+      }
+    },
+    "revenge_combo_11": {
+      "root": [
+        2.4611,
+        -46.55
+      ],
+      "angles": {
+        "neck": -94.6562,
+        "head": 4.6563,
+        "leftShoulder": 142,
+        "rightShoulder": -141.75,
+        "leftElbow": 60.3125,
+        "leftHand": -120,
+        "rightElbow": 15.3125,
+        "rightHand": 175.4688,
+        "leftKnee": 59.5561,
+        "leftFoot": 29.536,
+        "rightKnee": 77.9523,
+        "rightFoot": 59.0847
+      }
+    },
+    "revenge_combo_12": {
+      "root": [
+        5.7406,
+        -46
+      ],
+      "angles": {
+        "neck": -89.5,
+        "head": -0.5,
+        "leftShoulder": 132,
+        "rightShoulder": -145.5,
+        "leftElbow": 38,
+        "leftHand": -87,
+        "rightElbow": 22.5,
+        "rightHand": 132.5,
+        "leftKnee": 58.9005,
+        "leftFoot": 41.4495,
+        "rightKnee": 80.8576,
+        "rightFoot": 52.0289
+      }
+    },
+    "revenge_combo_13": {
+      "root": [
+        8.6498,
+        -45.45
+      ],
+      "angles": {
+        "neck": -84.3437,
+        "head": -5.6562,
+        "leftShoulder": 122,
+        "rightShoulder": -149.25,
+        "leftElbow": 15.6875,
+        "leftHand": -54,
+        "rightElbow": 29.6875,
+        "rightHand": 89.5313,
+        "leftKnee": 60.4669,
+        "leftFoot": 48.1043,
+        "rightKnee": 85.2639,
+        "rightFoot": 43.1157
+      }
+    },
+    "revenge_combo_14": {
+      "root": [
+        10,
+        -45.2
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 11,
+        "leftHand": -39,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 62.1334,
+        "leftFoot": 50.3543,
+        "rightKnee": 88.8626,
+        "rightFoot": 37.2172
+      }
+    },
+    "revenge_combo_15": {
+      "root": [
+        10.1436,
+        -45.2
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 11,
+        "leftHand": -39,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 62.9632,
+        "leftFoot": 50.5044,
+        "rightKnee": 90.4885,
+        "rightFoot": 35.607
+      }
+    },
+    "revenge_combo_16": {
+      "root": [
+        10.2,
+        -45.2
+      ],
+      "angles": {
+        "neck": -82,
+        "head": -8,
+        "leftShoulder": 112,
+        "rightShoulder": -153,
+        "leftElbow": 11,
+        "leftHand": -39,
+        "rightElbow": 35,
+        "rightHand": 70,
+        "leftKnee": 63.271,
+        "leftFoot": 50.5437,
+        "rightKnee": 91.0925,
+        "rightFoot": 34.9888
+      }
+    },
+    "revenge_combo_17": {
+      "root": [
+        7.4828,
+        -45.6247
+      ],
+      "angles": {
+        "neck": -82.3328,
+        "head": -7.6672,
+        "leftShoulder": 118.7333,
+        "rightShoulder": -152.1,
+        "leftElbow": 1.7217,
+        "leftHand": -45.4082,
+        "rightElbow": 29.8958,
+        "rightHand": 90.3254,
+        "leftKnee": 59.034,
+        "leftFoot": 53.9804,
+        "rightKnee": 86.3917,
+        "rightFoot": 37.8197
+      }
+    },
+    "revenge_combo_18": {
+      "root": [
+        2.2767,
+        -46.5382
+      ],
+      "angles": {
+        "neck": -83.2657,
+        "head": -6.7343,
+        "leftShoulder": 125.4667,
+        "rightShoulder": -151.2,
+        "leftElbow": -9.4232,
+        "leftHand": -59.6386,
+        "rightElbow": 21.5027,
+        "rightHand": 132.0953,
+        "leftKnee": 49.503,
+        "leftFoot": 62.5443,
+        "rightKnee": 79.2895,
+        "rightFoot": 39.1944
+      }
+    },
+    "revenge_combo_19": {
+      "root": [
+        -1,
+        -47.4
+      ],
+      "angles": {
+        "neck": -84.7,
+        "head": -5.3,
+        "leftShoulder": 132.2,
+        "rightShoulder": -150.3,
+        "leftElbow": -17.6,
+        "leftHand": -74.2,
+        "rightElbow": 17.5,
+        "rightHand": 166.5,
+        "leftKnee": 38.5421,
+        "leftFoot": 75.5472,
+        "rightKnee": 76.8818,
+        "rightFoot": 35.8837
+      }
+    },
+    "revenge_combo_20": {
+      "root": [
+        -1.7098,
+        -48.0889
+      ],
+      "angles": {
+        "neck": -90.0512,
+        "head": 0.0512,
+        "leftShoulder": 142.1,
+        "rightShoulder": -144.15,
+        "leftElbow": -19.5988,
+        "leftHand": -90.1575,
+        "rightElbow": 25.4512,
+        "rightHand": -178.9703,
+        "leftKnee": -1.7442,
+        "leftFoot": 110.35,
+        "rightKnee": 78.4992,
+        "rightFoot": 30.8297
+      }
+    },
+    "revenge_combo_21": {
+      "root": [
+        -2,
+        -48.6
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": -20,
+        "leftHand": -100,
+        "rightElbow": 35,
+        "rightHand": -175,
+        "leftKnee": -35,
+        "leftFoot": 130,
+        "rightKnee": 80.4005,
+        "rightFoot": 26.2636
+      }
+    },
+    "revenge_combo_22": {
+      "root": [
+        -2,
+        -48.875
+      ],
+      "angles": {
+        "neck": -102.2118,
+        "head": 12.2118,
+        "leftShoulder": 156,
+        "rightShoulder": -134,
+        "leftElbow": -18.7882,
+        "leftHand": -100,
+        "rightElbow": 23.7118,
+        "rightHand": -170,
+        "leftKnee": -30,
+        "leftFoot": 66.4389,
+        "rightKnee": 81.8455,
+        "rightFoot": 23.3339
+      }
+    },
+    "revenge_combo_23": {
+      "root": [
+        -2,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": -20,
+        "leftHand": -100,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": -25,
+        "leftFoot": 11,
+        "rightKnee": 82.5661,
+        "rightFoot": 21.8748
+      }
+    },
+    "revenge_combo_24": {
+      "root": [
+        -2,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": -20,
+        "leftHand": -100,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": -25,
+        "leftFoot": 11,
+        "rightKnee": 82.5661,
+        "rightFoot": 21.8748
+      }
+    },
+    "revenge_combo_25": {
+      "root": [
+        -2,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": -20,
+        "leftHand": -100,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": -25,
+        "leftFoot": 11,
+        "rightKnee": 82.5661,
+        "rightFoot": 21.8748
+      }
+    },
+    "revenge_combo_26": {
+      "root": [
+        -1.931,
+        -48.9481
+      ],
+      "angles": {
+        "neck": -102.9259,
+        "head": 12.9259,
+        "leftShoulder": 157.3333,
+        "rightShoulder": -132.6667,
+        "leftElbow": -19.4074,
+        "leftHand": -100,
+        "rightElbow": 17.0741,
+        "rightHand": -167.5926,
+        "leftKnee": -27.5926,
+        "leftFoot": 41.8519,
+        "rightKnee": 82.3671,
+        "rightFoot": 22.4412
+      }
+    },
+    "revenge_combo_27": {
+      "root": [
+        -1.7508,
+        -48.8519
+      ],
+      "angles": {
+        "neck": -99.0741,
+        "head": 9.0741,
+        "leftShoulder": 154.6667,
+        "rightShoulder": -135.3333,
+        "leftElbow": -20.5926,
+        "leftHand": -100,
+        "rightElbow": 27.9259,
+        "rightHand": -172.4074,
+        "leftKnee": -32.4074,
+        "leftFoot": 99.1481,
+        "rightKnee": 82.0975,
+        "rightFoot": 23.4153
+      }
+    },
+    "revenge_combo_28": {
+      "root": [
+        -1.5,
+        -48.8
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": -20,
+        "leftHand": -100,
+        "rightElbow": 35,
+        "rightHand": -175,
+        "leftKnee": -35,
+        "leftFoot": 130,
+        "rightKnee": 82.2018,
+        "rightFoot": 23.8011
+      }
+    },
+    "revenge_combo_29": {
+      "root": [
+        -1,
+        -48.8
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 5,
+        "leftHand": -110,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": -35,
+        "leftFoot": 130,
+        "rightKnee": 83.0001,
+        "rightFoot": 23.3715
+      }
+    },
+    "revenge_combo_30": {
+      "root": [
+        -0.5568,
+        -48.8519
+      ],
+      "angles": {
+        "neck": -94.1481,
+        "head": 6.4815,
+        "leftShoulder": 154.6667,
+        "rightShoulder": -135.3333,
+        "leftElbow": 24.4204,
+        "leftHand": -90.7081,
+        "rightElbow": -32.3276,
+        "rightHand": -123.0057,
+        "leftKnee": -35.7778,
+        "leftFoot": 98.8889,
+        "rightKnee": 84.0307,
+        "rightFoot": 22.3322
+      }
+    },
+    "revenge_combo_31": {
+      "root": [
+        -0.1673,
+        -48.9481
+      ],
+      "angles": {
+        "neck": -88.8519,
+        "head": 5.5185,
+        "leftShoulder": 157.3333,
+        "rightShoulder": -132.6667,
+        "leftElbow": 39.4324,
+        "leftHand": -53.2985,
+        "rightElbow": -79.9416,
+        "rightHand": -73.7251,
+        "leftKnee": -37.2222,
+        "leftFoot": 41.1111,
+        "rightKnee": 85.2867,
+        "rightFoot": 20.7037
+      }
+    },
+    "revenge_combo_32": {
+      "root": [
+        0,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": 44,
+        "leftHand": -33,
+        "rightElbow": -104,
+        "rightHand": -50,
+        "leftKnee": -38,
+        "leftFoot": 10,
+        "rightKnee": 85.9195,
+        "rightFoot": 19.8137
+      }
+    },
+    "revenge_combo_33": {
+      "root": [
+        0,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": 44,
+        "leftHand": -33,
+        "rightElbow": -104,
+        "rightHand": -50,
+        "leftKnee": -38,
+        "leftFoot": 10,
+        "rightKnee": 85.9195,
+        "rightFoot": 19.8137
+      }
+    },
+    "revenge_combo_34": {
+      "root": [
+        0,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": 160,
+        "rightShoulder": -130,
+        "leftElbow": 44,
+        "leftHand": -33,
+        "rightElbow": -104,
+        "rightHand": -50,
+        "leftKnee": -38,
+        "leftFoot": 10,
+        "rightKnee": 85.9195,
+        "rightFoot": 19.8137
+      }
+    },
+    "revenge_combo_35": {
+      "root": [
+        -0.2593,
+        -48.9051
+      ],
+      "angles": {
+        "neck": -89.6296,
+        "head": 6.2963,
+        "leftShoulder": 156.3333,
+        "rightShoulder": -133.6667,
+        "leftElbow": 47.1283,
+        "leftHand": -33.7493,
+        "rightElbow": -75.9752,
+        "rightHand": -75.6909,
+        "leftKnee": -33.847,
+        "leftFoot": 40.0692,
+        "rightKnee": 84.8594,
+        "rightFoot": 21.3549
+      }
+    },
+    "revenge_combo_36": {
+      "root": [
+        -0.7407,
+        -48.6768
+      ],
+      "angles": {
+        "neck": -96.3704,
+        "head": 8.7037,
+        "leftShoulder": 152.6667,
+        "rightShoulder": -137.3333,
+        "leftElbow": 46.9233,
+        "leftHand": -36.0542,
+        "rightElbow": -25.0614,
+        "rightHand": -126.9373,
+        "leftKnee": -23.0274,
+        "leftFoot": 92.8052,
+        "rightKnee": 82.7572,
+        "rightFoot": 24.487
+      }
+    },
+    "revenge_combo_37": {
+      "root": [
+        -1,
+        -48.4
+      ],
+      "angles": {
+        "neck": -100,
+        "head": 10,
+        "leftShoulder": 149,
+        "rightShoulder": -141,
+        "leftElbow": 40,
+        "leftHand": -40,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": -8,
+        "leftFoot": 112,
+        "rightKnee": 80.9644,
+        "rightFoot": 27.5202
+      }
+    },
+    "revenge_combo_38": {
+      "root": [
+        0.3125,
+        -47.9318
+      ],
+      "angles": {
+        "neck": -92.5625,
+        "head": 2.5625,
+        "leftShoulder": 140.6,
+        "rightShoulder": -145.65,
+        "leftElbow": 7.6431,
+        "leftHand": -58.2987,
+        "rightElbow": 16.6012,
+        "rightHand": 176.2812,
+        "leftKnee": 31.9562,
+        "leftFoot": 66.4998,
+        "rightKnee": 81.0135,
+        "rightFoot": 30.6221
+      }
+    },
+    "revenge_combo_39": {
+      "root": [
+        2,
+        -47.6
+      ],
+      "angles": {
+        "neck": -84.7,
+        "head": -5.3,
+        "leftShoulder": 132.2,
+        "rightShoulder": -150.3,
+        "leftElbow": -17.6,
+        "leftHand": -74.2,
+        "rightElbow": 17.5,
+        "rightHand": 166.5,
+        "leftKnee": 64.8625,
+        "leftFoot": 28.0494,
+        "rightKnee": 82.5703,
+        "rightFoot": 31.5911
+      }
+    },
+    "revenge_combo_40": {
+      "root": [
+        2.6875,
+        -47.7308
+      ],
+      "angles": {
+        "neck": -84.0375,
+        "head": 4.4875,
+        "leftShoulder": 151.25,
+        "rightShoulder": -166.5,
+        "leftElbow": -11.7704,
+        "leftHand": -97.7466,
+        "rightElbow": 1.962,
+        "rightHand": -162.758,
+        "leftKnee": 65.6932,
+        "leftFoot": 28.0413,
+        "rightKnee": 67.7719,
+        "rightFoot": 49.4619
+      }
+    },
+    "revenge_combo_41": {
+      "root": [
+        3,
+        -48
+      ],
+      "angles": {
+        "neck": -83.8,
+        "head": 14.7,
+        "leftShoulder": 170.3,
+        "rightShoulder": 177.3,
+        "leftElbow": 17.301,
+        "leftHand": -140.658,
+        "rightElbow": -29.543,
+        "rightHand": -115.672,
+        "leftKnee": 67.1438,
+        "leftFoot": 25.9764,
+        "rightKnee": 34,
+        "rightFoot": 85
+      }
+    },
+    "revenge_combo_42": {
+      "root": [
+        2,
+        -48.4
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 35,
+        "leftHand": -175,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 69.4322,
+        "leftFoot": 19.2685,
+        "rightKnee": -35,
+        "rightFoot": 130
+      }
+    },
+    "revenge_combo_43": {
+      "root": [
+        2.5,
+        -48.7871
+      ],
+      "angles": {
+        "neck": -102.6319,
+        "head": 12.6319,
+        "leftShoulder": -134,
+        "rightShoulder": 156,
+        "leftElbow": 24.1319,
+        "leftHand": -170,
+        "rightElbow": -18.3681,
+        "rightHand": -100,
+        "leftKnee": 72.3159,
+        "leftFoot": 14.8054,
+        "rightKnee": -30,
+        "rightFoot": 62.5136
+      }
+    },
+    "revenge_combo_44": {
+      "root": [
+        3,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 74.1165,
+        "leftFoot": 12.426,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "revenge_combo_45": {
+      "root": [
+        3,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 74.1165,
+        "leftFoot": 12.426,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "revenge_combo_46": {
+      "root": [
+        3,
+        -49
+      ],
+      "angles": {
+        "neck": -105,
+        "head": 15,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 74.1165,
+        "leftFoot": 12.426,
+        "rightKnee": -25,
+        "rightFoot": 11
+      }
+    },
+    "revenge_combo_47": {
+      "root": [
+        3,
+        -48.9481
+      ],
+      "angles": {
+        "neck": -102.9259,
+        "head": 12.9259,
+        "leftShoulder": -132.6667,
+        "rightShoulder": 157.3333,
+        "leftElbow": 17.0741,
+        "leftHand": -167.5926,
+        "rightElbow": -19.4074,
+        "rightHand": -100,
+        "leftKnee": 73.5869,
+        "leftFoot": 13.4651,
+        "rightKnee": -27.5926,
+        "rightFoot": 41.8519
+      }
+    },
+    "revenge_combo_48": {
+      "root": [
+        3,
+        -48.8519
+      ],
+      "angles": {
+        "neck": -99.0741,
+        "head": 9.0741,
+        "leftShoulder": -135.3333,
+        "rightShoulder": 154.6667,
+        "leftElbow": 27.9259,
+        "leftHand": -172.4074,
+        "rightElbow": -20.5926,
+        "rightHand": -100,
+        "leftKnee": 72.6965,
+        "leftFoot": 15.2085,
+        "rightKnee": -32.4074,
+        "rightFoot": 99.1481
+      }
+    },
+    "revenge_combo_49": {
+      "root": [
+        3,
+        -48.8
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 35,
+        "leftHand": -175,
+        "rightElbow": -20,
+        "rightHand": -100,
+        "leftKnee": 72.2559,
+        "leftFoot": 16.0695,
+        "rightKnee": -35,
+        "rightFoot": 130
+      }
+    },
+    "revenge_combo_50": {
+      "root": [
+        3,
+        -48.8
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": -138,
+        "rightShoulder": 152,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": 5,
+        "rightHand": -110,
+        "leftKnee": 72.2559,
+        "leftFoot": 16.0695,
+        "rightKnee": -35,
+        "rightFoot": 130
+      }
+    },
+    "revenge_combo_51": {
+      "root": [
+        3.2593,
+        -48.8519
+      ],
+      "angles": {
+        "neck": -94.1481,
+        "head": 6.4815,
+        "leftShoulder": -135.3333,
+        "rightShoulder": 154.6667,
+        "leftElbow": -32.3276,
+        "leftHand": -123.0057,
+        "rightElbow": 24.4204,
+        "rightHand": -90.7081,
+        "leftKnee": 72.6283,
+        "leftFoot": 15.9363,
+        "rightKnee": -35.7778,
+        "rightFoot": 98.8889
+      }
+    },
+    "revenge_combo_52": {
+      "root": [
+        3.7407,
+        -48.9481
+      ],
+      "angles": {
+        "neck": -88.8519,
+        "head": 5.5185,
+        "leftShoulder": -132.6667,
+        "rightShoulder": 157.3333,
+        "leftElbow": -79.9416,
+        "leftHand": -73.7251,
+        "rightElbow": 39.4324,
+        "rightHand": -53.2985,
+        "leftKnee": 73.3526,
+        "leftFoot": 15.623,
+        "rightKnee": -37.2222,
+        "rightFoot": 41.1111
+      }
+    },
+    "revenge_combo_53": {
+      "root": [
+        4,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -104,
+        "leftHand": -50,
+        "rightElbow": 44,
+        "rightHand": -33,
+        "leftKnee": 73.7609,
+        "leftFoot": 15.4173,
+        "rightKnee": -38,
+        "rightFoot": 10
+      }
+    },
+    "revenge_combo_54": {
+      "root": [
+        4,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -104,
+        "leftHand": -50,
+        "rightElbow": 44,
+        "rightHand": -33,
+        "leftKnee": 73.7609,
+        "leftFoot": 15.4173,
+        "rightKnee": -38,
+        "rightFoot": 10
+      }
+    },
+    "revenge_combo_55": {
+      "root": [
+        4,
+        -49
+      ],
+      "angles": {
+        "neck": -86,
+        "head": 5,
+        "leftShoulder": -130,
+        "rightShoulder": 160,
+        "leftElbow": -104,
+        "leftHand": -50,
+        "rightElbow": 44,
+        "rightHand": -33,
+        "leftKnee": 73.7609,
+        "leftFoot": 15.4173,
+        "rightKnee": -38,
+        "rightFoot": 10
+      }
+    },
+    "revenge_combo_56": {
+      "root": [
+        3.3671,
+        -48.8556
+      ],
+      "angles": {
+        "neck": -89.6296,
+        "head": 6.2963,
+        "leftShoulder": -133.6667,
+        "rightShoulder": 156.3333,
+        "leftElbow": -73.6296,
+        "leftHand": -78.1059,
+        "rightElbow": 43.7778,
+        "rightHand": -30.5732,
+        "leftKnee": 72.6387,
+        "leftFoot": 16.1633,
+        "rightKnee": -33.9811,
+        "rightFoot": 34.7171
+      }
+    },
+    "revenge_combo_57": {
+      "root": [
+        2.0676,
+        -48.5334
+      ],
+      "angles": {
+        "neck": -96.3704,
+        "head": 8.7037,
+        "leftShoulder": -137.3333,
+        "rightShoulder": 152.6667,
+        "leftElbow": -20.3704,
+        "leftHand": -131.7673,
+        "rightElbow": 40.2222,
+        "rightHand": -29.702,
+        "leftKnee": 70.3849,
+        "leftFoot": 17.5758,
+        "rightKnee": -23.2954,
+        "rightFoot": 82.1009
+      }
+    },
+    "revenge_combo_58": {
+      "root": [
+        1,
+        -48.2
+      ],
+      "angles": {
+        "neck": -100,
+        "head": 10,
+        "leftShoulder": -141,
+        "rightShoulder": 149,
+        "leftElbow": 10,
+        "leftHand": -165,
+        "rightElbow": 40,
+        "rightHand": -40,
+        "leftKnee": 68.2733,
+        "leftFoot": 19.2157,
+        "rightKnee": -8,
+        "rightFoot": 112
+      }
+    },
+    "revenge_combo_59": {
+      "root": [
+        0.462,
+        -47.9162
+      ],
+      "angles": {
+        "neck": -98.9133,
+        "head": 8.9133,
+        "leftShoulder": -174.5,
+        "rightShoulder": -174.5,
+        "leftElbow": 7.9133,
+        "leftHand": -139.4225,
+        "rightElbow": 25.4133,
+        "rightHand": -107.2718,
+        "leftKnee": 66.5417,
+        "leftFoot": 21.3132,
+        "rightKnee": 31.8417,
+        "rightFoot": 96.1674
+      }
+    },
+    "revenge_combo_60": {
+      "root": [
+        0,
+        -47.6
+      ],
+      "angles": {
+        "neck": -97,
+        "head": 7,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 5,
+        "leftHand": -110,
+        "rightElbow": 10,
+        "rightHand": -165,
+        "leftKnee": 64.7387,
+        "leftFoot": 23.7001,
+        "rightKnee": 77.653,
+        "rightFoot": 62.0215
+      }
+    },
+    "revenge_combo_61": {
+      "root": [
+        -0.5,
+        -47.2
+      ],
+      "angles": {
+        "neck": -95.2,
+        "head": 5.2,
+        "leftShoulder": 152,
+        "rightShoulder": -138,
+        "leftElbow": 3.2,
+        "leftHand": -110,
+        "rightElbow": 8.2,
+        "rightHand": -165,
+        "leftKnee": 62.6358,
+        "leftFoot": 26.5422,
+        "rightKnee": 100.5346,
+        "rightFoot": 14.6615
+      }
+    },
+    "revenge_combo_62": {
+      "root": [
+        1.1081,
+        -46.43
+      ],
+      "angles": {
+        "neck": -87.743,
+        "head": -2.257,
+        "leftShoulder": 145.3333,
+        "rightShoulder": -144.6667,
+        "leftElbow": -10.5533,
+        "leftHand": -105.3333,
+        "rightElbow": 7.4097,
+        "rightHand": -165,
+        "leftKnee": 59.5359,
+        "leftFoot": 36.0496,
+        "rightKnee": 100.9079,
+        "rightFoot": 18.0156
+      }
+    },
+    "revenge_combo_63": {
+      "root": [
+        4.1606,
+        -45.5
+      ],
+      "angles": {
+        "neck": -76.6826,
+        "head": -13.3174,
+        "leftShoulder": 138.6667,
+        "rightShoulder": -151.3333,
+        "leftElbow": -39.0211,
+        "leftHand": -96.6667,
+        "rightElbow": 3.016,
+        "rightHand": -165,
+        "leftKnee": 58.1367,
+        "leftFoot": 45.7693,
+        "rightKnee": 106.824,
+        "rightFoot": 13.5432
+      }
+    },
+    "revenge_combo_64": {
+      "root": [
+        6,
+        -44.9835
+      ],
+      "angles": {
+        "neck": -71,
+        "head": -19,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -51,
+        "leftHand": -92,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 58.1775,
+        "leftFoot": 50.0806,
+        "rightKnee": 113.2042,
+        "rightFoot": 5.1251
+      }
+    },
+    "revenge_combo_65": {
+      "root": [
+        6.2867,
+        -44.844
+      ],
+      "angles": {
+        "neck": -71,
+        "head": -19,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -51,
+        "leftHand": -92,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 58.0574,
+        "leftFoot": 51.002,
+        "rightKnee": 113.57,
+        "rightFoot": 5.1251
+      }
+    },
+    "revenge_combo_66": {
+      "root": [
+        6.4,
+        -44.7882
+      ],
+      "angles": {
+        "neck": -71,
+        "head": -19,
+        "leftShoulder": 132,
+        "rightShoulder": -158,
+        "leftElbow": -51,
+        "leftHand": -92,
+        "rightElbow": 4,
+        "rightHand": -165,
+        "leftKnee": 58.0122,
+        "leftFoot": 51.3627,
+        "rightKnee": 113.7148,
+        "rightFoot": 5.1251
+      }
+    },
+    "revenge_combo_67": {
+      "root": [
+        6.0673,
+        -44.9509
+      ],
+      "angles": {
+        "neck": -70.0148,
+        "head": -19.9852,
+        "leftShoulder": 130.3333,
+        "rightShoulder": -159.6667,
+        "leftElbow": -48.6126,
+        "leftHand": -90.9013,
+        "rightElbow": 4.6815,
+        "rightHand": -165,
+        "leftKnee": 58.1486,
+        "leftFoot": 50.2981,
+        "rightKnee": 113.29,
+        "rightFoot": 5.1251
+      }
+    },
+    "revenge_combo_68": {
+      "root": [
+        5.3125,
+        -45.1658
+      ],
+      "angles": {
+        "neck": -68.1852,
+        "head": -21.8148,
+        "leftShoulder": 128.6667,
+        "rightShoulder": -161.3333,
+        "leftElbow": -45.0697,
+        "leftHand": -89.1359,
+        "rightElbow": 4.5185,
+        "rightHand": -165,
+        "leftKnee": 58.079,
+        "leftFoot": 48.6148,
+        "rightKnee": 110.1027,
+        "rightFoot": 9.7217
+      }
+    },
+    "revenge_combo_69": {
+      "root": [
+        4.5,
+        -45.4
+      ],
+      "angles": {
+        "neck": -67.2,
+        "head": -22.8,
+        "leftShoulder": 127,
+        "rightShoulder": -163,
+        "leftElbow": -40.8,
+        "leftHand": -89,
+        "rightElbow": 5.2,
+        "rightHand": -165,
+        "leftKnee": 58.0956,
+        "leftFoot": 46.6492,
+        "rightKnee": 107.6855,
+        "rightFoot": 12.6297
+      }
+    },
+    "revenge_combo_70": {
+      "root": [
+        3.6725,
+        -45.7619
+      ],
+      "angles": {
+        "neck": -70.0519,
+        "head": -19.9481,
+        "leftShoulder": 129.6667,
+        "rightShoulder": -160.3333,
+        "leftElbow": -38.1464,
+        "leftHand": -90.4929,
+        "rightElbow": 5.3852,
+        "rightHand": -165,
+        "leftKnee": 58.606,
+        "leftFoot": 43.741,
+        "rightKnee": 106.6678,
+        "rightFoot": 12.5828
+      }
+    },
+    "revenge_combo_71": {
+      "root": [
+        2.7693,
+        -46.2336
+      ],
+      "angles": {
+        "neck": -75.3481,
+        "head": -14.6519,
+        "leftShoulder": 132.3333,
+        "rightShoulder": -157.6667,
+        "leftElbow": -33.1529,
+        "leftHand": -92.2453,
+        "rightElbow": 8.0148,
+        "rightHand": -165,
+        "leftKnee": 59.6153,
+        "leftFoot": 39.7417,
+        "rightKnee": 106.5528,
+        "rightFoot": 10.4751
+      }
+    },
+    "revenge_combo_72": {
+      "root": [
+        2,
+        -46.6
+      ],
+      "angles": {
+        "neck": -78.2,
+        "head": -11.8,
+        "leftShoulder": 135,
+        "rightShoulder": -155,
+        "leftElbow": -29.8,
+        "leftHand": -94.5,
+        "rightElbow": 8.2,
+        "rightHand": -165,
+        "leftKnee": 60.5657,
+        "leftFoot": 36.1784,
+        "rightKnee": 106.4205,
+        "rightFoot": 8.7849
+      }
+    },
+    "revenge_combo_73": {
+      "root": [
+        1.3317,
+        -46.8417
+      ],
+      "angles": {
+        "neck": -77.3875,
+        "head": -6.675,
+        "leftShoulder": 133.25,
+        "rightShoulder": -156.75,
+        "leftElbow": -21.8685,
+        "leftHand": -98.7771,
+        "rightElbow": 1.7388,
+        "rightHand": -159.2961,
+        "leftKnee": 61.2673,
+        "leftFoot": 33.3213,
+        "rightKnee": 105.5076,
+        "rightFoot": 8.9771
+      }
+    },
+    "revenge_combo_74": {
+      "root": [
+        0.6837,
+        -47.0586
+      ],
+      "angles": {
+        "neck": -75.6,
+        "head": 4.6,
+        "leftShoulder": 131.5,
+        "rightShoulder": -158.5,
+        "leftElbow": -11.5533,
+        "leftHand": -104.8236,
+        "rightElbow": -14.5757,
+        "rightHand": -146.7474,
+        "leftKnee": 62.0356,
+        "leftFoot": 30.3876,
+        "rightKnee": 104.5355,
+        "rightFoot": 9.3506
+      }
+    },
+    "revenge_combo_75": {
+      "root": [
+        0.1939,
+        -47.2151
+      ],
+      "angles": {
+        "neck": -73.8125,
+        "head": 15.875,
+        "leftShoulder": 129.75,
+        "rightShoulder": -160.25,
+        "leftElbow": -2.2063,
+        "leftHand": -110.2235,
+        "rightElbow": -30.8903,
+        "rightHand": -134.1987,
+        "leftKnee": 62.7076,
+        "leftFoot": 27.997,
+        "rightKnee": 103.7949,
+        "rightFoot": 9.6495
+      }
+    },
+    "revenge_combo_76": {
+      "root": [
+        0,
+        -47.27516310470919
+      ],
+      "angles": {
+        "neck": -73,
+        "head": 21,
+        "leftShoulder": 128,
+        "rightShoulder": 198,
+        "leftElbow": 2.820835487672504,
+        "leftHand": -112.56037891350913,
+        "rightElbow": -37.351420684408964,
+        "rightHand": -128.49473394751124,
+        "leftKnee": 63,
+        "leftFoot": 27,
+        "rightKnee": 103.5,
+        "rightFoot": 9.772430388406434
+      }
     }
   },
   "animations": {
@@ -32976,6 +34516,521 @@
           "frame": 26,
           "pose": "throw_back_victim_26",
           "easing": "linear"
+        }
+      ]
+    },
+    "revenge_combo": {
+      "durationFrames": 77,
+      "loop": false,
+      "grounded": false,
+      "clampFloor": true,
+      "interpolation": "angles",
+      "keyframes": [
+        {
+          "frame": 0,
+          "pose": "revenge_combo_0",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 1,
+          "pose": "revenge_combo_1",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 2,
+          "pose": "revenge_combo_2",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 3,
+          "pose": "revenge_combo_3",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 4,
+          "pose": "revenge_combo_4",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 5,
+          "pose": "revenge_combo_5",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 6,
+          "pose": "revenge_combo_6",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 7,
+          "pose": "revenge_combo_7",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 8,
+          "pose": "revenge_combo_8",
+          "easing": "linear",
+          "turn": 0.05
+        },
+        {
+          "frame": 9,
+          "pose": "revenge_combo_9",
+          "easing": "linear",
+          "turn": 0.1
+        },
+        {
+          "frame": 10,
+          "pose": "revenge_combo_10",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 11,
+          "pose": "revenge_combo_11",
+          "easing": "linear",
+          "turn": 0.3625
+        },
+        {
+          "frame": 12,
+          "pose": "revenge_combo_12",
+          "easing": "linear",
+          "turn": 0.575
+        },
+        {
+          "frame": 13,
+          "pose": "revenge_combo_13",
+          "easing": "linear",
+          "turn": 0.7875
+        },
+        {
+          "frame": 14,
+          "pose": "revenge_combo_14",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 15,
+          "pose": "revenge_combo_15",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 16,
+          "pose": "revenge_combo_16",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 17,
+          "pose": "revenge_combo_17",
+          "easing": "linear",
+          "turn": 0.816667
+        },
+        {
+          "frame": 18,
+          "pose": "revenge_combo_18",
+          "easing": "linear",
+          "turn": 0.633333
+        },
+        {
+          "frame": 19,
+          "pose": "revenge_combo_19",
+          "easing": "linear",
+          "turn": 0.45
+        },
+        {
+          "frame": 20,
+          "pose": "revenge_combo_20",
+          "easing": "linear",
+          "turn": 0.225
+        },
+        {
+          "frame": 21,
+          "pose": "revenge_combo_21",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 22,
+          "pose": "revenge_combo_22",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 23,
+          "pose": "revenge_combo_23",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 24,
+          "pose": "revenge_combo_24",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 25,
+          "pose": "revenge_combo_25",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 26,
+          "pose": "revenge_combo_26",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 27,
+          "pose": "revenge_combo_27",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 28,
+          "pose": "revenge_combo_28",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 29,
+          "pose": "revenge_combo_29",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 30,
+          "pose": "revenge_combo_30",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 31,
+          "pose": "revenge_combo_31",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 32,
+          "pose": "revenge_combo_32",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 33,
+          "pose": "revenge_combo_33",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 34,
+          "pose": "revenge_combo_34",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 35,
+          "pose": "revenge_combo_35",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 36,
+          "pose": "revenge_combo_36",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 37,
+          "pose": "revenge_combo_37",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 38,
+          "pose": "revenge_combo_38",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 39,
+          "pose": "revenge_combo_39",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 40,
+          "pose": "revenge_combo_40",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 41,
+          "pose": "revenge_combo_41",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 42,
+          "pose": "revenge_combo_42",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 43,
+          "pose": "revenge_combo_43",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 44,
+          "pose": "revenge_combo_44",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 45,
+          "pose": "revenge_combo_45",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 46,
+          "pose": "revenge_combo_46",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 47,
+          "pose": "revenge_combo_47",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 48,
+          "pose": "revenge_combo_48",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 49,
+          "pose": "revenge_combo_49",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 50,
+          "pose": "revenge_combo_50",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 51,
+          "pose": "revenge_combo_51",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 52,
+          "pose": "revenge_combo_52",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 53,
+          "pose": "revenge_combo_53",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 54,
+          "pose": "revenge_combo_54",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 55,
+          "pose": "revenge_combo_55",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 56,
+          "pose": "revenge_combo_56",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 57,
+          "pose": "revenge_combo_57",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 58,
+          "pose": "revenge_combo_58",
+          "easing": "linear",
+          "turn": 0
+        },
+        {
+          "frame": 59,
+          "pose": "revenge_combo_59",
+          "easing": "linear",
+          "turn": 0.05
+        },
+        {
+          "frame": 60,
+          "pose": "revenge_combo_60",
+          "easing": "linear",
+          "turn": 0.1
+        },
+        {
+          "frame": 61,
+          "pose": "revenge_combo_61",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 62,
+          "pose": "revenge_combo_62",
+          "easing": "linear",
+          "turn": 0.433333
+        },
+        {
+          "frame": 63,
+          "pose": "revenge_combo_63",
+          "easing": "linear",
+          "turn": 0.716667
+        },
+        {
+          "frame": 64,
+          "pose": "revenge_combo_64",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 65,
+          "pose": "revenge_combo_65",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 66,
+          "pose": "revenge_combo_66",
+          "easing": "linear",
+          "turn": 1
+        },
+        {
+          "frame": 67,
+          "pose": "revenge_combo_67",
+          "easing": "linear",
+          "turn": 0.95
+        },
+        {
+          "frame": 68,
+          "pose": "revenge_combo_68",
+          "easing": "linear",
+          "turn": 0.9
+        },
+        {
+          "frame": 69,
+          "pose": "revenge_combo_69",
+          "easing": "linear",
+          "turn": 0.85
+        },
+        {
+          "frame": 70,
+          "pose": "revenge_combo_70",
+          "easing": "linear",
+          "turn": 0.666667
+        },
+        {
+          "frame": 71,
+          "pose": "revenge_combo_71",
+          "easing": "linear",
+          "turn": 0.483333
+        },
+        {
+          "frame": 72,
+          "pose": "revenge_combo_72",
+          "easing": "linear",
+          "turn": 0.3
+        },
+        {
+          "frame": 73,
+          "pose": "revenge_combo_73",
+          "easing": "linear",
+          "turn": 0.225
+        },
+        {
+          "frame": 74,
+          "pose": "revenge_combo_74",
+          "easing": "linear",
+          "turn": 0.15
+        },
+        {
+          "frame": 75,
+          "pose": "revenge_combo_75",
+          "easing": "linear",
+          "turn": 0.075
+        },
+        {
+          "frame": 76,
+          "pose": "revenge_combo_76",
+          "easing": "linear",
+          "turn": 0
+        }
+      ],
+      "trails": [
+        {
+          "joint": "leftHand",
+          "fromFrame": 2,
+          "toFrame": 9,
+          "historyFrames": 3
+        },
+        {
+          "joint": "leftHand",
+          "fromFrame": 10,
+          "toFrame": 18,
+          "historyFrames": 3
+        },
+        {
+          "joint": "leftFoot",
+          "fromFrame": 19,
+          "toFrame": 27,
+          "historyFrames": 3
+        },
+        {
+          "joint": "leftFoot",
+          "fromFrame": 28,
+          "toFrame": 36,
+          "historyFrames": 3
+        },
+        {
+          "joint": "rightFoot",
+          "fromFrame": 40,
+          "toFrame": 48,
+          "historyFrames": 3
+        },
+        {
+          "joint": "rightFoot",
+          "fromFrame": 49,
+          "toFrame": 57,
+          "historyFrames": 3
+        },
+        {
+          "joint": "leftHand",
+          "fromFrame": 60,
+          "toFrame": 68,
+          "historyFrames": 3
         }
       ]
     }
