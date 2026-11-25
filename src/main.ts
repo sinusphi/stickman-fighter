@@ -10,7 +10,7 @@ import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
-import { newContactSounds, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
+import { describeStrike, newContactSounds, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
 import { newResourceFills } from './platform/resource-ready';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
@@ -134,9 +134,22 @@ async function main(): Promise<void> {
       const swingView = index === 0 ? view.game : { ...view.game, fighters: [old.fighters[0], view.game.fighters[1]] as GameState['fighters'] };
       for (const swing of newSwingSounds(swingView, old)) audio.playSwing(swing);
       for (const contact of newContactSounds(view.game, old)) audio.playContact(contact);
+      const throws = newThrowSounds(view.game, old);
+      for (const grab of throws.grabs) audio.playGrab(grab);
+      for (const flight of throws.flights) audio.playSwing(flight);
+      for (const slam of throws.slams) audio.playContact(slam);
       // The player is fighter 0 of every view: its full-bar start (Revenge, Wirbel) sounds once.
       if (index === 0) for (const start of newResourceStarts(swingView, old)) if (start.fighter === 0) audio.playResourceStart(start.resource, start.pan);
     });
+    // A miniboss shook off a throw: muted sparks and the dull blocked-throw thud.
+    const shrug = session.state.shrug;
+    if (shrug.count !== before.shrug.count) {
+      const boss = session.state.enemies.find(e => e.uid === shrug.uid), p = session.state.player;
+      if (boss) {
+        effects.spawnShrug(boss.fighter.x, Math.sign(boss.fighter.x - p.x) || p.facing);
+        audio.playBlock(describeStrike(p.moveId ?? 'throw_forward', undefined, boss.fighter.x));
+      }
+    }
     if (!wasOver && session.state.over && session.state.survivedFrames > survivalBest) {
       survivalBest = session.state.survivedFrames; saveBest(storage, survivalBest);
     }
@@ -317,11 +330,14 @@ async function main(): Promise<void> {
     const s = survival?.state, data = canvas.dataset;
     if (!s) { delete data.survival; return; }
     // Nearest enemy in front and behind (px, -1 = none), landed hits of the player's
-    // current attack (most on one enemy) and the number of enemies it struck.
+    // current attack (most on one enemy), the number of enemies it struck, enemies
+    // held in a throw and shrugged-off throw attempts.
     const distances = (ahead: boolean) => s.enemies.filter(e => !e.dead && !e.entering && inFront(s.player, e.fighter) === ahead).map(e => Math.round(Math.abs(e.fighter.x - s.player.x) / rules.unit));
     const nearest = (list: number[]) => list.length ? Math.min(...list) : -1;
     const hits = Math.max(0, ...s.enemies.map(e => e.playerHits.length)), struck = s.enemies.filter(e => e.playerHits.length > 0).length;
-    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${nearest(distances(true))}|${hits}|${nearest(distances(false))}|${struck}`;
+    // Throws: enemies held right now and throw attempts a miniboss shrugged off.
+    const thrown = s.enemies.filter(e => e.fighter.state === 'Thrown').length;
+    data.survival = `${s.player.facing}|${s.enemies.filter(e => !e.dead).length}|${s.enemies.filter(e => e.warn > 0).length}|${s.over ? 1 : 0}|${s.turns}|${s.enemies.find(e => e.boss > 0 && !e.dead)?.boss ?? 0}|${s.flow.bosses}|${s.energy.total}|${nearest(distances(true))}|${hits}|${nearest(distances(false))}|${struck}|${thrown}|${s.shrug.count}`;
   }
   const hudElement = document.getElementById('hud')!;
   /** Bottom of the DOM HUD in logical canvas pixels, so canvas overlays (boss bar) stay clear of it. */

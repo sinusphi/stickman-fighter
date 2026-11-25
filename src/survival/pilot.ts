@@ -43,6 +43,8 @@ export class EnemyPilot {
     const f = enemy.fighter, frame = state.frame, director = this.director;
     if (state.over || f.state === 'KO') return neutralInput();
     if (enemy.entering) return directionInput(6, f.facing);
+    // Player throw: a prepared attack that has not started yet is dropped, the enemy only waits and guards.
+    if (director.throwPause(frame) && f.state !== 'Attack') { this.strike.clear(); return this.release(this.hold(state, enemy)); }
     // A prepared strike is dropped when the enemy gets hit before it starts.
     if (this.strike.busy && !READY.includes(f.state) && f.state !== 'Attack') this.strike.clear();
     if (this.strike.busy) return this.release(this.strike.next(f));

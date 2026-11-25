@@ -202,6 +202,13 @@ export const SURVIVAL = {
     promoteFrontAtMost: 1,
     /** After moving up (threshold or player turn) an enemy waits this long before it may attack. */
     promotionGraceFrames: 50,
+    /**
+     * Player throws: while the player executes a throw no enemy may start an
+     * attack, and for this many frames after the throw (the player is free
+     * again then and must get a fair chance to react). Attacks that were
+     * already running when the grab happened go on.
+     */
+    throwGraceFrames: 16,
   },
 
   lurk: {

@@ -20,6 +20,12 @@ import { alive, inFront, type Enemy, type SurvivalState } from './state';
  *    then). Moving up starts a grace period before they may strike.
  *  - Every token starts with a small random delay; identical moves of two
  *    enemies and attack starts closer than `attackGapFrames` are vetoed.
+ *  - Player throws: from the grab until `throwGraceFrames` after the throw
+ *    every new attack start is vetoed. The player is locked into the throw
+ *    animation and cannot guard; without the pause a crowd would punish every
+ *    throw. Attacks already running at the grab go on (their startup was
+ *    visible before the throw was chosen), tokens and warnings stay, so the
+ *    pressure resumes right after the grace period.
  *
  * States (`mode`):
  *  - normal:  tokens, back throttling and mixes as described above.
@@ -64,6 +70,16 @@ interface Slot {
   shuffleUntil: number;
 }
 const READY_STATES = ['Idle', 'Walk', 'Crouch', 'CrouchWalk'];
+/** The player's throw attempt before its grab frame. */
+function throwAttempt(state: SurvivalState): boolean {
+  const p = state.player, move = p.state === 'Attack' && p.moveId ? MOVES[p.moveId] : undefined;
+  return move?.throw?.phase === 'attempt' && p.moveFrame < move.startup;
+}
+/** The player holds an enemy (execute move of a throw) or a victim is still in the air. */
+function playerThrowing(state: SurvivalState): boolean {
+  const p = state.player;
+  return (p.state === 'Attack' && !!p.moveId && MOVES[p.moveId]?.throw?.phase === 'execute') || state.enemies.some(e => e.fighter.state === 'Thrown');
+}
 /** Frames an allowed attack may take from the decision to its first move frame (input sequence plus buffer). */
 const ATTACK_START_FRAMES = 8;
 
@@ -74,18 +90,23 @@ export class Director {
   mode: DirectorMode = 'normal';
   private backReadyAt = 0;
   private lastAttack = -Infinity;
+  /** No new attack start before this frame (player throw plus grace). */
+  private throwUntil = -Infinity;
   private locks = new Map<string, { uid: number; frame: number }>();
   private rng: Rng;
   constructor(seed: number, private config = SURVIVAL) { this.rng = new Rng(seed); }
 
   reset(seed: number): void {
     this.rng = new Rng(seed); this.slots.clear(); this.locks.clear();
-    this.nextFull = 0; this.lastFacing = null; this.mode = 'normal'; this.backReadyAt = 0; this.lastAttack = -Infinity;
+    this.nextFull = 0; this.lastFacing = null; this.mode = 'normal'; this.backReadyAt = 0; this.lastAttack = -Infinity; this.throwUntil = -Infinity;
   }
 
   /** Call once per frame before the enemies decide. */
   update(state: SurvivalState): void {
     const frame = state.frame, p = state.player;
+    if (playerThrowing(state)) this.throwUntil = frame + this.config.director.throwGraceFrames;
+    // The few startup frames of an attempt pause as well: an attack allowed now would start during the throw.
+    else if (throwAttempt(state)) this.throwUntil = Math.max(this.throwUntil, frame + 1);
     const turned = this.lastFacing !== null && this.lastFacing !== p.facing;
     const mode = this.modeOf(state);
     if (mode !== this.mode) this.enter(mode, state);
@@ -215,6 +236,8 @@ export class Director {
   token(uid: number): Side | null { return this.slots.get(uid)?.token ?? null; }
   side(uid: number): Side | null { return this.slots.get(uid)?.side ?? null; }
   promoted(uid: number): boolean { return this.slots.get(uid)?.promoted ?? false; }
+  /** A player throw (or its grace period) holds every new attack back. */
+  throwPause(frame: number): boolean { return frame < this.throwUntil; }
   /** Token held and start delay over. */
   mayAttack(uid: number, frame: number): boolean {
     const slot = this.slots.get(uid);
@@ -243,13 +266,14 @@ export class Director {
   }
   /**
    * Veto for the attack an enemy wants to start now. Allows it only with a
-   * token after its start delay, never a throw, not the move another enemy
+   * token after its start delay, never a throw, not during a player throw
+   * and its grace period, not the move another enemy
    * started within `sameMoveLockFrames`, and not within `attackGapFrames` of
    * any other enemy's attack start. An allowed attack is counted.
    */
   allowMove(uid: number, moveId: string, frame: number): boolean {
     const d = this.config.director, slot = this.slots.get(uid);
-    if (!slot || !this.mayAttack(uid, frame) || MOVES[moveId]?.throw) return false;
+    if (!slot || !this.mayAttack(uid, frame) || MOVES[moveId]?.throw || this.throwPause(frame)) return false;
     if (frame - this.lastAttack < d.attackGapFrames) return false;
     const lock = this.locks.get(moveId);
     if (lock && lock.uid !== uid && frame - lock.frame < d.sameMoveLockFrames) return false;

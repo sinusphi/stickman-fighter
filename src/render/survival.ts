@@ -6,6 +6,7 @@ import type { Palette } from '../platform/theme';
 import { t } from '../platform/i18n';
 import { formatSurvival, type Enemy, type SurvivalState } from '../survival/state';
 import { drawFigure, drawTrail } from './figure';
+import { thrownOffset } from './canvas';
 import { fighterDepths } from './depth';
 import { MIRROR_YAW_ANIMATIONS, animationId, animationTrails, animations, fighterPose, isKneeTrail, sampleHeadYaw, sampleRotationTrail, sampleTrails, sampleTurn } from './skeleton';
 import type { HitEffects } from './effects';
@@ -85,10 +86,13 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
     .sort((x, y) => Number(!x.enemy!.dead) - Number(!y.enemy!.dead));
   const figures = [...crowd, player].map(figure => {
     const { f, old, enemy, level } = figure;
-    const [x, y] = lerp(f, old);
+    let [x, y] = lerp(f, old);
+    // A thrown enemy hangs on the player's hands: sub-frame position from the throw table (as in versus).
+    const held = enemy ? thrownOffset(enemy.pair, f, a) : null;
+    if (held) { x = lerp(player.f, player.old)[0] + held[0] / U; y = ground + held[1] / U; }
     const koTime = f.state === 'KO' ? Math.min(animations.KO.durationFrames - 1, f.stateFrame + a) : undefined;
     let pose = fighterPose(f, old, alpha, frozen, level, koTime);
-    let facing = f.state === 'Attack' ? f.attackFacing : f.facing, yaw: number | undefined;
+    let facing = f.state === 'Attack' || f.state === 'Thrown' ? f.attackFacing : f.facing, yaw: number | undefined;
     if (!enemy && state.turn) {
       // Turn: the limbs close in on the body axis towards the front view (head
       // stays round, both eyes show), then open up on the other side.
@@ -142,6 +146,7 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
   if (canvas.dataset.edge !== edgeData) canvas.dataset.edge = edgeData;
   const clear = drawBossBar(ctx, state, palette, layout?.hudBottom ?? 0, canvas);
   drawEnergyGain(ctx, state, lerp(player.f, player.old)[0], palette);
+  drawShrug(ctx, state, palette);
 
   // Banners keep below the HUD and the boss bar (their top edge sits about 30 px above the first line).
   const shift = Math.max(0, clear + 8 - (BANNER_Y - 30));
@@ -199,6 +204,20 @@ function drawEnergyGain(ctx: CanvasRenderingContext2D, state: SurvivalState, x: 
   ctx.font = state.energy.boss ? 'bold 20px Arial' : 'bold 13px Arial'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
   ctx.strokeStyle = palette.arena; ctx.lineWidth = 4; ctx.fillStyle = palette.special;
   ctx.strokeText(`+${state.energy.last}`, x, ground - 150 - rise); ctx.fillText(`+${state.energy.last}`, x, ground - 150 - rise);
+  ctx.restore();
+}
+
+/** "Shrugged off" above a miniboss that just shook off a throw attempt. */
+function drawShrug(ctx: CanvasRenderingContext2D, state: SurvivalState, palette: Palette): void {
+  const age = state.frame - state.shrug.frame, life = 40;
+  const boss = state.enemies.find(e => e.uid === state.shrug.uid);
+  if (age < 0 || age > life || !boss) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, (life - age) / 15);
+  ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = palette.arena; ctx.lineWidth = 4; ctx.fillStyle = palette.muted;
+  const text = t('survival.shrug'), x = boss.fighter.x / U, y = ground - 165 - age * .4;
+  ctx.strokeText(text, x, y); ctx.fillText(text, x, y);
   ctx.restore();
 }
 

@@ -148,6 +148,7 @@ export class HitEffects {
       const before = previous.find(v => v.uid === uid)?.game;
       if (!before) continue;
       this.observeContacts(game, before);
+      this.observeThrows(game, before);
       if (!playerSeen) { this.observeFighter(game.fighters[0], before.fighters[0]); playerSeen = true; }
       this.observeFighter(game.fighters[1], before.fighters[1], false);
     }
@@ -156,6 +157,18 @@ export class HitEffects {
       if (this.comboCount[attacker] === 0 || this.comboEnding[attacker] >= 0) continue;
       if (!views.some(({ game }) => stunned(game.fighters[1 - attacker]))) this.comboEnding[attacker] = 0;
     }
+  }
+
+  /**
+   * Survival: a miniboss shrugged a throw off. Muted block sparks at its chest
+   * and a quick grey ring, no shake. `x` in subpixels, `side` points from the
+   * player to the boss.
+   */
+  spawnShrug(x: number, side: number): void {
+    if (!this.settings.effects) return;
+    const sx = screenX(x) - side * 10, sy = screenY(0) - BODY_CENTRE;
+    this.spawnSparks({ x: sx, y: sy, side, weight: 0.4, level: 'MID', kind: 'punch', blocked: true, damage: 0 });
+    this.spawn(ParticleKind.Ring, sx, sy, 0, 0, 14, 14, Tint.Muted);
   }
 
   // -------------------------------------------------------- bar full -------

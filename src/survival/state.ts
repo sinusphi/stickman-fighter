@@ -6,6 +6,7 @@ import { createFighter, createRound } from '../simulation/factory';
 import { moveFighter, transition } from '../simulation/movement';
 import { pushbox, resolvePushboxes } from '../simulation/collision';
 import { advanceAttack, resolveCombat, startAttack, standingHoldEligible } from '../simulation/combat';
+import { advanceThrows, attemptAtGrab, inGrabRange, isThrowable, resolveThrows } from '../simulation/throws';
 import type { Facing, Fighter, GameState } from '../simulation/types';
 import { SURVIVAL, type EnemyTier, type SurvivalConfig } from './config';
 import { bossSpec, gainFactor, pickType, typeSpec, type EnemySpec } from './spawner';
@@ -21,7 +22,13 @@ import { bossSpec, gainFactor, pickType, typeSpec, type EnemySpec } from './spaw
  * integer subpixels, own seeded random stream, no clock.
  *
  * Player facing is fixed; only a turn (double tap backwards) changes it.
- * Enemies always face the player. Throws are not part of survival yet.
+ * Enemies always face the player.
+ *
+ * Throws: only the player throws (the enemies' THROW button is masked, the
+ * director never allows a throw move). The versus throw code runs per pair:
+ * the closest enemy in grab range decides. Enemies in hitstun can be grabbed
+ * as well (survival only), a miniboss shrugs every throw off (the attempt
+ * whiffs, `shrug` records it for the presentation).
  */
 
 export interface Enemy {
@@ -77,6 +84,8 @@ export interface SpawnFlow {
 /** Energy rewards: total so far and the latest gain (floating "+N"). */
 export interface EnergyLog { total: number; lastFrame: number; last: number; boss: boolean }
 export interface TurnState { frame: number; from: Facing }
+/** Throw attempts a miniboss shrugged off: running count, frame and enemy of the latest. */
+export interface ShrugLog { count: number; frame: number; uid: number }
 export interface SurvivalState {
   frame: number;
   combatFrame: number;
@@ -100,6 +109,7 @@ export interface SurvivalState {
   inputConfig: GameState['inputConfig'];
   /** Enemy the player hit last (HUD focus). */
   focus: number | null;
+  shrug: ShrugLog;
   config: SurvivalConfig;
 }
 
@@ -107,6 +117,11 @@ const U = rules.unit;
 const THROW_BIT = buttonBit('THROW');
 /** States in which the player may turn: standing free or walking. */
 export const TURNABLE_STATES: readonly Fighter['state'][] = ['Idle', 'Walk'];
+
+/** Survival grab rule: everything a versus throw may seize, plus enemies in hitstun on the ground. */
+export function survivalGrabbable(f: Fighter): boolean {
+  return isThrowable(f) || (f.y === 0 && f.state === 'Hitstun');
+}
 
 /** Mulberry32 on the state's seed; the only randomness of the simulation. */
 export function random(state: { seed: number }): number {
@@ -128,7 +143,7 @@ export function createSurvival(seed = 1, inputConfig?: GameState['inputConfig'],
     spawnTimer: config.enemies.firstSpawnFrames, survivedFrames: 0, kills: 0, over: false, hitstop: 0,
     turn: null, tap: { left: false, right: false, lastBack: -Infinity }, turns: 0, playerAttackId: player.attackId,
     inputConfig: structuredClone(inputConfig ?? { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }),
-    focus: null, config,
+    focus: null, shrug: { count: 0, frame: -Infinity, uid: 0 }, config,
   };
 }
 
@@ -254,6 +269,8 @@ function settle(state: SurvivalState): void {
     f.input.pending = null;
     advanceAttack(f); moveFighter(f, true);
   }
+  // A throw in progress still lands, without damage once the run is over (as in versus).
+  for (const e of state.enemies) advanceThrows(e.pair, false);
 }
 
 function insideArena(f: Fighter): boolean {
@@ -282,12 +299,12 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
     removeFallen(state);
     return;
   }
-  // Throws are not part of survival yet.
-  const raw: RawInput = { ...playerRaw, buttons: playerRaw.buttons & ~THROW_BIT, ...(playerRaw.taps !== undefined ? { taps: playerRaw.taps & ~THROW_BIT } : {}) };
+  const raw = playerRaw;
   if (detectTurn(state, raw)) state.turn = { frame: 0, from: p.facing };
   faceEnemies(state);
   captureInput(p.input, raw, p.facing, state.frame, state.combatFrame, state.inputConfig.socd, state.inputConfig.bufferFrames);
   state.enemies.forEach((e, i) => {
+    // Enemies never throw.
     const input = enemyInputs[i] ?? neutralInput();
     captureInput(e.fighter.input, { ...input, buttons: input.buttons & ~THROW_BIT }, e.fighter.facing, state.frame, state.combatFrame, state.inputConfig.socd, state.inputConfig.bufferFrames);
   });
@@ -301,6 +318,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   const fighters = [p, ...state.enemies.map(e => e.fighter)];
   const holdEligible = fighters.map(standingHoldEligible);
   for (const f of fighters) { advanceAttack(f); moveFighter(f); }
+  advanceThrowsOf(state);
   advanceTurn(state);
   for (const [i, f] of fighters.entries()) {
     const enemy = i > 0 ? state.enemies[i - 1] : undefined;
@@ -314,6 +332,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   if (p.attackId !== state.playerAttackId) { state.playerAttackId = p.attackId; for (const e of state.enemies) e.playerHits = []; }
   // KO'd enemies lie as scenery: no pushbox, no contact.
   const order = state.enemies.filter(e => !e.entering && !e.dead).sort((a, b) => Math.abs(a.fighter.x - p.x) - Math.abs(b.fighter.x - p.x));
+  grabStep(state, order);
   for (const e of order) {
     const hpBefore = e.fighter.hp, stateBefore = e.fighter.state;
     p.hitTargets = e.playerHits;
@@ -342,6 +361,40 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
 
   if (!state.over) spawnStep(state);
   state.combatFrame++;
+}
+
+/** Running throws: the victim follows the table; on the impact the hit counts like any other landed hit. */
+function advanceThrowsOf(state: SurvivalState): void {
+  for (const e of state.enemies) {
+    if (e.fighter.state !== 'Thrown') continue;
+    const hpBefore = e.fighter.hp;
+    e.pair.hitstop = 0;
+    advanceThrows(e.pair);
+    state.hitstop = Math.max(state.hitstop, e.pair.hitstop);
+    if (e.fighter.hp < hpBefore) state.focus = e.uid;
+    const gain = applyHit(state, e, hpBefore, 'Thrown');
+    if (gain) gainEnergy(state, gain, false);
+  }
+}
+
+/**
+ * Grab check of the player's throw attempt, closest enemy first. The first
+ * enemy in grab range that could be seized decides: a regular enemy is thrown
+ * (versus throw code on its pair), a miniboss shrugs the attempt off and it
+ * whiffs with its regular recovery.
+ */
+function grabStep(state: SurvivalState, order: readonly Enemy[]): void {
+  const p = state.player, attempt = attemptAtGrab(p);
+  if (!attempt) return;
+  for (const e of order) {
+    if (!survivalGrabbable(e.fighter) || !inGrabRange(p, e.fighter, attempt)) continue;
+    if (e.boss > 0) { state.shrug = { count: state.shrug.count + 1, frame: state.frame, uid: e.uid }; return; }
+    e.pair.hitstop = 0;
+    resolveThrows(e.pair, survivalGrabbable);
+    state.hitstop = Math.max(state.hitstop, e.pair.hitstop);
+    state.focus = e.uid;
+    return;
+  }
 }
 
 /**

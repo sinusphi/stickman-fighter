@@ -38,7 +38,8 @@ export function inGrabRange(attacker: Fighter, defender: Fighter, move: Compiled
   return overlaps(grabBox(attacker, move), pushbox(defender));
 }
 
-const attemptAtGrab = (f: Fighter): CompiledMove | null => {
+/** The throw attempt `f` is in when it reaches its grab frame in this step, else null. */
+export const attemptAtGrab = (f: Fighter): CompiledMove | null => {
   const move = f.state === 'Attack' && f.moveId ? MOVES[f.moveId] : undefined;
   return move?.throw?.phase === 'attempt' && f.moveFrame === move.startup ? move : null;
 };
@@ -61,8 +62,12 @@ function switchMove(f: Fighter, move: CompiledMove): void {
   f.landingRecovery = move.recovery;
 }
 
-/** Grab checks of this step. Runs after attacks started and pushboxes resolved, before strikes. */
-export function resolveThrows(game: GameState): void {
+/**
+ * Grab checks of this step. Runs after attacks started and pushboxes resolved,
+ * before strikes. `grabbable` decides which defenders can be seized (versus:
+ * `isThrowable`; survival widens it, see survival/state).
+ */
+export function resolveThrows(game: GameState, grabbable: (f: Fighter) => boolean = isThrowable): void {
   const attempts = game.fighters.map(attemptAtGrab);
   const [a, b] = game.fighters;
   if (attempts[0] && attempts[1] && inGrabRange(a, b, attempts[0]) && inGrabRange(b, a, attempts[1])) {
@@ -79,7 +84,7 @@ export function resolveThrows(game: GameState): void {
     const attempt = attempts[attacker.id];
     if (!attempt) continue;
     const defender = game.fighters[1 - attacker.id];
-    if (!isThrowable(defender) || !inGrabRange(attacker, defender, attempt)) continue;
+    if (!grabbable(defender) || !inGrabRange(attacker, defender, attempt)) continue;
     const execute = MOVES[attempt.throw?.execute ?? ''];
     if (!execute) continue;
     switchMove(attacker, execute);

@@ -1,7 +1,7 @@
 // Survival mode: start with F10, enemies spawn and attack, double tap backwards
 // turns the player, back attackers show their warning, Backspace starts a new
-// run, the first miniboss shows up after 30 s of run time (HUD, boss bar), F10
-// returns to versus. Screenshots in test-results/survival.
+// run, the player throws an enemy (6 + C), the first miniboss shows up after
+// 30 s of run time (HUD, boss bar) and shrugs a throw off, F10 returns to versus. Screenshots in test-results/survival.
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
@@ -10,8 +10,8 @@ const output = 'test-results/survival'; await mkdir(output, { recursive: true })
 const read = async page => {
   const value = await page.locator('#game').getAttribute('data-survival');
   if (!value) return null;
-  const [facing, enemies, warnings, over, turns, boss, bosses, energy] = value.split('|').map(Number);
-  return { facing, enemies, warnings, over, turns, boss, bosses, energy };
+  const [facing, enemies, warnings, over, turns, boss, bosses, energy, front, , , , thrown, shrugs] = value.split('|').map(Number);
+  return { facing, enemies, warnings, over, turns, boss, bosses, energy, front, thrown, shrugs };
 };
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } }), errors = [];
@@ -53,6 +53,30 @@ try {
   await page.keyboard.press('Backspace');
   await expect.poll(async () => (await page.locator('#timer').textContent()), { timeout: 3000 }).toMatch(/^0:0[0-2]$/);
 
+  // Throws (paused, frame by frame): walk up to the nearest enemy in front and throw it with
+  // forward + C. `done` tells when the attempt counts (enemy held, or boss shrugged it off).
+  const throwNearest = async (done, tries = 40) => {
+    for (let i = 0; i < tries; i++) {
+      const now = await read(page), forward = now.facing === 1 ? 'd' : 'a';
+      if (now.front < 0 || now.front > 46) { await page.keyboard.down(forward); await step(3); await page.keyboard.up(forward); await step(1); continue; }
+      await page.keyboard.down(forward); await page.keyboard.down('c'); await step(1);
+      await page.keyboard.up('c'); await page.keyboard.up(forward);
+      for (let f = 0; f < 12; f++) { await step(1); const after = await read(page); if (done(now, after)) return after; }
+      await step(30);
+    }
+    return null;
+  };
+  await page.locator('#pause').click();
+  await step(150);
+  const held = await throwNearest((_, after) => after.thrown > 0);
+  if (!held) throw Error('Der Spieler hat keinen Gegner geworfen.');
+  await page.locator('#game').screenshot({ path: `${output}/throw.png` });
+  await step(60);
+  expect((await read(page)).thrown).toBe(0);
+  await page.locator('#pause').click();
+  await page.keyboard.press('Backspace');
+  await expect.poll(async () => (await page.locator('#timer').textContent()), { timeout: 3000 }).toMatch(/^0:0[0-2]$/);
+
   // Miniboss: paused and stepped, so the run does not depend on real time (the player stays idle).
   await page.locator('#pause').click();
   let bossFrames = 0;
@@ -65,6 +89,12 @@ try {
   await step(240); await page.waitForTimeout(100);
   await page.locator('#game').screenshot({ path: `${output}/miniboss.png` });
   expect((await read(page)).bosses).toBe(1);
+  // The miniboss shrugs every throw off.
+  const shrugged = await throwNearest((before, after) => after.shrugs > before.shrugs, 60);
+  if (!shrugged) throw Error('Der Miniboss hat keinen Wurf abgeschüttelt.');
+  expect(shrugged.thrown).toBe(0);
+  await step(2);
+  await page.locator('#game').screenshot({ path: `${output}/boss-shrug.png` });
   await page.locator('#pause').click();
 
   await page.keyboard.press('F10');
