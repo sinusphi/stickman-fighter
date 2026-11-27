@@ -18,6 +18,8 @@ export interface HudContext {
   replayFrames: number;
   show: { boxes: boolean; inputs: boolean; states: boolean };
   stageCaption: string;
+  /** Active game speed level (0 = standard pace), shown under the round label. */
+  speedLevel?: number;
   /** "Bar full" presentation: effects switch and the monotonic event count per bar (see HitEffects). */
   ready?: { effects: boolean; events: (fighter: number, resource: 'revenge' | 'special') => number };
   /** Survival run: `game` is then a [player, focused enemy] view (see survival/views). */
@@ -75,6 +77,7 @@ export function hudLabels(c: HudContext) {
     timer: s ? s.time : game.training.enabled ? '∞' : String(Math.ceil(game.round.timer / rules.hz)).padStart(2, '0'),
     round: s ? t('survival.round', { time: s.best }) : game.training.enabled ? 'TRAINING' : `ROUND ${String(game.round.number).padStart(2, '0')}`,
     dummy: `Dummy: ${dummyName(game.training.dummy)} · F5`,
+    speed: c.speedLevel ? `${'›'.repeat(c.speedLevel)} ${t('speed.badge', { level: c.speedLevel })}` : '',
   };
 }
 
@@ -211,6 +214,9 @@ export class Hud {
     }
     this.text('timer', labels.timer);
     this.text('round-label', labels.round);
+    this.text('speed-badge', labels.speed);
+    this.flag('speed-badge', 'hidden', !labels.speed);
+    this.attr('speed-badge', 'data-level', String(c.speedLevel ?? 0));
     this.text('arena-mode', labels.arenaMode);
     const canvas = this.el('game');
     canvas.dataset.frame = String(game.frame); canvas.dataset.ready = 'true';

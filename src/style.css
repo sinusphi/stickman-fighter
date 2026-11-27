@@ -39,6 +39,9 @@ h1 { font-size:22px; letter-spacing:-1px; margin:0; text-transform:uppercase; }
 .timer-wrap { text-align:center;white-space:nowrap; }
 #timer { font:700 42px/1 'Courier New',monospace;letter-spacing:-3px; }
 #round-label { font-size:8px;letter-spacing:1px; }
+/* Game speed above standard: a solid pill under the round label, so a boosted match is obvious at a glance. */
+.speed-badge { display:block;width:max-content;margin:6px auto 0;padding:3px 8px 2px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--inverse);background:var(--primary); }
+.speed-badge[data-level="3"] { background:var(--p2); }
 /* Survival time runs as m:ss and may reach three-digit minutes: a little smaller, the column grows with it. */
 .hud.is-survival #timer { font-size:36px;letter-spacing:-2px; }
 canvas { display:block; width:100%; aspect-ratio:960/420; }
@@ -141,4 +144,10 @@ input:focus-visible { outline:2px solid var(--focus);outline-offset:3px; }
 .stage-switch button:first-of-type { border-radius:4px 0 0 4px; }
 .stage-switch button:last-of-type { border-radius:0 4px 4px 0; }
 .stage-switch button[aria-pressed="true"] { color:var(--inverse);background:var(--primary);border-color:var(--primary);position:relative; }
-@media(max-width:700px) { .section-bar{flex-wrap:wrap}.section-bar>.eyebrow{white-space:nowrap}.section-actions{gap:8px 14px}.stage-switch .eyebrow{display:none}.stage-switch button{padding:5px 8px;font-size:10px} }
+.speed-switch { display:flex;align-items:center;gap:10px; }
+.speed-switch button { font:11px 'Courier New',monospace;letter-spacing:.8px;text-transform:uppercase;padding:6px 11px; }
+.speed-switch button[aria-pressed="true"] { color:var(--inverse);background:var(--primary);border-color:var(--primary); }
+.speed-switch input[type="range"] { width:76px;margin:0;accent-color:var(--primary);cursor:pointer; }
+.speed-switch input[type="range"]:disabled { opacity:.35;cursor:default; }
+.speed-switch input[type="range"]:focus-visible { outline:2px solid var(--p2);outline-offset:3px; }
+@media(max-width:700px) { .section-bar{flex-wrap:wrap}.section-bar>.eyebrow{white-space:nowrap}.section-actions{gap:8px 14px}.stage-switch .eyebrow{display:none}.stage-switch button,.speed-switch button{padding:5px 8px;font-size:10px}.speed-switch input[type="range"]{width:60px}.speed-badge{font-size:7px;margin-top:4px;padding:2px 5px 1px} }

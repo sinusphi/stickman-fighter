@@ -9,6 +9,8 @@ import { render, fitCanvas } from './render/canvas';
 import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
+import { activeSpeedLevel, gameSpeedScale, DEFAULT_GAME_SPEED, type GameSpeed } from './platform/game-speed';
+import { setupSpeedSwitch } from './platform/speed-switch';
 import { HitAudio } from './platform/audio';
 import { describeStrike, newContactSounds, newGuardBreaks, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
 import { newResourceFills } from './platform/resource-ready';
@@ -101,6 +103,9 @@ async function main(): Promise<void> {
   };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
+  // Presentation only: the speed switch scales the wall clock, every simulation frame stays the same.
+  let gameSpeed: GameSpeed = { ...DEFAULT_GAME_SPEED };
+  setupSpeedSwitch(document, speed => { gameSpeed = speed; loop.speed = gameSpeedScale(speed); });
   const slowMotion = new KoSlowMotion();
   let showBoxes = false, showInputs = false, showStates = false;
   let pendingEvents: ControlEvent[] = [];
@@ -333,7 +338,7 @@ async function main(): Promise<void> {
   const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message,effects.settings);
   element('settings-details').addEventListener('toggle',event=>{ if((event.target as HTMLDetailsElement).open)setPaused(true); });
   // A mouse click must not leave the focus on a button or training checkbox, where game keys would be ignored.
-  document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button,.training-option'))(document.activeElement as HTMLElement)?.blur(); });
+  document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button,.training-option,.speed-switch'))(document.activeElement as HTMLElement)?.blur(); });
   const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo',F10:'survival' };
   window.addEventListener('keydown',event=>{
     if((event.target as HTMLElement).closest('#animation-preview'))return;
@@ -357,7 +362,7 @@ async function main(): Promise<void> {
       paused:loop.paused, muted:audio.isMuted(), cpu:cpuSettings, cpuDebug:[cpus[0].debug,cpus[1].debug],
       playback:playback?{index:playback.index,total:playback.replay.frames.length}:null,
       recordingFrames:recording?recording.frames.length:null, replayFrames:lastReplay?.frames.length??0,
-      show:{boxes:showBoxes,inputs:showInputs,states:showStates}, stageCaption:STAGES[stage].caption,
+      show:{boxes:showBoxes,inputs:showInputs,states:showStates}, stageCaption:STAGES[stage].caption, speedLevel:activeSpeedLevel(gameSpeed),
       ready:{effects:effects.settings.effects,events:(fighter,resource)=>effects.readyEventCount(fighter,resource)},
     });
   }
