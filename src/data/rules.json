@@ -61,6 +61,8 @@
     "overrides": {
       "middle_high_punch_combo:punch": 200,
       "revenge_combo:punch": 240,
+      "revenge_combo_f:thrust": 240,
+      "revenge_combo_v:upper": 240,
       "special_spin:back": 160,
       "special_spin:front": 160
     },

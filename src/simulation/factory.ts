@@ -7,8 +7,9 @@ import type { Fighter, GameState } from './types';
  * Pure state factories. This module imports no simulation code at runtime so
  * state, events and rounds can all depend on it without import cycles.
  */
-export function createRound(): RoundState {
-  return { phase:'fighting', number:1, timer:rules.roundSeconds*rules.hz, wins:[0,0], transition:0, winner:null, reason:null };
+/** `intro`: the round opens with the versus intro (see simulation/intro) instead of fighting at once. */
+export function createRound(intro = false): RoundState {
+  return { phase:intro?'intro':'fighting', number:1, timer:rules.roundSeconds*rules.hz, wins:[0,0], transition:0, winner:null, reason:null, intro:intro?{ step:'ready', frame:0 }:null };
 }
 
 export function createFighter(id: number): Fighter {
@@ -18,6 +19,11 @@ export function createFighter(id: number): Fighter {
     comboCount: 0, damageScalePermille: rules.damageScaleUnit, juggleState: 0, advantage: 'n/a' };
 }
 
-export function createGame(): GameState {
-  return { schemaVersion: 2, frame: 0, combatFrame: 0, fighters: [createFighter(0), createFighter(1)], inputConfig: { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }, hitstop: 0, lastContact: null, measurements: [], round: createRound(), training: { enabled:false, dummy:'stand' } };
+/**
+ * `intro: true` marks a versus game: every round (after resets too) opens with
+ * the round intro, except while training is enabled. Plain games (tests,
+ * survival views) start fighting at once.
+ */
+export function createGame(options: { intro?: boolean } = {}): GameState {
+  return { ...(options.intro ? { roundIntro: true as const } : {}), schemaVersion: 2, frame: 0, combatFrame: 0, fighters: [createFighter(0), createFighter(1)], inputConfig: { socd: { horizontal: 'neutral', vertical: 'positive' }, bufferFrames: rules.bufferFrames }, hitstop: 0, lastContact: null, measurements: [], round: createRound(options.intro), training: { enabled:false, dummy:'stand' } };
 }

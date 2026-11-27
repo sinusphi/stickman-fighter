@@ -62,7 +62,9 @@ if (kneeStrikes.length) {
   animation.trails = strikes.map(s => ({ joint: s.joint, fromFrame: s.from - 4, toFrame: s.to + 2, historyFrames: 3 }));
 }
 // Alte Posen dieses Tritts entfernen, damit eine kürzere Fassung nichts zurücklässt.
-for (const name of Object.keys(poses.poses)) if (name.startsWith(`${id}_`)) delete poses.poses[name];
+// Only this move's own baked frames (`<id>_<n>`): another move may share the id as a prefix (revenge_combo_f).
+const ownFrame = new RegExp(`^${id}_\\d+$`);
+for (const name of Object.keys(poses.poses)) if (ownFrame.test(name)) delete poses.poses[name];
 Object.assign(poses.poses, newPoses);
 poses.animations[id] = animation;
 
@@ -119,8 +121,12 @@ try {
   const move = {
     ...structuredClone(template), id,
     button: def.button,
-    command: { type: 'hold', directions: [def.direction ?? 4], buttons: def.buttons ?? [def.button], trigger: 'pressed', priority: def.priority ?? (def.buttons ? 20 : 10),
-      ...(def.resource ? { resource: def.resource } : {}) },
+    // `motion` (an id from motions.json) makes it a motion command on `button`; otherwise a hold command.
+    command: def.motion
+      ? { type: 'motion', directions: [], buttons: [def.button], trigger: 'pressed', priority: def.priority ?? 10, motionId: def.motion,
+        ...(def.resource ? { resource: def.resource } : {}) }
+      : { type: 'hold', directions: [def.direction ?? 4], buttons: def.buttons ?? [def.button], trigger: 'pressed', priority: def.priority ?? (def.buttons ? 20 : 10),
+        ...(def.resource ? { resource: def.resource } : {}) },
     animation: id, startup, active, recovery, ...def.hit,
     multiHit: strikes.length > 1,
     hitGroups: strikes.map(s => ({ id: s.group, maxHitsPerTarget: 1, ...s.hit })),
@@ -146,10 +152,10 @@ if (check) {
   const patch = { prefix: `${id}_`, poses: newPoses, animations: { [id]: animation } };
   await new Promise((resolve, reject) => {
     const child = execFile(PYTHON, ['-c', [
-      'import json,sys',
+      'import json,re,sys',
       'from pathlib import Path',
       'p=Path(sys.argv[1]); data=json.loads(p.read_text()); patch=json.load(sys.stdin)',
-      "for name in [n for n in data['poses'] if n.startswith(patch['prefix'])]: del data['poses'][name]",
+      "for name in [n for n in data['poses'] if re.fullmatch(re.escape(patch['prefix'])+r'\\d+', n)]: del data['poses'][name]",
       "data['poses'].update(patch['poses']); data['animations'].update(patch['animations'])",
       'p.write_text(json.dumps(data,indent=2)+chr(10))',
     ].join('\n'), posesPath.pathname], error => error ? reject(error) : resolve(undefined));
@@ -162,5 +168,5 @@ if (check) {
   else await writeFile(movesPath, text);
 }
 if (stale.length) throw Error(`${id}: generated data stale: ${stale.join(', ')}`);
-console.log(check ? `${id}: generated data current.` : `${id}: ${duration} frames, ${startup}/${active}/${recovery}, ${def.direction === 6 ? "forward" : "back"} + ${(def.buttons ?? [def.button]).join("+")}.`);
+console.log(check ? `${id}: generated data current.` : `${id}: ${duration} frames, ${startup}/${active}/${recovery}, ${def.motion ? def.motion.replace(/[PK]$/, def.button) : `${def.direction === 6 ? "forward" : "back"} + ${(def.buttons ?? [def.button]).join("+")}`}.`);
 }

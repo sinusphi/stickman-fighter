@@ -3,6 +3,7 @@ import type { Resources } from '../simulation/types';
 type ResourceName = keyof Resources;
 import rawMoves from './moves.json';
 import poses from './poses.json';
+import MOTION_DEFINITIONS from './motions.json';
 import type { Animation, Rotation } from '../render/animation-types';
 import { BUTTONS, type Button } from '../input/types';
 import type { Box, Stance } from '../simulation/collision';
@@ -157,9 +158,17 @@ export function validateMoves(values: unknown): Record<string, CompiledMove> {
         buttons.length>=1 && buttons.length<=3 && new Set(buttons).size===buttons.length && lead===move.button,
         `${move.id}: Hold-Command nur im Stand mit Richtung 4 oder 6 und ein bis drei verschiedenen Tasten; \`button\` muss die Taste mit der höchsten Priorität (rules.normalPriority) sein.`);
     }
-    // Resource moves are standing chords (no single-button shortcut to a full-bar move).
-    assert(move.command.resource===undefined || ['revenge','special'].includes(move.command.resource) && move.command.type==='hold' && move.command.buttons.length>=2,
-      `${move.id}: Ressourcen-Moves sind Hold-Chords mit Revenge oder Special.`);
+    if(move.command.type==='motion') {
+      // A motion move starts from `button`, which the referenced motion must accept.
+      const motion=MOTION_DEFINITIONS.find(m=>m.id===move.command.motionId);
+      assert(motion!==undefined && move.command.trigger==='pressed' && move.command.directions.length===0 && move.command.buttons.length===1 &&
+        move.command.buttons[0]===move.button && motion.buttons.includes(move.button) && move.stance==='standing',
+        `${move.id}: Motion-Command braucht eine bekannte Motion, die \`button\` akzeptiert, im Stand.`);
+    }
+    // Resource moves are standing chords or motions (no single-button shortcut to a full-bar move).
+    assert(move.command.resource===undefined || ['revenge','special'].includes(move.command.resource) &&
+      (move.command.type==='hold' && move.command.buttons.length>=2 || move.command.type==='motion'),
+      `${move.id}: Ressourcen-Moves sind Hold-Chords oder Motions mit Revenge oder Special.`);
     assert(Array.isArray(move.cancelWindows) && Array.isArray(move.hitGroups) && move.hitGroups.length > 0 && move.hitGroups.every(g => typeof g.id === 'string' && integer(g.maxHitsPerTarget,1)), `${move.id}: Hit-/Cancel-Gruppen.`);
     assert(move.hitGroups.every(g=>(g.hitLevel===undefined || ['LOW','MID','HIGH'].includes(g.hitLevel)) && (g.damage===undefined || integer(g.damage))),`${move.id}: Treffergruppen-Level oder Schaden.`);
     assert(move.hitGroups.every(g=>GROUP_FRAME_DATA.every(key=>g[key]===undefined || integer(g[key]))),`${move.id}: Frame-Data der Treffergruppe.`);

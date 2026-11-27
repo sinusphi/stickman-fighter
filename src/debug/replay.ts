@@ -9,6 +9,7 @@ import { snapshot, step } from '../simulation/state';
 import type { GameState } from '../simulation/types';
 import type { ControlEvent } from '../simulation/events';
 import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/types';
+import { INTRO_FIGHT_FRAMES, INTRO_MAX_APPROACH_FRAMES, INTRO_READY_FRAMES, INTRO_SALUTE_FRAMES, INTRO_STEPS, LOCKED_INTRO_STEPS, type IntroState } from '../simulation/intro';
 
 /**
  * Replay contract: the engine version is independent of the app version in
@@ -16,7 +17,7 @@ import { BUTTONS, BUTTON_MASK, type InputFrame, type RawInput } from '../input/t
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.13.0';
+export const ENGINE_VERSION = '1.16.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }
@@ -53,6 +54,15 @@ export function validRaw(raw: RawInput): boolean {
   return !!raw && ['up','down','left','right'].every(k=>typeof raw[k as 'up']==='boolean') && int(raw.buttons,0,BUTTON_MASK) && (raw.taps===undefined || int(raw.taps,0,BUTTON_MASK)) && (raw.noRun===undefined || typeof raw.noRun==='boolean');
 }
 function validFrame(frame: InputFrame): boolean { return !!frame && int(frame.frame,-1) && int(frame.direction,1,9) && [frame.pressed,frame.held,frame.released].every(n=>int(n,0,BUTTON_MASK)); }
+const INTRO_LIMITS: Record<IntroState['step'], number> = { ready:INTRO_READY_FRAMES, approach:INTRO_MAX_APPROACH_FRAMES, salute:INTRO_SALUTE_FRAMES, fight:INTRO_FIGHT_FRAMES-1 };
+/** Locked intro steps belong to the 'intro' phase with a full timer; 'fight' only to running rounds. */
+function validIntro(state: GameState): boolean {
+  const { round } = state, intro = round.intro;
+  if (state.roundIntro !== undefined && state.roundIntro !== true) return false;
+  if (intro === null) return round.phase !== 'intro';
+  if (!intro || !INTRO_STEPS.includes(intro.step) || !int(intro.frame,0,INTRO_LIMITS[intro.step]) || state.roundIntro !== true || state.training.enabled) return false;
+  return LOCKED_INTRO_STEPS.includes(intro.step) ? round.phase === 'intro' && round.timer === rules.hz*rules.roundSeconds : round.phase === 'fighting';
+}
 function validConfig(config: GameState['inputConfig']): boolean { return !!config && ['neutral','positive','lastInputWins'].includes(config.socd?.horizontal) && ['neutral','positive','lastInputWins'].includes(config.socd?.vertical) && int(config.bufferFrames,1,30) && (config.autoBlock === undefined || (Array.isArray(config.autoBlock) && config.autoBlock.length === 2 && config.autoBlock.every(value=>typeof value === 'boolean'))); }
 
 export function validateSnapshot(value: unknown): GameState { checkSnapshot(value); return snapshot(value as GameState); }
@@ -61,7 +71,8 @@ function checkSnapshot(value: unknown): asserts value is GameState {
   assert(state?.schemaVersion===2 && int(state.frame) && int(state.combatFrame) && int(state.hitstop,0,120), 'Snapshot-Version oder Frame-Zähler.');
   assert(validConfig(state.inputConfig), 'Input-Konfiguration.');
   assert(state.training && typeof state.training.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(state.training.dummy),'Trainingszustand.');
-  assert(state.round && ['fighting','roundOver','matchOver'].includes(state.round.phase) && int(state.round.timer,0,rules.hz*rules.roundSeconds) && int(state.round.number,1) && int(state.round.transition,0,rules.roundTransition) && state.round.wins?.length===2 && state.round.wins.every(n=>int(n,0,2)) && [null,0,1].includes(state.round.winner) && [null,'KO','TIME OVER','DOUBLE KO','DRAW'].includes(state.round.reason), 'Rundenzustand.');
+  assert(state.round && ['intro','fighting','roundOver','matchOver'].includes(state.round.phase) && int(state.round.timer,0,rules.hz*rules.roundSeconds) && int(state.round.number,1) && int(state.round.transition,0,rules.roundTransition) && state.round.wins?.length===2 && state.round.wins.every(n=>int(n,0,2)) && [null,0,1].includes(state.round.winner) && [null,'KO','TIME OVER','DOUBLE KO','DRAW'].includes(state.round.reason), 'Rundenzustand.');
+  assert(validIntro(state),'Runden-Intro.');
   assert(state.fighters?.length===2,'Zwei Figuren erforderlich.');
   const states = ['Idle','Walk','Run','Crouch','CrouchWalk','JumpSquat','Airborne','Landing','Attack','Hitstun','Blockstun','Knockdown','KO','Thrown'];
   for (const [index,f] of state.fighters.entries()) {

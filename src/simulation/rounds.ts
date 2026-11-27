@@ -2,16 +2,21 @@ import rules from '../data/rules.json';
 import type { RawInput } from '../input/types';
 import { createFighter, createRound } from './factory';
 import type { GameState } from './types';
+import type { IntroState } from './intro';
 
 export interface RoundState {
-  phase: 'fighting' | 'roundOver' | 'matchOver';
+  phase: 'intro' | 'fighting' | 'roundOver' | 'matchOver';
   number: number;
   timer: number;
   wins: [number, number];
   transition: number;
   winner: number | null;
   reason: 'KO' | 'TIME OVER' | 'DOUBLE KO' | 'DRAW' | null;
+  /** Versus round intro progress; 'fight' only keeps the banner during the first fighting frames. */
+  intro: IntroState | null;
 }
+/** Whether a new round of this game opens with the intro (versus only, never in training). */
+export function playsIntro(game: GameState): boolean { return game.roundIntro === true && !game.training.enabled; }
 export { createRound };
 export function resetRound(game: GameState, inputs: [RawInput, RawInput]): void {
   const resources = game.fighters.map(fighter => structuredClone(fighter.resources));
@@ -21,7 +26,7 @@ export function resetRound(game: GameState, inputs: [RawInput, RawInput]): void 
     f.input.previous = { ...inputs[f.id], taps:0 };
   }
   game.hitstop=0; game.lastContact=null; game.measurements=[];
-  game.round = { ...createRound(), wins:game.round.wins, number:game.round.wins[0]+game.round.wins[1]+1 };
+  game.round = { ...createRound(playsIntro(game)), wins:game.round.wins, number:game.round.wins[0]+game.round.wins[1]+1 };
 }
 export function advanceRound(game: GameState, inputs: [RawInput, RawInput]): void {
   if (game.round.phase === 'roundOver' && --game.round.transition <= 0) resetRound(game,inputs);
@@ -38,6 +43,7 @@ export function resolveRound(game: GameState): void {
   if (round.winner!==null) round.wins[round.winner]++;
   round.phase = round.wins.some(wins=>wins>=rules.winsRequired)?'matchOver':'roundOver';
   round.transition=rules.roundTransition;
+  round.intro=null;
   for(const f of game.fighters) { f.input.pending=null; f.advantage='n/a'; }
   game.measurements=[];
 }

@@ -9,6 +9,7 @@ import { createFighter, createGame } from './factory';
 import { dummyInput } from '../debug/training';
 import { applyEvents, type ControlEvent } from './events';
 import { advanceThrows, resolveThrows } from './throws';
+import { advanceFightBanner, stepIntro } from './intro';
 
 // Factories live in ./factory so events and rounds can use them without an import cycle.
 export { createFighter, createGame };
@@ -23,6 +24,7 @@ export function updateFacing(game: GameState): void {
 
 export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInput(), neutralInput()], events: ControlEvent[] = []): void {
   applyEvents(game,events);
+  if (game.round.phase === 'intro') { stepIntro(game,inputs); return; }
   if (game.round.phase !== 'fighting') {
     if (game.hitstop === 0) settleFighters(game);
     game.frame++;
@@ -36,6 +38,7 @@ export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInp
     captureInput(fighter.input, effective[fighter.id], fighter.facing, game.frame, game.combatFrame, game.inputConfig.socd, game.inputConfig.bufferFrames);
   }
   game.frame++;
+  advanceFightBanner(game);
   if (game.hitstop > 0) { game.hitstop--; return; }
   const holdEligible = game.fighters.map(standingHoldEligible);
   const available = game.fighters.map(fighter => { advanceAttack(fighter); return moveFighter(fighter, fixedDummy && fighter.id === 1); });

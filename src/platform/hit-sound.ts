@@ -100,6 +100,8 @@ export const SWING_MERGE_FRAMES = 8;
 const PAN_WIDTH = 0.55;
 const SPIN_MOVE = /spin|tornado|turn|dwit/;
 const UPPERCUT_MOVE = /uppercut/;
+/** Hit group of a combo that ends in an uppercut (revenge_combo_v). */
+const UPPERCUT_GROUP = 'upper';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -140,7 +142,7 @@ export function describeStrike(moveId: string, groupId?: string, x = rules.stage
   const group = groupOf(move, groupId);
   const damage = group.damage ?? move.damage;
   const kind = kindOf(move, group);
-  const style: HitStyle = kind === 'knee' ? 'normal' : SPIN_MOVE.test(move.id) ? 'spin' : UPPERCUT_MOVE.test(move.id) ? 'uppercut' : 'normal';
+  const style: HitStyle = kind === 'knee' ? 'normal' : SPIN_MOVE.test(move.id) ? 'spin' : UPPERCUT_MOVE.test(move.id) || group.id === UPPERCUT_GROUP ? 'uppercut' : 'normal';
   return {
     kind, strength: strengthOf(damage),
     weight: clamp((damage - SOUND_DAMAGE_RANGE.light) / (SOUND_DAMAGE_RANGE.heavy - SOUND_DAMAGE_RANGE.light), 0, 1),
@@ -263,6 +265,8 @@ export function swingCues(moveId: string): SwingCue[] {
 /** Whooshes whose cue frame the attack reached in this step (whiffs included). */
 export function newSwingSounds(game: GameState, previous: GameState): SwingSound[] {
   const sounds: SwingSound[] = [];
+  // The intro's fist salute is a greeting, not a strike: no whoosh.
+  if (game.round.phase === 'intro') return sounds;
   for (const fighter of game.fighters) {
     if (fighter.state !== 'Attack' || !fighter.moveId) continue;
     const before = previous.fighters[fighter.id];

@@ -1,3 +1,4 @@
+import motions from '../data/motions.json';
 import { buttonBit, neutralInput, type RawInput } from '../input/types';
 import type { Facing } from '../simulation/types';
 import type { Intent } from './brain';
@@ -22,8 +23,16 @@ export class Controller {
     // Release every button and stand up before hold eligibility is sampled by the engine.
     this.queue.push({ direction:move.stance==='crouching'?2:5, buttons:0 });
     if (move.stance==='airborne' && self.y===0) this.queue.push({direction:8,buttons:0,waitAir:true});
-    const direction=move.command.type==='hold' ? move.command.directions[0] : move.stance==='crouching'?2:5;
-    this.queue.push({direction,buttons:move.command.buttons.reduce((bits,b)=>bits|buttonBit(b),0)});
+    const buttons=move.command.buttons.reduce((bits,b)=>bits|buttonBit(b),0);
+    if (move.command.type==='motion') {
+      // Play the motion's directions one frame each; the button comes with the last one.
+      const sequence=motions.find(m=>m.id===move.command.motionId)?.sequence;
+      if (!sequence) { this.clear(); return; }
+      sequence.forEach((direction,i)=>this.queue.push({direction,buttons:i===sequence.length-1?buttons:0}));
+    } else {
+      const direction=move.command.type==='hold' ? move.command.directions[0] : move.stance==='crouching'?2:5;
+      this.queue.push({direction,buttons});
+    }
     this.queue.push({direction:5,buttons:0});
   }
   next(self: VisibleFighter): RawInput {

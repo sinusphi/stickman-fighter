@@ -18,11 +18,10 @@ import { createReplay, playReplay } from '../../src/debug/replay';
 const id = 'revenge_combo', move = MOVES[id], U = rules.unit;
 /** Steps for one full combo including every hitstop (77 frames + 67 hitstop frames on hit). */
 const RUN = 200;
-const KEYS: Button[] = ['LK', 'LMK', 'HK'];
-const ALL = KEYS.reduce((bits, b) => bits | buttonBit(b), 0);
+const LP = buttonBit('LP');
+/** The former forward chord LK+LMK+HK: no longer the Revenge combo. */
+const OLD_CHORD = (['LK', 'LMK', 'HK'] as Button[]).reduce((bits, b) => bits | buttonBit(b), 0);
 const GROUPS = ['jab', 'hook', 'leftMiddle', 'leftHigh', 'rightMiddle', 'rightHigh', 'punch'];
-const press = (facing: 1 | -1, buttons: number, direction: 4 | 5 | 6 = 6, down = false): RawInput =>
-  ({ ...neutralInput(), right: direction === 6 ? facing === 1 : direction === 4 ? facing === -1 : false, left: direction === 6 ? facing === -1 : direction === 4 ? facing === 1 : false, down, buttons });
 function setup(facing: 1 | -1 = 1, distance = 250, revenge = 100): GameState {
   const game = createGame(), [a, b] = game.fighters;
   a.x = 480 * U; b.x = a.x + facing * distance * U;
@@ -30,16 +29,20 @@ function setup(facing: 1 | -1 = 1, distance = 250, revenge = 100): GameState {
   a.resources.revenge.current = revenge;
   return game;
 }
-/** Every key order and arrival frame inside the chord window (per key: frame it is pressed). */
-function arrivals(): number[][] {
-  const out: number[][] = [];
-  for (let a = 0; a <= CHORD_WINDOW_FRAMES; a++) for (let b = 0; b <= CHORD_WINDOW_FRAMES; b++) for (let c = 0; c <= CHORD_WINDOW_FRAMES; c++)
-    if (Math.min(a, b, c) === 0) out.push([a, b, c]);
-  return out;
-}
-function playPattern(game: GameState, facing: 1 | -1, pattern: number[], direction: 4 | 5 | 6 = 6, down = false): void {
-  for (let frame = 0; frame <= Math.max(...pattern); frame++)
-    step(game, [press(facing, KEYS.reduce((bits, b, i) => pattern[i] <= frame ? bits | buttonBit(b) : bits, 0), direction, down), neutralInput()]);
+/** Numpad direction (relative to `facing`) plus buttons as raw input. */
+const pad = (facing: 1 | -1, direction: number, buttons = 0): RawInput => {
+  const x = (direction - 1) % 3 - 1;
+  return { ...neutralInput(), down: direction <= 3, up: direction >= 7, right: x * facing > 0, left: x * facing < 0, buttons };
+};
+/** Quarter circle forward: down, down-forward, forward with LP (the shortest input). */
+const QCF = [2, 3, 6];
+/** Input variants of 236+LP: held parts, LP after forward, forward let go just before LP. */
+const VARIANTS: [number[], number][] = [
+  [[2, 3, 6], 2], [[2, 3, 6, 6], 3], [[2, 2, 2, 3, 3, 6, 6], 6], [[2, 3, 6, 6, 6, 6], 5], [[2, 3, 6, 5], 3], [[2, 5, 3, 6], 3],
+];
+/** Plays `directions` with LP pressed on frame `lp` (0 = none) and held from there. */
+function playMotion(game: GameState, facing: 1 | -1, directions: number[] = QCF, lp = directions.length - 1, defender = neutralInput()): void {
+  directions.forEach((direction, frame) => step(game, [pad(facing, direction, frame >= lp ? LP : 0), defender]));
 }
 /** First active frame of every hit group (from the frame boxes). */
 const starts = GROUPS.map(group => move.frames.findIndex(frame => frame.hitboxes.some(box => box.hitGroup === group)));
@@ -48,7 +51,7 @@ function landed(distance: number, crouch: boolean, facing: 1 | -1 = 1, shiftAfte
   const game = setup(facing, distance), [a, b] = game.fighters;
   const defender = { ...neutralInput(), down: crouch };
   for (let i = 0; i < 3; i++) step(game, [neutralInput(), defender]);
-  step(game, [press(facing, ALL), defender]);
+  playMotion(game, facing, QCF, 2, defender);
   let shifted = false;
   for (let f = 0; f < RUN; f++) {
     step(game, [neutralInput(), defender]);
@@ -58,12 +61,11 @@ function landed(distance: number, crouch: boolean, facing: 1 | -1 = 1, shiftAfte
 }
 
 describe('revenge combo: data', () => {
-  it('is a forward LK+LMK+HK hold chord that needs and spends the Revenge bar', () => {
-    expect(move.command).toMatchObject({ type: 'hold', directions: [6], buttons: KEYS, resource: 'revenge' });
-    expect(move.button).toBe('HK');
+  it('is a 236+LP motion that needs and spends the Revenge bar, no chord', () => {
+    expect(move.command).toMatchObject({ type: 'motion', motionId: '236+P', buttons: ['LP'], resource: 'revenge' });
+    expect(move.button).toBe('LP');
     expect(move.standingHitstun).toBe(true);
-    expect(CHORD_UPGRADES.filter(chord => chord.target === id)).toHaveLength(1);
-    expect(CHORD_UPGRADES[0].target).toBe(id);
+    expect(CHORD_UPGRADES.some(chord => chord.target === id)).toBe(false);
   });
   it('has seven hits in order, a quick opener and a total length well below the five-hit combo', () => {
     expect(move.hitGroups.map(g => g.id)).toEqual(GROUPS);
@@ -102,85 +104,90 @@ describe('revenge combo: data', () => {
 });
 
 describe('revenge combo: input', () => {
-  it('starts with a full bar for every key order inside the window, in both facings, on the same path', () => {
+  it('starts with a full bar for every input variant, in both facings, on the same path', () => {
     for (const facing of [1, -1] as const) {
       let path: number | null = null;
-      for (const pattern of arrivals()) {
-        const game = setup(facing);
-        playPattern(game, facing, pattern);
-        const a = game.fighters[0];
-        expect(a.moveId, pattern.join('/')).toBe(id);
+      for (const [directions, lp] of VARIANTS) {
+        const game = setup(facing), a = game.fighters[0], label = `${facing} ${directions.join('')}@${lp}`;
+        playMotion(game, facing, directions, lp);
+        expect(a.moveId, label).toBe(id);
         expect(a.attackId).toBe(1);
         expect(a.resources.revenge.current).toBe(0);
-        // Same world path whichever key came first (standing_lk's own step is replaced).
-        for (let f = Math.max(...pattern); f < 30; f++) step(game, [neutralInput(), neutralInput()]);
-        path ??= a.x;
-        expect(a.x, pattern.join('/')).toBe(path);
+        // Same world path relative to where the combo started.
+        const from = a.x;
+        for (let f = 0; f < 30; f++) step(game, [neutralInput(), neutralInput()]);
+        path ??= a.x - from;
+        expect(a.x - from, label).toBe(path);
       }
     }
   });
   it('spends the bar at the start, also on a whiff', () => {
     const game = setup(1, 300);
-    step(game, [press(1, ALL), neutralInput()]);
+    playMotion(game, 1);
     expect(game.fighters[0].moveId).toBe(id);
     expect(game.fighters[0].resources.revenge.current).toBe(0);
     for (let f = 0; f < 100; f++) step(game, [neutralInput(), neutralInput()]);
     expect(game.fighters[1].hp).toBe(rules.maxHealth);
     expect(game.fighters[0].resources.revenge.current).toBe(0);
   });
-  it('behaves exactly as before without a full bar', () => {
-    for (const facing of [1, -1] as const) for (const pattern of arrivals()) for (const revenge of [99, 50]) {
+  it('behaves exactly as before without a full bar: LP stays the jab', () => {
+    for (const facing of [1, -1] as const) for (const [directions, lp] of VARIANTS) for (const revenge of [99, 50]) {
       const game = setup(facing, 250, revenge), baseline = setup(facing, 250, 0);
-      playPattern(game, facing, pattern); playPattern(baseline, facing, pattern);
+      playMotion(game, facing, directions, lp); playMotion(baseline, facing, directions, lp);
+      expect(game.fighters[0].moveId).toBe('standing_lp');
       for (let f = 0; f < 40; f++) { step(game, [neutralInput(), neutralInput()]); step(baseline, [neutralInput(), neutralInput()]); }
       expect(game.fighters[0].resources.revenge.current).toBe(revenge);
       const strip = (g: GameState) => g.fighters.map(({ resources: _, ...rest }) => rest);
-      expect(strip(game), pattern.join('/')).toEqual(strip(baseline));
+      expect(strip(game), directions.join('')).toEqual(strip(baseline));
     }
   });
-  it('needs the standing ground state and direction 6', () => {
-    // Crouching, no direction and back: never the Revenge combo, bar kept.
-    for (const [direction, down] of [[6, true], [5, false], [4, false]] as const) {
-      const game = setup(1);
-      step(game, [press(1, ALL, direction, down), neutralInput()]);
-      expect(game.fighters[0].moveId, `${direction}${down ? ' down' : ''}`).not.toBe(id);
-      expect(game.fighters[0].resources.revenge.current).toBe(100);
+  it('needs the full quarter circle forward, finished standing, and LP', () => {
+    for (const facing of [1, -1] as const) {
+      // Incomplete, reversed or crouching-finished motions, plain LP, other punches or kicks: never the Revenge combo, bar kept (LK and RLK start the F and V variants, see their own tests).
+      const misses: [number[], number, number][] = [
+        [[5], 0, LP], [[6], 0, LP], [[4], 0, LP], [[2], 0, LP], [[3, 6], 1, LP], [[2, 6], 1, LP], [[2, 3], 1, LP], [[2, 1, 4], 2, LP],
+        [[2, 3, 6], 2, buttonBit('MP')], [[2, 3, 6], 2, buttonBit('MK')], [[2, 3, 6], 2, buttonBit('HK')], [[2, 3, 6, 6, 6, 6, 6], 6, LP],
+      ];
+      for (const [directions, at, button] of misses) {
+        const game = setup(facing);
+        directions.forEach((direction, frame) => step(game, [pad(facing, direction, frame >= at ? button : 0), neutralInput()]));
+        expect(game.fighters[0].moveId, `${facing} ${directions.join('')}@${at}`).not.toBe(id);
+        expect(game.fighters[0].resources.revenge.current).toBe(100);
+      }
     }
     // In the air.
     const game = setup(1);
     step(game, [{ ...neutralInput(), up: true, right: true }, neutralInput()]);
     for (let i = 0; i < 6; i++) step(game, [neutralInput(), neutralInput()]);
     expect(game.fighters[0].y).toBeLessThan(0);
-    step(game, [press(1, ALL), neutralInput()]);
+    playMotion(game, 1);
     expect(game.fighters[0].moveId).not.toBe(id);
     expect(game.fighters[0].resources.revenge.current).toBe(100);
   });
-  it('displaces no single kick and no other chord, even with a full bar', () => {
+  it('displaces no single attack and no chord, even with a full bar', () => {
     for (const facing of [1, -1] as const) {
-      for (const [button, want] of [['LK', 'standing_lk'], ['LMK', 'standing_lmk'], ['HK', 'spin_hk']] as const) {
+      for (const [button, want] of [['LP', 'standing_lp'], ['LK', 'standing_lk'], ['LMK', 'standing_lmk'], ['HK', 'spin_hk']] as const) {
         const game = setup(facing);
-        step(game, [press(facing, buttonBit(button)), neutralInput()]);
+        step(game, [pad(facing, 6, buttonBit(button)), neutralInput()]);
         expect(game.fighters[0].moveId).toBe(want);
         expect(game.fighters[0].resources.revenge.current).toBe(100);
       }
+      // The old Revenge chord (forward LK+LMK+HK) no longer spends the bar.
+      const old = setup(facing);
+      step(old, [pad(facing, 6, OLD_CHORD), neutralInput()]);
+      expect(old.fighters[0].moveId).not.toBe(id);
+      expect(old.fighters[0].resources.revenge.current).toBe(100);
       // Other full-bar chords need their own bar (special_spin: tests/unit/special-spin.test.ts).
-      for (const chord of CHORD_UPGRADES.filter(c => c.target !== id && !MOVES[c.target].command.resource)) {
+      for (const chord of CHORD_UPGRADES.filter(c => !MOVES[c.target].command.resource)) {
         const buttons = Object.values(chord.sources);
         for (let gap = 0; gap <= CHORD_WINDOW_FRAMES; gap++) {
           const game = setup(facing);
-          for (let i = 0; i < gap; i++) step(game, [press(facing, buttonBit(buttons[0]), chord.direction as 4 | 6), neutralInput()]);
-          step(game, [press(facing, buttons.reduce((bits, b) => bits | buttonBit(b), 0), chord.direction as 4 | 6), neutralInput()]);
+          for (let i = 0; i < gap; i++) step(game, [pad(facing, chord.direction, buttonBit(buttons[0])), neutralInput()]);
+          step(game, [pad(facing, chord.direction, buttons.reduce((bits, b) => bits | buttonBit(b), 0)), neutralInput()]);
           expect(game.fighters[0].moveId, `${chord.target} ${gap}`).toBe(chord.target);
           expect(game.fighters[0].resources.revenge.current).toBe(100);
         }
       }
-      // A late third key (outside the window) no longer upgrades.
-      const game = setup(facing);
-      step(game, [press(facing, buttonBit('HK') | buttonBit('LMK')), neutralInput()]);
-      for (let i = 0; i < CHORD_WINDOW_FRAMES; i++) step(game, [press(facing, buttonBit('HK') | buttonBit('LMK')), neutralInput()]);
-      step(game, [press(facing, ALL), neutralInput()]);
-      expect(game.fighters[0].moveId).toBe('spin_hk');
-      expect(game.fighters[0].resources.revenge.current).toBe(100);
     }
   });
 });
@@ -208,7 +215,7 @@ describe('revenge combo: hits', () => {
   it('deals the full damage, stands a crouching opponent up and knocks down with the finisher', () => {
     const game = setup(1, 60), [a, b] = game.fighters, crouch = { ...neutralInput(), down: true };
     step(game, [neutralInput(), crouch]);
-    step(game, [press(1, ALL), crouch]);
+    playMotion(game, 1, QCF, 2, crouch);
     let knocked = false;
     for (let f = 0; f < RUN; f++) {
       step(game, [neutralInput(), crouch]);
@@ -221,7 +228,7 @@ describe('revenge combo: hits', () => {
   it('stays blockable after a blocked opener (no special rule)', () => {
     const game = setup(1, 60), block = { ...neutralInput(), left: false, right: true };
     step(game, [neutralInput(), block]);
-    step(game, [press(1, ALL), block]);
+    playMotion(game, 1, QCF, 2, block);
     for (let f = 0; f < 10; f++) step(game, [neutralInput(), block]);
     expect(game.lastContact?.blocked).toBe(true);
     expect(game.fighters[1].hp).toBeGreaterThan(rules.maxHealth - 10);
@@ -230,7 +237,7 @@ describe('revenge combo: hits', () => {
     const game = setup(1, 60);
     game.training = { enabled: true, dummy: 'stand' };
     const replay = createReplay(game);
-    replay.frames.push({ inputs: [press(1, ALL), neutralInput()], events: [] });
+    for (const direction of QCF) replay.frames.push({ inputs: [pad(1, direction, direction === 6 ? LP : 0), neutralInput()], events: [] });
     for (let f = 0; f < RUN; f++) replay.frames.push({ inputs: [neutralInput(), neutralInput()], events: [] });
     let started = false;
     const end = playReplay(replay, state => { started ||= state.fighters[0].moveId === id; });
@@ -252,7 +259,7 @@ describe('revenge combo: survival', () => {
     const e = spawnEnemy(s, facing, kind);
     e.entering = false; e.fighter.x = s.player.x + facing * distance * U; e.fighter.facing = -facing as 1 | -1;
     s.player.resources.revenge.current = 100;
-    stepSurvival(s, press(facing, ALL));
+    for (const direction of QCF) stepSurvival(s, pad(facing, direction, direction === 6 ? LP : 0));
     expect(s.player.moveId).toBe(id);
     expect(s.player.resources.revenge.current).toBe(0);
     let hits = 0, hp = e.fighter.hp, knockdownBeforeFinisher = false;
@@ -300,11 +307,11 @@ describe('revenge combo: CPU, presentation, animation', () => {
   it('sounds like punches and kicks, one whoosh per strike, and reports its start once', () => {
     expect(GROUPS.map(g => classifyHit(id, g).kind)).toEqual(['punch', 'punch', 'kick', 'kick', 'kick', 'kick', 'punch']);
     expect(swingCues(id)).toHaveLength(7);
-    // Chord upgrade (HK first, LK+LMK a frame later): the start is reported on the upgrade step only.
+    // Motion with LP held a few frames: the start is reported once.
     const game = setup(1);
     let previous = snapshot(game), reported = 0;
-    for (const buttons of [buttonBit('HK'), ALL, ALL, 0, 0]) {
-      step(game, [press(1, buttons), neutralInput()]);
+    for (const [direction, buttons] of [[2, 0], [3, 0], [6, LP], [6, LP], [5, 0], [5, 0]]) {
+      step(game, [pad(1, direction, buttons), neutralInput()]);
       reported += newResourceStarts(game, previous).length; previous = snapshot(game);
     }
     expect(game.fighters[0].moveId).toBe(id);

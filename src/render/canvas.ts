@@ -14,6 +14,7 @@ import type { Palette } from '../platform/theme';
 import { RELAX_FRAMES } from './feedback';
 import type { HitEffects } from './effects';
 import { t } from '../platform/i18n';
+import { INTRO_FIGHT_FRAMES, INTRO_READY_FRAMES } from '../simulation/intro';
 import { DEFAULT_STAGE, STAGE_VIEW, drawContactShadow, drawStage, stagePan, type StageId } from './stages';
 export { samplePose } from './skeleton';
 
@@ -140,8 +141,17 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     ctx.fillStyle=palette.text;ctx.fillText(text,480,y);
   };
   ctx.textAlign = 'center';
+  const intro=game.round.intro;
   if (paused) banner('PAUSE',155,'bold 34px Arial',7);
-  else if (game.round.phase !== 'fighting') {
+  else if (intro && (intro.step==='ready' || intro.step==='fight')) {
+    // Round intro: a short pop-in, then the text fades out over the last frames of its step.
+    const total=intro.step==='ready'?INTRO_READY_FRAMES:INTRO_FIGHT_FRAMES,time=intro.frame+alpha;
+    const pop=Math.min(1,time/6),size=Math.round((intro.step==='ready'?40:52)*(1.25-.25*pop));
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(pop,(total-time)/10));
+    banner(t(intro.step==='ready'?'banner.readyUp':'banner.fight'),165,`bold ${size}px Arial`,8);
+    ctx.restore();
+  }
+  else if (game.round.phase === 'roundOver' || game.round.phase === 'matchOver') {
     banner(game.round.phase === 'matchOver' ? `PLAYER ${game.round.winner!+1} WINS` : game.round.reason === 'KO' ? 'K.O.' : game.round.reason!,155,'bold 34px Arial',7);
     banner(game.round.phase === 'matchOver' ? t(demo ? 'banner.nextMatch' : 'banner.restart') : game.round.winner === null ? t('banner.replayRound') : t('banner.roundTo',{player:game.round.winner+1}),181,'11px monospace',4);
   }

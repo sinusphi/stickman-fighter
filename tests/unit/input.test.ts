@@ -73,7 +73,7 @@ describe('motion parser', () => {
   it('rejects missing diagonals, wrong order and wrong button group', () => {
     expect(parseMotions(history([2, 6]))).toEqual([]);
     expect(parseMotions(history([3, 2, 6]))).toEqual([]);
-    expect(parseMotions(history([2, 3, 6], 'LK'))).toEqual([]);
+    expect(parseMotions(history([2, 3, 6], 'MK'))).toEqual([]);
   });
   it('can begin a quarter-circle from a held down direction',()=>{
     expect(parseMotions(history([...Array(80).fill(2),3,6]))).toContain('236+P');

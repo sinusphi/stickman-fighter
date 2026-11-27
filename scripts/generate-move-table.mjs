@@ -24,6 +24,10 @@ const LANGUAGES = {
     throws: { throw_forward: 'Hip Throw', throw_back: 'Shoulder Throw' }, unblockable: 'unblockable (throw)', whiff: 'whiff',
     revenge: 'Revenge Combo: Jab → Hook → Left Middle → Left High → Right Middle → Right High → Heavy Punch (full Revenge bar)',
     special: 'Wirbel: 360° Spin Kick, back and front (full Special bar)',
+    names: {
+      revenge_combo_f: 'Revenge Combo F: Right Low → Left Low → Right Middle → Left Middle → Right High → Left High → Push Kick (full Revenge bar)',
+      revenge_combo_v: 'Revenge Combo V: Hook → Jab → Hook → Right Low → Left Middle → Left High → Uppercut (full Revenge bar)',
+    },
     throwIntro: px => `Throws grab a standing or crouching opponent that can act, up to ${px} px beyond the own pushbox; frame data of throws: grab frame / whiff recovery, damage on impact.`,
     intro: count => `${count} moves. Directions are relative to the opponent (6 forward, 4 back); keys for the starting positions with default controls (P1 left, P2 right). Frames at 60 Hz, startup counted from frame 0. Knee hit groups of the standing middle/high kicks are included in the damage.`,
     header: '| Move | ID | Input | P1 | P2 | Startup / Active / Recovery | Total | Damage | Block level |',
@@ -34,6 +38,10 @@ const LANGUAGES = {
     throws: { throw_forward: 'Hüftwurf', throw_back: 'Schulterwurf' }, unblockable: 'nicht blockbar (Wurf)', whiff: 'Fehlgriff',
     revenge: 'Revenge-Kombo: Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß (volle Revenge-Leiste)',
     special: 'Wirbel: 360°-Drehtritt, hinten und vorne (volle Special-Leiste)',
+    names: {
+      revenge_combo_f: 'Revenge-Kombo F: Rechts Low → Links Low → Rechts Middle → Links Middle → Rechts High → Links High → Stoßtritt (volle Revenge-Leiste)',
+      revenge_combo_v: 'Revenge-Kombo V: Haken → Jab → Haken → Rechts Low → Links Middle → Links High → Uppercut (volle Revenge-Leiste)',
+    },
     throwIntro: px => `Würfe greifen einen stehenden oder hockenden, handlungsfähigen Gegner bis ${px} px vor der eigenen Pushbox; Frame-Daten der Würfe: Greif-Frame / Recovery beim Fehlgriff, Schaden beim Aufprall.`,
     intro: count => `${count} Moves. Richtungen relativ zum Gegner (6 vorwärts, 4 zurück); Tasten für die Ausgangsaufstellung mit Standardbelegung (P1 links, P2 rechts). Frames bei 60 Hz, Startup gezählt ab Frame 0. Knie-Treffergruppen der stehenden Middle-/Highkicks sind im Schaden mit aufgeführt.`,
     header: '| Move | ID | Eingabe | P1 | P2 | Startup / Aktiv / Recovery | Dauer | Schaden | Block-Level |',
@@ -56,14 +64,16 @@ try {
     const input = (move, player) => {
       const buttons = (move.command.type === 'hold' ? move.command.buttons : [move.button]).map(b => label(keys[player][b])).join(' + ');
       if (move.command.type === 'hold') return `${language.hold(label(direction(player, move.command.directions[0])))} + ${buttons}`;
+      // Quarter circle forward: down, down + forward, forward, then the button.
+      if (move.command.type === 'motion') { const down = label(keys[player].down), forward = label(direction(player, 6)); return `${down}, ${down} + ${forward}, ${forward} + ${buttons}`; }
       if (move.stance === 'crouching') return `${language.hold(label(keys[player].down))} + ${buttons}`;
       if (move.stance === 'airborne') return language.air(buttons);
       return buttons;
     };
-    const notation = move => move.command.type === 'hold' ? `${move.command.directions.join('/')} + ${move.command.buttons.join(' + ')}` : `${language.stance[move.stance]} · ${move.button}`;
+    const notation = move => move.command.type === 'motion' ? move.command.motionId.replace(/[PK]$/, move.button).replace('+', ' + ') : move.command.type === 'hold' ? `${move.command.directions.join('/')} + ${move.command.buttons.join(' + ')}` : `${language.stance[move.stance]} · ${move.button}`;
     const level = move => execution(move) ? language.unblockable : [...new Set(move.hitGroups.map(group => group.hitLevel ?? move.hitLevel))].join(' / ');
     const damage = move => execution(move)?.damage ?? move.hitGroups.map(group => group.damage ?? move.damage).join(' + ');
-    const name = move => language.throws[move.id] ?? (move.command.resource ? language[move.command.resource] : undefined) ?? NAMES[move.id] ?? `${language.stance[move.stance]} ${move.button}`;
+    const name = move => language.throws[move.id] ?? language.names?.[move.id] ?? (move.command.resource ? language[move.command.resource] : undefined) ?? NAMES[move.id] ?? `${language.stance[move.stance]} ${move.button}`;
     const frames = move => `${move.startup} / ${move.active} / ${move.recovery}${execution(move) ? ` (${language.whiff})` : ''}`;
     const rows = Object.values(MOVES).map(move => `| ${name(move)} | \`${move.id}\` | ${notation(move)} | ${input(move, 0)} | ${input(move, 1)} | ${frames(move)} | ${move.duration} | ${damage(move)} | ${level(move)} |`);
     const table = [START, `${language.intro(rows.length)} ${language.throwIntro(grabPx)}`, '', language.header, '|---|---|---|---|---|---|---:|---|---|', ...rows, END].join('\n');

@@ -37,7 +37,8 @@ function throwLabel(id: string): string | undefined {
   const role=base.throw.phase==='attempt'?'preview.throwAttempt':base.throw.victimAnimation===id?'preview.throwVictim':'preview.throwExecute';
   return `${name} · ${t(role)} · ${base.command.directions[0]}+THROW`;
 }
-const commandText = (command: CompiledMove['command']) => `${command.directions.join('/')}+${command.buttons.join('+')}`;
+const commandText = (command: CompiledMove['command']) => command.type==='motion' && command.motionId
+  ? command.motionId.replace(/[PK]$/,command.buttons.join('+')) : `${command.directions.join('/')}+${command.buttons.join('+')}`;
 function animationLabel(id: string): string {
   if(previewKeys[id])return t(previewKeys[id]);
   const thrown=throwLabel(id);

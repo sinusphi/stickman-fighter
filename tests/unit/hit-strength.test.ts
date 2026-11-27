@@ -15,10 +15,10 @@ function setup(facing: 1 | -1, distance = 40) {
 }
 
 describe('hit strength and ground knockdowns', () => {
-  it('lets only the finishers of the five-hit and the Revenge combo and both Wirbel hits knock down at the default stability', () => {
+  it('lets only the finishers of the five-hit and the three Revenge combos and both Wirbel hits knock down at the default stability', () => {
     const fighter = createGame().fighters[1];
     const heavy = Object.values(MOVES).flatMap(move => move.hitGroups.filter(group => knocksDown(move, group, fighter)).map(group => `${move.id}:${group.id}`));
-    expect(heavy.sort()).toEqual([`${id}:punch`, 'revenge_combo:punch', 'special_spin:back', 'special_spin:front'].sort());
+    expect(heavy.sort()).toEqual([`${id}:punch`, 'revenge_combo:punch', 'revenge_combo_f:thrust', 'revenge_combo_v:upper', 'special_spin:back', 'special_spin:front'].sort());
     expect(hitStrength(MOVES.standing_lp, MOVES.standing_lp.hitGroups[0])).toBe(MOVES.standing_lp.damage);
   });
 

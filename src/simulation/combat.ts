@@ -44,9 +44,6 @@ export const CHORD_WINDOW_FRAMES = 3;
  */
 interface ChordUpgrade { sources: Readonly<Record<string, Button>>; direction: Direction; target: string; travel: 'undoSource' | 'catchUpTarget' | 'none' | 'replace' }
 export const CHORD_UPGRADES: readonly ChordUpgrade[] = [
-  // Forward LK+LMK+HK (D+F+G+H), only with a full Revenge bar (see resourceReady).
-  // No two-key subset of it is a forward chord, so it never shadows one.
-  { sources: { standing_lk: 'LK', standing_lmk: 'LMK', spin_hk: 'HK' }, direction: 6, target: 'revenge_combo', travel: 'replace' },
   // Back LP+LK+MK (A+R+F+B, pad X+A+B), only with a full Special bar: the Wirbel.
   // No two-key subset of it is a back chord (those are LK+LMK and MK+HP).
   { sources: { standing_lp: 'LP', left_turn_kick: 'LK', spin_mk: 'MK' }, direction: 4, target: 'special_spin', travel: 'replace' },
@@ -131,7 +128,7 @@ export function startAttack(f: Fighter, combatFrame: number, holdEligible = stan
     const command = move.command;
     if (command.type === 'normal') return true;
     if (command.type === 'hold') return holdEligible && resourceReady(f, move) && command.directions.includes(current.direction) && command.buttons.every(b => Boolean(current.pressed & buttonBit(b)));
-    return pending.motions.includes(command.motionId ?? '');
+    return resourceReady(f, move) && pending.motions.includes(command.motionId ?? '');
   };
   const candidates = Object.values(MOVES).filter(move => isPlayableMove(move) && move.stance === stance(f) && move.button === button && commandMatches(move));
   const category={normal:0,hold:1,motion:2};

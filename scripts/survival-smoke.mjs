@@ -8,7 +8,7 @@
 // up and the damage upgrade reaches the player. Screenshots in test-results/survival.
 import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
-import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
+import { SERVER_URL, TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const browser = await chromium.launch({ executablePath: chromeExecutable(), headless: true, args: ['--no-sandbox'] });
 const output = 'test-results/survival'; await mkdir(output, { recursive: true });
 const read = async page => {
@@ -148,7 +148,7 @@ try {
     await expect.poll(async () => (await upgrades()).offer.length, { timeout: 8000 }).toBe(3);
     return upgrades();
   };
-  await page.goto(`${TEST_URL}/?survival-test=weak-boss`);
+  await page.goto(`${SERVER_URL}/?survival-test=weak-boss&intro=off`);
   await page.locator('#game[data-ready="true"]').waitFor();
   await page.keyboard.press('F10');
   await expect(page.locator('#match-status')).toContainText('SURVIVAL');

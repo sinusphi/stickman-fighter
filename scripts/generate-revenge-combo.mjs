@@ -1,5 +1,6 @@
 /**
- * Forward LK+LMK+HK with a full Revenge bar: jab → hook → left middle → left
+ * Quarter circle forward (down, down-forward, forward: motion 236) + LP with a
+ * full Revenge bar: jab → hook → left middle → left
  * high → right middle → right high → heavy hook finisher (seven hits).
  *
  * Footwork, so no support foot ever slides (ground positions are in the
@@ -111,7 +112,7 @@ await generateKick(G => {
   ];
   // Body turn of the punches (as authored for standing_mp), square again for the kicks.
   const turnTrack = [[0, 0], [7, 0], [10, .15], [14, 1], [16, 1], [19, .45], [21, 0], [58, 0], [61, .15], [64, 1], [66, 1], [69, .85], [72, .3], [76, 0]];
-  return { id: 'revenge_combo', button: 'HK', buttons: ['LK', 'LMK', 'HK'], direction: 6, duration: 77, priority: 30,
+  return { id: 'revenge_combo', button: 'LP', motion: '236+P', duration: 77, priority: 30,
     advance: { frames: STEP_FRAMES, distance: STEP },
     resource: 'revenge', standingHitstun: true,
     frame: { startup: 6, active: 61, recovery: 10 }, kickFoot: 'leftFoot',

@@ -61,8 +61,8 @@ describe('hit feedback', () => {
 });
 
 describe('combo list', () => {
-  it('lists every multi-button move exactly once', () => {
-    const ids = Object.values(MOVES).filter(m => m.command.buttons.length > 1).map(m => m.id).sort();
+  it('lists every multi-button and motion move exactly once', () => {
+    const ids = Object.values(MOVES).filter(m => m.command.buttons.length > 1 || m.command.type === 'motion').map(m => m.id).sort();
     expect(comboMoves.map(m => m.id).sort()).toEqual(ids);
   });
 });

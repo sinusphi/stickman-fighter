@@ -18,7 +18,7 @@ try {
  await combos.locator('summary').click();
  const comboCommands=await page.evaluate(async()=>{
   const {default:moves}=await import('/src/data/moves.json');
-  return moves.filter(move=>move.command.buttons.length>1).map(move=>({id:move.id,buttons:move.command.buttons,direction:move.command.directions[0]}));
+  return moves.filter(move=>move.command.buttons.length>1||move.command.type==='motion').map(move=>({id:move.id,buttons:move.command.buttons,direction:move.command.directions[0],motion:move.command.type==='motion'}));
  });
  // Throws are listed in their own section below the combos.
  await expect(combos.locator('.combo-list:not(.throw-list) li')).toHaveCount(comboCommands.length);
@@ -28,9 +28,11 @@ try {
   for(const player of [0,1])await expect(row.locator(`[data-owner="${player}"][data-control="THROW"]`)).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="THROW"]`).innerText());
  }
  await expect(combos.locator('.throw-list li')).toHaveCount(2);
- for(const {id,buttons,direction} of comboCommands) {
+ for(const {id,buttons,direction,motion} of comboCommands) {
   const row=combos.locator(`[data-combo="${id}"]`);
-  await expect(row.locator('.combo-command')).toHaveText(`${direction===6?'Forward (6)':'Back (4)'} + ${buttons.join(' + ')}`);
+  // Motion moves (revenge_combo: 236 + LP) show the quarter circle instead of a hold direction.
+  await expect(row.locator('.combo-command')).toHaveText(`${motion?'Quarter circle forward (↓ ↘ →, 236)':direction===6?'Forward (6)':'Back (4)'} + ${buttons.join(' + ')}`);
+  if(motion)for(const player of [0,1])for(const control of ['down',player===0?'right':'left'])await expect(row.locator(`[data-owner="${player}"][data-control="${control}"]`).first()).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="${control}"]`).innerText());
   for(const player of [0,1])for(const button of buttons) {
    await expect(row.locator(`[data-owner="${player}"][data-control="${button}"]`)).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="${button}"]`).innerText());
   }
@@ -47,6 +49,9 @@ try {
  const options=await select.locator('option').evaluateAll(options=>options.map(option=>option.value));
  expect([...options].sort()).toEqual(catalog.map(clip=>clip.id).sort());
  expect(new Set(options).size).toBe(options.length);
+ await expect(select.locator('option[value="revenge_combo"]')).toContainText('236+LP');
+ await expect(select.locator('option[value="revenge_combo_f"]')).toContainText('236+LK');
+ await expect(select.locator('option[value="revenge_combo_v"]')).toContainText('236+RLK');
  await expect(select).toHaveValue('Idle');
  expect(await select.locator('optgroup').evaluateAll(groups=>groups.map(group=>group.label))).toEqual([
   'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Throws','Blocks & hit reactions','Rotation demos',

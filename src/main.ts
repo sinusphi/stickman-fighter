@@ -51,7 +51,9 @@ async function main(): Promise<void> {
   setupStage(document,selected=>{stage=selected;});
   const devices = new Devices();
   await devices.loadConfiguration();
-  let game = createGame();
+  // Versus rounds open with the intro; `?intro=off` skips it (browser smokes of other features).
+  const versusIntro = new URLSearchParams(location.search).get('intro') !== 'off';
+  let game = createGame({ intro: versusIntro });
   game.inputConfig = { socd: structuredClone(devices.config.socd), bufferFrames: devices.config.bufferFrames, autoBlock: devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean] };
   let previous = snapshot(game);
   // Accessing localStorage itself can throw when persistence is disabled.
@@ -233,7 +235,9 @@ async function main(): Promise<void> {
         if (++demoMatchOverFrames >= DEMO_MATCH_HOLD) { demoMatchOverFrames = 0; pendingEvents.push({ type:'reset' }); }
       } else demoMatchOverFrames = 0;
     }
-    if (previous.round.phase !== 'fighting' && game.round.phase === 'fighting') { previous = snapshot(game);feedback.reset(game);effects.reset(); }
+    // A new round starts with its intro, or directly fighting without one (training).
+    const roundStarted = previous.round.phase !== game.round.phase && (game.round.phase === 'intro' || (game.round.phase === 'fighting' && previous.round.phase !== 'intro'));
+    if (roundStarted) { previous = snapshot(game);feedback.reset(game);effects.reset(); }
     loop.timeScale=slowMotion.update(game,feedback.koFrames);
   }
   function queue(event: ControlEvent): void {

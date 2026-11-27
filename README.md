@@ -20,8 +20,9 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 ## Features
 
 - Local versus, CPU, and CPU-versus-CPU modes; against the CPU you can play as P1 or P2
+- Round intro in versus: READY UP!, both fighters walk in, a fist salute, then FIGHT!
 - 37 standing, crouching, airborne, spin, tornado, and combo attacks, plus two throws (hip throw and shoulder throw with side switch)
-- Revenge combo: with a full Revenge bar, a seven-hit comeback combo
+- Revenge combo: with a full Revenge bar, a seven-hit comeback combo in three variants (quarter circle + LP, LK or RLK)
 - Wirbel: with a full Special bar, a 360° spin kick that hits behind and in front
 - Blocking, jumping, running (double tap forward), best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
 - Hit effects: sparks, screen shake, dust, speed lines, KO flash, and a combo counter (switchable in the settings)
@@ -65,15 +66,39 @@ Throws: **6 + Throw** hip throw, **4 + Throw** shoulder throw (the opponent land
 Use **Backspace** to restart a match. Controls can be reassigned in the game.
 
 
+## Round intro
+
+Every versus round (also against the CPU and in the demo, not in training or survival) opens with a short intro of about two seconds:
+
+1. **READY UP!** Both fighters stand at their start positions.
+2. Both walk towards each other on their own until the tips of their extended standing LP fists would touch exactly. The distance comes from the move's baked contact geometry, not from a fixed number.
+3. **Fist salute:** both play the standing LP animation without a hitbox, damage or meter gain; the fists meet at the furthest extension with a small spark.
+4. **FIGHT!** Inputs are released and the round timer starts. The fighters stand where they greeted, just outside reach.
+
+Inputs are locked until FIGHT; a button held through the intro does not count as a press. The intro is part of the deterministic simulation and is recorded in replays. `?intro=off` in the URL skips the intro (used by the browser smoke tests of other features).
+
 ## Revenge combo
 
-The Revenge bar fills while you take hits (full after about 400 damage). With a full bar, **forward (6) + LK + LMK + HK** together starts the Revenge combo: jab → hook → left middle → left high → right middle → right high → heavy punch, 500 damage in total, with a step forward over the first two strikes. The finisher knocks the opponent down.
+The Revenge bar fills while you take hits (full after about 400 damage). With a full bar, a **quarter circle forward + LP (236 + LP)** starts the Revenge combo (P1 from the left: hold S, add D, release S while holding D, then R; P2 from the right: ↓, ↓ + ←, ← + Num7; forward always points towards the opponent): jab → hook → left middle → left high → right middle → right high → heavy punch, 500 damage in total, with a step forward over the first two strikes. The finisher knocks the opponent down.
 
-- Player 1: hold **D** and press **F + G + H**; Player 2: hold **←** and press **Numpad 4 + 5 + 6**. The keys may arrive up to 3 frames (50 ms) apart.
-- Only from standing on the ground. The combo empties the bar when it starts, even if it misses. Without a full bar the same keys work exactly as before (spin high kick).
+- The quarter circle may take up to 20 frames in total with at most 8 frames between its steps; LP may come up to 3 frames after forward, a short neutral before LP is fine. On the gamepad: D-pad or stick ↓, ↘, → (towards the opponent), then LP.
+- Only from standing on the ground. The combo empties the bar when it starts, even if it misses. Without a full bar, crouching, in the air or with an incomplete or reversed quarter circle, LP stays the normal jab. Forward + LK + LMK + HK no longer spends the bar (it is the spin high kick).
 - Once the jab lands, all seven hits land: they cannot be blocked anymore, and a crouching opponent is stood up by the hits. If the jab is blocked, the rest stays blockable as usual (the jab must be blocked standing).
 - Start distance (centre to centre): from bodies touching (38 px) up to 93 px against a standing opponent, 86 px against a crouching one.
-- Works in versus, training and survival (stagger does not cut it short there). The CPU does not use it. On the gamepad LMK is unassigned by default, so the combo needs a custom binding there.
+- Works in versus, training and survival (stagger does not cut it short there). The CPU does not use it.
+
+### Three variants, one quarter circle
+
+The same quarter circle forward starts one of three seven-hit combos, depending on the button (P1 keys, P2 on the numpad in brackets). All three need the full bar, empty it and are not blockable once the first hit lands.
+
+| Button | Combo | Opens | Character | Finisher |
+|---|---|---|---|---|
+| LP (R / Num7) | `revenge_combo`: Jab → Hook → Left Middle → Left High → Right Middle → Right High → Heavy Punch | HIGH (block standing) | punches first, kicks in the middle, step in over the first two strikes | heavy punch, 500 damage in total |
+| LK (F / Num4) | `revenge_combo_f`: Right Low → Left Low → Right Middle → Left Middle → Right High → Left High → Push Kick | LOW (block crouching) | kicks only, the legs alternate on the spot (12 frames per kick), a slow wind-up for the finisher | straight push kick at hip height, 490 damage in total, longest of the three (105 frames) |
+| RLK (V / Num1) | `revenge_combo_v`: Hook → Jab → Hook → Right Low → Left Middle → Left High → Uppercut | MID (block crouching) | fastest start (8 frames) and a fast punch rhythm, then a low-kick mix-up and a double left kick | rising uppercut from a deep dip of the hips, 475 damage in total, shortest (82 frames) |
+
+- Start distance (centre to centre, from bodies touching at 38 px): `revenge_combo_f` up to 96 px against a standing, 102 px against a crouching opponent; `revenge_combo_v` up to 78 px standing, 82 px crouching.
+- Without a full bar the buttons stay the normal single attacks (LK left low kick, RLK right low kick). The CPU does not use any of them.
 
 
 ## Wirbel (Special)
@@ -133,7 +158,7 @@ npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 <summary>All attacks with inputs and frame data</summary>
 
 <!-- move-table:start (generated by npm run generate:move-table) -->
-41 moves. Directions are relative to the opponent (6 forward, 4 back); keys for the starting positions with default controls (P1 left, P2 right). Frames at 60 Hz, startup counted from frame 0. Knee hit groups of the standing middle/high kicks are included in the damage. Throws grab a standing or crouching opponent that can act, up to 36 px beyond the own pushbox; frame data of throws: grab frame / whiff recovery, damage on impact.
+43 moves. Directions are relative to the opponent (6 forward, 4 back); keys for the starting positions with default controls (P1 left, P2 right). Frames at 60 Hz, startup counted from frame 0. Knee hit groups of the standing middle/high kicks are included in the damage. Throws grab a standing or crouching opponent that can act, up to 36 px beyond the own pushbox; frame data of throws: grab frame / whiff recovery, damage on impact.
 
 | Move | ID | Input | P1 | P2 | Startup / Active / Recovery | Total | Damage | Block level |
 |---|---|---|---|---|---|---:|---|---|
@@ -176,8 +201,10 @@ npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 | Right Middle → Body Hook | `kick_punch_combo` | 4 + MK + HP | hold A + B + Y | hold → + Num2 + Num9 | 17 / 16 / 14 | 47 | 65 + 85 | MID |
 | Hip Throw | `throw_forward` | 6 + THROW | hold D + C | hold ← + Num0 | 4 / 1 / 22 (whiff) | 27 | 110 | unblockable (throw) |
 | Shoulder Throw | `throw_back` | 4 + THROW | hold A + C | hold → + Num0 | 4 / 1 / 22 (whiff) | 27 | 130 | unblockable (throw) |
-| Revenge Combo: Jab → Hook → Left Middle → Left High → Right Middle → Right High → Heavy Punch (full Revenge bar) | `revenge_combo` | 6 + LK + LMK + HK | hold D + F + G + H | hold ← + Num4 + Num5 + Num6 | 6 / 61 / 10 | 77 | 40 + 60 + 65 + 80 + 65 + 80 + 110 | HIGH / MID |
+| Revenge Combo: Jab → Hook → Left Middle → Left High → Right Middle → Right High → Heavy Punch (full Revenge bar) | `revenge_combo` | 236 + LP | S, S + D, D + R | ↓, ↓ + ←, ← + Num7 | 6 / 61 / 10 | 77 | 40 + 60 + 65 + 80 + 65 + 80 + 110 | HIGH / MID |
 | Wirbel: 360° Spin Kick, back and front (full Special bar) | `special_spin` | 4 + LP + LK + MK | hold A + R + F + B | hold → + Num7 + Num4 + Num2 | 9 / 11 / 22 | 42 | 50 + 60 | MID |
+| Revenge Combo F: Right Low → Left Low → Right Middle → Left Middle → Right High → Left High → Push Kick (full Revenge bar) | `revenge_combo_f` | 236 + LK | S, S + D, D + F | ↓, ↓ + ←, ← + Num4 | 10 / 79 / 16 | 105 | 35 + 35 + 55 + 60 + 80 + 90 + 135 | LOW / MID / HIGH |
+| Revenge Combo V: Hook → Jab → Hook → Right Low → Left Middle → Left High → Uppercut (full Revenge bar) | `revenge_combo_v` | 236 + RLK | S, S + D, D + V | ↓, ↓ + ←, ← + Num1 | 8 / 64 / 10 | 82 | 45 + 40 + 60 + 45 + 65 + 85 + 135 | MID / HIGH / LOW |
 <!-- move-table:end -->
 
 </details>

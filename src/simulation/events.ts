@@ -16,8 +16,10 @@ export function applyEvents(game: GameState, events: ControlEvent[]): void {
       if (toggled) applyEvents(game, [{ type: 'reset' }]);
     }
     if (event.type === 'reset') {
-      const { frame, combatFrame, inputConfig, training } = game;
-      Object.assign(game, createGame(), { frame, combatFrame, inputConfig, training });
+      const { frame, combatFrame, inputConfig, training, roundIntro } = game;
+      Object.assign(game, createGame({ intro: roundIntro }), { frame, combatFrame, inputConfig, training });
+      // Training keeps the versus marker for later, but its rounds never play the intro.
+      if (training.enabled && game.round.phase === 'intro') { game.round.phase = 'fighting'; game.round.intro = null; }
     }
   }
 }
