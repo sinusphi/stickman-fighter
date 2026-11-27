@@ -1,5 +1,15 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-27 · Neue Eingabe für die Revenge-Kombos
+
+- **Revenge-Kombos mit neuer Tastenkombination:** Statt Viertelkreis (↓ ↘ →, 236) jetzt **unten halten, vorwärts dazunehmen, beide halten, dann die Taste** (Motion `23`): P1 S halten, D dazu, dann R (LP, `revenge_combo`), F (LK, `revenge_combo_f`) oder V (RLK, `revenge_combo_v`); P2 ↓ halten, ← dazu, dann Num7 / Num4 / Num1. Vorwärts zeigt weiter zum Gegner.
+- Unten muss zuerst kommen (direkt gedrücktes ↘ oder erst vorwärts zählt nicht), beide Richtungen dürfen beliebig lange gehalten werden (bis rund 2 Sekunden Eingabeverlauf), bis zu 3 Frames Loslassen vor der Taste ist erlaubt. Neues Motion-Flag `hold` in `motions.json`.
+- Da ↘ eine Hocke ist, richten sich die Revenge-Kombos direkt aus der Hocke auf (Motions, die in einer Hockrichtung enden, dürfen Standing-Moves starten). Ohne volle Leiste bleibt die Eingabe der jeweilige hockende Angriff (`crouching_lp`, `crouching_lk`, `crouching_rlk`).
+- Weil ↘ eine Hocke ist und kein Gehschritt mehr vor dem Angriff liegt, startet jede Revenge-Kombo 3 px weniger weit: `revenge_combo` bis 90 / 83 px (stehend / hockend), `revenge_combo_f` bis 93 / 99 px, `revenge_combo_v` bis 75 / 79 px.
+- Kombo-Liste, Hinweise (EN/DE), Animationsvorschau, CPU-Eingabe und Move-Tabelle in beiden READMEs angepasst.
+- **Replays:** `ENGINE_VERSION` 1.20.0, Moves/Motions geändert (Datenhash).
+- Tests: `revenge-combo`, `revenge-variants`, `guard-break` und `input` auf die neue Eingabe umgestellt; Smokes `smoke:revenge-combo`, `smoke:guard-break` und `smoke:animation-preview` angepasst.
+
 ## 2026-11-27 · Jumping Uppercut mit zwei Treffern
 
 - **Jumping Uppercut ist jetzt ein Zwei-Treffer-Angriff:** Erst ein gerader rechter Punch auf Kinnhöhe aus dem Stand (25 Schaden), dann zieht die Faust zur Brust zurück, die Hüfte geht tief, und beim Abspringen fährt derselbe Arm nach oben gestreckt als Uppercut in den Gegner (75 Schaden). Zusammen 100 statt 85. Beide Treffer HIGH (stehend blocken, gegen hockende Deckung gehen beide drüber).
