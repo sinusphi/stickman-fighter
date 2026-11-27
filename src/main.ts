@@ -10,7 +10,7 @@ import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
 import { HitAudio } from './platform/audio';
-import { describeStrike, newContactSounds, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
+import { describeStrike, newContactSounds, newGuardBreaks, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
 import { newResourceFills } from './platform/resource-ready';
 import { setupAnimationPreview } from './debug/animation-preview';
 import type { HitLevel } from './data/schema';
@@ -91,6 +91,7 @@ async function main(): Promise<void> {
   const playContactSound = () => {
     for (const swing of newSwingSounds(game, previous)) audio.playSwing(swing);
     for (const contact of newContactSounds(game, previous)) audio.playContact(contact);
+    for (const guardBreak of newGuardBreaks(game, previous)) audio.playGuardBreak(guardBreak.block, guardBreak.resource);
     const throws = newThrowSounds(game, previous);
     for (const grab of throws.grabs) audio.playGrab(grab);
     for (const flight of throws.flights) audio.playSwing(flight);
@@ -147,6 +148,7 @@ async function main(): Promise<void> {
       const swingView = index === 0 ? view.game : { ...view.game, fighters: [old.fighters[0], view.game.fighters[1]] as GameState['fighters'] };
       for (const swing of newSwingSounds(swingView, old)) audio.playSwing(swing);
       for (const contact of newContactSounds(view.game, old)) audio.playContact(contact);
+      for (const guardBreak of newGuardBreaks(view.game, old)) audio.playGuardBreak(guardBreak.block, guardBreak.resource);
       const throws = newThrowSounds(view.game, old);
       for (const grab of throws.grabs) audio.playGrab(grab);
       for (const flight of throws.flights) audio.playSwing(flight);
@@ -275,6 +277,15 @@ async function main(): Promise<void> {
     const modes: DummyMode[]=['stand','crouch','block','cpu'];
     queue({type:'training',enabled:true,dummy:modes[(modes.indexOf(game.training.dummy)+1)%modes.length]});
   }
+  // Training options: keep the Revenge / Special bars full (a replayable event, no reset).
+  for (const name of ['revenge','special'] as const) element<HTMLInputElement>(`full-${name}`).onchange=()=>{
+    if (!game.training.enabled || survival) {
+      element<HTMLInputElement>(`full-${name}`).checked = name === 'revenge' ? game.training.fullRevenge === true : game.training.fullSpecial === true;
+      return;
+    }
+    queue({type:'trainingBars',revenge:element<HTMLInputElement>('full-revenge').checked,special:element<HTMLInputElement>('full-special').checked});
+    updateUI();
+  };
   function toggleRecord(): void {
     if (playback) stopPlayback();
     if (recording) { lastReplay=recording; recording=null; message(t('message.recordingSaved',{frames:lastReplay.frames.length})); }
@@ -321,7 +332,8 @@ async function main(): Promise<void> {
   };
   const pollSettings=setupSettings(devices,()=>{refreshBindings();queue({type:'inputConfig',config:{socd:structuredClone(devices.config.socd),bufferFrames:devices.config.bufferFrames,autoBlock:devices.config.players.map(p=>p.autoBlock === true) as [boolean,boolean]}});},message,effects.settings);
   element('settings-details').addEventListener('toggle',event=>{ if((event.target as HTMLDetailsElement).open)setPaused(true); });
-  document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button'))(document.activeElement as HTMLElement)?.blur(); });
+  // A mouse click must not leave the focus on a button or training checkbox, where game keys would be ignored.
+  document.addEventListener('click',event=>{ if((event as MouseEvent).detail>0 && (event.target as HTMLElement).closest('button,.training-option'))(document.activeElement as HTMLElement)?.blur(); });
   const hotkeys: Record<string,string> = { KeyP:'pause',Period:'step',Backspace:'reset',F1:'boxes',F2:'inputs',F3:'states',F4:'training',F5:'dummy',F6:'record',F7:'play',F8:'cpu',F9:'demo',F10:'survival' };
   window.addEventListener('keydown',event=>{
     if((event.target as HTMLElement).closest('#animation-preview'))return;

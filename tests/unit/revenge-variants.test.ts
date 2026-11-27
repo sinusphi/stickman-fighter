@@ -14,6 +14,7 @@ import { SURVIVAL } from '../../src/survival/config';
 import { bossSpec } from '../../src/survival/spawner';
 import { createSurvival, spawnEnemy, stepSurvival, type SurvivalState } from '../../src/survival/state';
 import { createReplay, playReplay } from '../../src/debug/replay';
+import { GUARD_BREAK_FREEZE_FRAMES } from '../../src/simulation/guard-break';
 
 /**
  * The two Revenge variants on the same quarter circle (236) as `revenge_combo` (+LP):
@@ -240,20 +241,21 @@ describe.each(VARIANTS)('$id: hits', v => {
     expect(b.hp).toBe(rules.maxHealth - v.damage);
     expect(knocked).toBe(true);
   });
-  it('stays blockable after a blocked opener (no special rule), with the guard its level asks for', () => {
-    const game = setup(1, 60), block = { ...neutralInput(), left: false, right: true, down: requiresCrouchGuard(v.levels[0] as 'LOW' | 'MID' | 'HIGH') };
-    step(game, [neutralInput(), block]);
-    playMotion(game, 1, v.button, QCF, 2, block);
-    for (let f = 0; f < 16; f++) step(game, [neutralInput(), block]);
-    expect(game.lastContact?.blocked).toBe(true);
-    expect(game.fighters[1].hp).toBeGreaterThan(rules.maxHealth - 10);
-  });
-  it('is not blocked by the wrong guard: a standing block loses to a LOW or MID opener, a crouching block to none that is HIGH', () => {
-    const game = setup(1, 60), wrong = { ...neutralInput(), right: true, down: !requiresCrouchGuard(v.levels[0] as 'LOW' | 'MID' | 'HIGH') };
-    step(game, [neutralInput(), wrong]);
-    playMotion(game, 1, v.button, QCF, 2, wrong);
-    for (let f = 0; f < 16; f++) step(game, [neutralInput(), wrong]);
-    expect(game.fighters[1].hp).toBeLessThan(rules.maxHealth);
+  it('breaks the guard its opener asks for and hits through the wrong one: the full combo always lands', () => {
+    for (const right of [true, false]) {
+      const level = v.levels[0] as 'LOW' | 'MID' | 'HIGH';
+      for (const down of [requiresCrouchGuard(level), !requiresCrouchGuard(level)]) {
+        const game = setup(1, 60), guard = { ...neutralInput(), right, down };
+        step(game, [neutralInput(), guard]);
+        playMotion(game, 1, v.button, QCF, 2, guard);
+        for (let f = 0; f < RUN + GUARD_BREAK_FREEZE_FRAMES; f++) step(game, [neutralInput(), guard]);
+        // Walking back before any contact may leave the opener short; from the first hit on, every hit lands.
+        const hits = game.fighters[0].hitTargets.map(t => t.split(':')[0]);
+        expect(hits.length, `${right} ${down}`).toBeGreaterThanOrEqual(v.groups.length - 1);
+        expect(hits, `${right} ${down}`).toEqual(v.groups.slice(v.groups.indexOf(hits[0])));
+        if (!right) expect(game.fighters[1].hp).toBe(rules.maxHealth - v.damage);
+      }
+    }
   });
   it('works in training (bar handled as in versus, no damage) and replays deterministically', () => {
     const game = setup(1, 60);

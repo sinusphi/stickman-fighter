@@ -298,3 +298,16 @@ export function newResourceStarts(game: GameState, previous: GameState): { fight
   }
   return starts;
 }
+
+/**
+ * Guard breaks that started in this step (simulation/guard-break): the blocked
+ * strike's guard sound plus the bar behind the move for the charge cue. The
+ * breakthrough itself sounds through newContactSounds as a regular hit.
+ */
+export function newGuardBreaks(game: GameState, previous: GameState): { block: StrikeSound; resource: 'revenge' | 'special' }[] {
+  const now = game.guardBreak, before = previous.guardBreak;
+  if (!now || (before && before.frame === now.frame && before.attacker === now.attacker)) return [];
+  const attacker = game.fighters[now.attacker], moveId = attacker?.moveId;
+  if (!moveId || !MOVES[moveId]) return [];
+  return [{ block: describeStrike(moveId, now.group, game.fighters[now.defender].x), resource: MOVES[moveId].command.resource === 'special' ? 'special' : 'revenge' }];
+}

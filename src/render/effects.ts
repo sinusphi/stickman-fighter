@@ -11,6 +11,7 @@ import { animationTrails, samplePose, sampleYaw } from './skeleton';
 import { STAGE_VIEW } from './stages';
 import { newResourceFills, RESOURCE_NAMES, type ResourceName } from '../platform/resource-ready';
 import { saluteContact } from '../simulation/intro';
+import { GUARD_BREAK_FREEZE_FRAMES } from '../simulation/guard-break';
 
 /*
  * Presentation only. Hit sparks, screen shake, dust, speed lines, the KO flash
@@ -42,7 +43,7 @@ const BODY_CENTRE = 58 * FIGURE_SCALE;
 /** Minimum per-step ground slide of a stunned fighter that kicks up dust (subpixels). */
 const SLIDE_DUST = 2 * rules.unit;
 
-export const ParticleKind = { Ray: 0, Flash: 1, Arc: 2, Dust: 3, Ring: 4, Halo: 5, Aura: 6, Spark: 7, Star: 8 } as const;
+export const ParticleKind = { Ray: 0, Flash: 1, Arc: 2, Dust: 3, Ring: 4, Halo: 5, Aura: 6, Spark: 7, Star: 8, Crack: 9 } as const;
 export type ParticleKind = typeof ParticleKind[keyof typeof ParticleKind];
 /** Index into the palette roles used for particles. */
 export const Tint = { Special: 0, Revenge: 1, Muted: 2, Light: 3 } as const;
@@ -128,6 +129,7 @@ export class HitEffects {
    */
   update(game: GameState, previous: GameState, live = true): void {
     if (live) this.tick();
+    this.observeGuardBreak(game, previous);
     this.observeContacts(game, previous);
     this.observeThrows(game, previous);
     for (const f of game.fighters) this.observeFighter(f, previous.fighters[f.id]);
@@ -167,6 +169,7 @@ export class HitEffects {
     for (const { uid, game } of views) {
       const before = previous.find(v => v.uid === uid)?.game;
       if (!before) continue;
+      this.observeGuardBreak(game, before);
       this.observeContacts(game, before);
       this.observeThrows(game, before);
       if (!playerSeen) { this.observeFighter(game.fighters[0], before.fighters[0]); playerSeen = true; }
@@ -279,6 +282,77 @@ export class HitEffects {
       const side = i % 2 ? 1 : -1, angle = r.range(-0.35, 0.35), speed = r.range(3.5, 6.5);
       this.spawn(ParticleKind.Ray, x + side * 6, y + r.range(-8, 14), side * Math.cos(angle) * speed, Math.sin(angle) * speed,
         r.range(5, 9), Math.round(r.range(8, 12)), i % 3 === 0 ? Tint.Light : Tint.Special);
+    }
+  }
+
+  // -------------------------------------------------------- guard break ----
+  /**
+   * Guard break (simulation/guard-break): when a guard-breaking strike meets a
+   * block, the guard lights up and cracks during the freeze; when the freeze
+   * ends and the strike lands, the guard shatters with a bright flash.
+   */
+  private observeGuardBreak(game: GameState, previous: GameState): void {
+    const now = game.guardBreak, before = previous.guardBreak;
+    if (now && !(before && before.frame === now.frame && before.attacker === now.attacker)) {
+      const attacker = game.fighters[now.attacker], defender = game.fighters[now.defender];
+      const moveId = attacker.moveId;
+      if (!moveId || !MOVES[moveId]) return;
+      const move = MOVES[moveId], group = move.hitGroups.find(g => g.id === now.group) ?? move.hitGroups[0];
+      const [x, y] = this.strikePoint(game, attacker, previous.fighters[attacker.id], moveId, group.id, defender, group.hitLevel ?? move.hitLevel);
+      this.spawnGuardBreak(x, y, now.side, move.command.resource === 'special' ? Tint.Special : Tint.Revenge,
+        screenX(defender.x), screenY(defender.y) - BODY_CENTRE);
+    }
+    if (before && !now) {
+      const contact = game.lastContact;
+      if (!contact || contact.blocked || contact.attacker !== before.attacker || contact.defender !== before.defender) return;
+      const defender = game.fighters[before.defender], moveId = game.fighters[before.attacker].moveId;
+      const tint = moveId && MOVES[moveId]?.command.resource === 'special' ? Tint.Special : Tint.Revenge;
+      this.spawnGuardShatter(screenX(defender.x) - before.side * 8, screenY(defender.y) - BODY_CENTRE, before.side, tint);
+    }
+  }
+
+  /**
+   * Start of a guard break at the blocked strike (`x`, `y`): a white flash over
+   * the screen, a bright guard arc that holds through the freeze, jagged cracks
+   * running from the contact into the guard, a halo and an aura on the
+   * defender (body centre `bx`, `by`) in the colour of the bar behind the move.
+   */
+  spawnGuardBreak(x: number, y: number, side: number, tint: Tint, bx: number, by: number): void {
+    this.addShake(4);
+    if (!this.settings.effects) return;
+    const r = this.random, hold = GUARD_BREAK_FREEZE_FRAMES;
+    this.flash = Math.max(this.flash, 0.55);
+    this.spawn(ParticleKind.Flash, x, y, 0, 0, 20, 12, Tint.Light);
+    // Arcs only read the sign of vx (their facing); a tiny value keeps them in place.
+    this.spawn(ParticleKind.Arc, x, y, -side * 0.01, 0, 16, hold, Tint.Light);
+    this.spawn(ParticleKind.Arc, x, y, -side * 0.01, 0, 21, hold, tint);
+    this.spawn(ParticleKind.Halo, x, y, 0, 0, 8, 18, tint, 1.12);
+    this.spawn(ParticleKind.Aura, bx, by, 0, 0, 46, hold + 6, tint, 1.004);
+    for (let i = 0; i < 6; i++) {
+      // Cracks fan out into the guard, away from the attacker.
+      const angle = (side > 0 ? 0 : Math.PI) + side * (-1.25 + i * 0.5 + r.range(-0.15, 0.15));
+      this.spawn(ParticleKind.Crack, x, y, 0, 0, r.range(11, 19), hold + 2, i % 2 ? tint : Tint.Light, angle);
+    }
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + r.range(-0.2, 0.2), speed = r.range(1.6, 3);
+      this.spawn(ParticleKind.Ray, x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, r.range(5, 8), Math.round(r.range(8, 12)), Tint.Light);
+    }
+  }
+
+  /** Breakthrough at the end of the freeze: the guard shatters in a bright burst. */
+  spawnGuardShatter(x: number, y: number, side: number, tint: Tint): void {
+    this.addShake(6);
+    if (!this.settings.effects) return;
+    const r = this.random;
+    this.flash = Math.max(this.flash, 0.8);
+    this.spawn(ParticleKind.Flash, x, y, 0, 0, 30, 12, Tint.Light);
+    this.spawn(ParticleKind.Halo, x, y, 0, 0, 12, 16, Tint.Light, 1.16);
+    this.spawn(ParticleKind.Halo, x, y, 0, 0, 18, 20, tint, 1.1);
+    for (let i = 0; i < 12; i++) {
+      // Guard shards fly off behind the defender.
+      const angle = (side > 0 ? 0 : Math.PI) + r.range(-1.1, 1.1), speed = r.range(3.2, 6.4);
+      this.spawn(ParticleKind.Spark, x, y + r.range(-18, 18), Math.cos(angle) * speed, Math.sin(angle) * speed - 0.6,
+        r.range(6, 11), Math.round(r.range(10, 16)), i % 3 === 0 ? tint : Tint.Light);
     }
   }
 
@@ -614,6 +688,19 @@ export class HitEffects {
           ctx.globalAlpha = fade; ctx.strokeStyle = palette.arena; ctx.lineWidth = 3;
           ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(x, y); ctx.stroke();
           ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+          break;
+        }
+        case ParticleKind.Crack: {
+          // Jagged crack in the guard: grows within a few steps, then holds and fades late.
+          const angle = this.grow[i], grow = Math.min(1, (age + alpha + 1) / 4), length = size * grow;
+          const ux = Math.cos(angle), uy = Math.sin(angle), nx = -uy, ny = ux, jag = size * 0.16 * (i % 2 ? 1 : -1);
+          ctx.globalAlpha = Math.min(1, fade * 2.5);
+          ctx.beginPath(); ctx.moveTo(x, y);
+          ctx.lineTo(x + ux * length * 0.35 + nx * jag, y + uy * length * 0.35 + ny * jag);
+          ctx.lineTo(x + ux * length * 0.65 - nx * jag, y + uy * length * 0.65 - ny * jag);
+          ctx.lineTo(x + ux * length, y + uy * length);
+          ctx.strokeStyle = palette.arena; ctx.lineWidth = 3; ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = 1.4; ctx.stroke();
           break;
         }
         case ParticleKind.Star: {

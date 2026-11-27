@@ -1,4 +1,5 @@
 import { FIGURE_SCALE } from '../data/figure-scale';
+import { guardBreakGlow } from './guard-break';
 import rules from '../data/rules.json';
 import type { HitLevel } from '../data/schema';
 import type { Fighter } from '../simulation/types';
@@ -133,7 +134,9 @@ export function renderSurvival(canvas: HTMLCanvasElement, state: SurvivalState, 
     const hitFlash = level && ['Hitstun', 'Knockdown', 'KO'].includes(f.state) ? Math.max(0, 1 - (koTime ?? f.stateFrame) / 3) : 0;
     const warnFlash = enemy?.warn ? .3 + .35 * Math.abs(Math.sin(state.frame * .35)) : 0;
     const id = animationId(f, level);
-    drawFigure(ctx, pose, color, palette, facing, Math.max(hitFlash, warnFlash), fighterDepths(f, alpha, frozen, level), sampleTurn(id, time), yaw ?? sampleHeadYaw(id, time), animations[id].fixedLegDepth, MIRROR_YAW_ANIMATIONS.has(id));
+    let breakGlow = enemy ? guardBreakGlow(enemy.pair.guardBreak, state.hitstop, 1) : 0;
+    if (!enemy) for (const e of state.enemies) breakGlow = Math.max(breakGlow, guardBreakGlow(e.pair.guardBreak, state.hitstop, 0));
+    drawFigure(ctx, pose, color, palette, facing, Math.max(hitFlash, warnFlash, breakGlow), fighterDepths(f, alpha, frozen, level), sampleTurn(id, time), yaw ?? sampleHeadYaw(id, time), animations[id].fixedLegDepth, MIRROR_YAW_ANIMATIONS.has(id));
     ctx.restore();
     if (enemy?.warn) drawWarning(ctx, x, y + Math.min(...Object.values(pose).map(p => p[1])) * FIGURE_SCALE, state.frame, palette);
   }

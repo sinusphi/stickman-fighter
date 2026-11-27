@@ -3,10 +3,11 @@ import { captureInput } from '../input/commands';
 import { neutralInput, type RawInput } from '../input/types';
 import { moveFighter } from './movement';
 import { resolvePushboxes } from './collision';
-import { advanceAttack, measureAdvantage, resolveCombat, startAttack, standingHoldEligible } from './combat';
+import { advanceAttack, measureAdvantage, resolveCombat, resolveGuardBreak, startAttack, standingHoldEligible } from './combat';
+import { holdComboLock } from './guard-break';
 import { advanceRound, resolveRound } from './rounds';
 import { createFighter, createGame } from './factory';
-import { dummyInput } from '../debug/training';
+import { dummyInput, fillTrainingBars } from '../debug/training';
 import { applyEvents, type ControlEvent } from './events';
 import { advanceThrows, resolveThrows } from './throws';
 import { advanceFightBanner, stepIntro } from './intro';
@@ -39,7 +40,14 @@ export function step(game: GameState, inputs: [RawInput, RawInput] = [neutralInp
   }
   game.frame++;
   advanceFightBanner(game);
-  if (game.hitstop > 0) { game.hitstop--; return; }
+  if (game.training.enabled) fillTrainingBars(game);
+  if (game.hitstop > 0) {
+    // The freeze of a guard break ends with the strike landing (and its own hitstop).
+    if (--game.hitstop === 0) resolveGuardBreak(game);
+    return;
+  }
+  const [a, b] = game.fighters;
+  holdComboLock(a, [b]); holdComboLock(b, [a]);
   const holdEligible = game.fighters.map(standingHoldEligible);
   const available = game.fighters.map(fighter => { advanceAttack(fighter); return moveFighter(fighter, fixedDummy && fighter.id === 1); });
   advanceThrows(game);

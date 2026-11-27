@@ -216,6 +216,13 @@ export const START_PRESETS: Record<'revenge' | 'special', ReadyPreset> = {
   special: { wave: 'triangle', notes: [783.99, 587.33, 783.99, 1174.66], spacing: 0.03, duration: 0.08, gain: 0.5, cutoff: 6000,
     echoes: [{ delay: 0.11, level: 0.3 }] },
 };
+/** Guard break: a tense figure rising through the freeze (~0.5 s) until the strike breaks through. */
+export const GUARD_BREAK_PRESETS: Record<'revenge' | 'special', ReadyPreset> = {
+  revenge: { wave: 'square', notes: [164.81, 220, 277.18, 329.63, 440], spacing: 0.085, duration: 0.11, gain: 0.42, cutoff: 2600,
+    echoes: [{ delay: 0.1, level: 0.25 }] },
+  special: { wave: 'triangle', notes: [392, 523.25, 659.25, 783.99, 1046.5], spacing: 0.085, duration: 0.1, gain: 0.5, cutoff: 6000,
+    echoes: [{ delay: 0.1, level: 0.25 }] },
+};
 const READY_ATTACK = 0.018;
 /** The bar fills on a hit; start the cue after that impact's transient so it is not masked. */
 export const READY_OFFSET = 0.12;
@@ -361,6 +368,13 @@ export class HitAudio {
   playResourceStart(resource: 'revenge' | 'special', pan = 0): void {
     const context = this.ready(2);
     if (context) this.charge(context, START_PRESETS[resource], pan, 0);
+  }
+
+  /** Guard break: the blocked strike's guard sound, then a rising cue through the freeze; synth only. */
+  playGuardBreak(block: StrikeSound, resource: 'revenge' | 'special'): void {
+    this.playBlock(block);
+    const context = this.ready(2);
+    if (context) this.charge(context, GUARD_BREAK_PRESETS[resource], block.pan, 0.04);
   }
 
   /** Running context with a free (or stolen) voice slot, otherwise null. */

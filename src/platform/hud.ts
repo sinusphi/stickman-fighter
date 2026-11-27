@@ -107,6 +107,13 @@ export class Hud {
   flag(id: string, name: 'disabled' | 'hidden', value: boolean): void {
     if (this.changed(`${id}|${name}`, String(value))) (this.el(id) as HTMLButtonElement)[name] = value;
   }
+  /**
+   * Checkbox state from the game, written only when the game value changes: a
+   * click flips the box at once while its event applies on the next frame.
+   */
+  checked(id: string, value: boolean): void {
+    if (this.changed(`${id}|checked`, String(value))) (this.el(id) as HTMLInputElement).checked = value;
+  }
   toggle(id: string, name: string, on: boolean): void {
     if (this.changed(`${id}|.${name}`, String(on))) this.el(id).classList.toggle(name, on);
   }
@@ -164,6 +171,10 @@ export class Hud {
     this.attr('states', 'aria-pressed', String(c.show.states));
     this.attr('training', 'aria-pressed', String(game.training.enabled));
     this.flag('dummy', 'disabled', !game.training.enabled);
+    this.flag('full-revenge', 'disabled', !game.training.enabled || !!playback);
+    this.flag('full-special', 'disabled', !game.training.enabled || !!playback);
+    this.checked('full-revenge', game.training.fullRevenge === true);
+    this.checked('full-special', game.training.fullSpecial === true);
     this.text('dummy', labels.dummy);
     this.text('record', t(c.recordingFrames !== null ? 'button.stopRecord' : 'button.record'));
     this.attr('record', 'aria-pressed', String(c.recordingFrames !== null));

@@ -5,7 +5,8 @@ import { buttonBit, neutralInput, type RawInput } from '../input/types';
 import { createFighter, createRound } from '../simulation/factory';
 import { moveFighter, transition } from '../simulation/movement';
 import { pushbox, resolvePushboxes } from '../simulation/collision';
-import { advanceAttack, resolveCombat, startAttack, standingHoldEligible } from '../simulation/combat';
+import { advanceAttack, resolveCombat, resolveGuardBreak, startAttack, standingHoldEligible } from '../simulation/combat';
+import { holdComboLock } from '../simulation/guard-break';
 import { advanceThrows, attemptAtGrab, inGrabRange, isThrowable, resolveThrows } from '../simulation/throws';
 import type { Facing, Fighter, GameState } from '../simulation/types';
 import { SURVIVAL, type EnemyTier, type SurvivalConfig } from './config';
@@ -289,6 +290,20 @@ function resolveBodies(state: SurvivalState): void {
   for (const { fighter: f } of present) resolvePushboxes([p, f]);
 }
 
+/** Combat of one [player, enemy] pair with the survival bookkeeping (focus, stagger, energy, guard upgrade). */
+function pairCombat(state: SurvivalState, e: Enemy, resolve: (pair: GameState) => void): void {
+  const p = state.player, hpBefore = e.fighter.hp, stateBefore = e.fighter.state, playerHp = p.hp;
+  p.hitTargets = e.playerHits;
+  e.pair.hitstop = 0;
+  resolve(e.pair);
+  state.hitstop = Math.max(state.hitstop, e.pair.hitstop);
+  if (e.fighter.hp < hpBefore) state.focus = e.uid;
+  const hitGain = applyHit(state, e, hpBefore, stateBefore);
+  if (hitGain) gainEnergy(state, hitGain, false);
+  guardStep(state, e, playerHp);
+  p.hitTargets = [];
+}
+
 /**
  * One survival step. `enemyInputs` is aligned with `state.enemies` (missing
  * entries mean neutral input). Mirrors simulation/state.step: inputs are
@@ -314,13 +329,19 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   });
   state.frame++;
   for (const e of state.enemies) { e.pair.frame = state.frame; e.pair.combatFrame = state.combatFrame; e.pair.hitstop = state.hitstop; }
-  if (state.hitstop > 0) { state.hitstop--; return; }
+  if (state.hitstop > 0) {
+    // A guard break lands its strike when the freeze ends (simulation/guard-break).
+    if (--state.hitstop === 0) for (const e of state.enemies) if (e.pair.guardBreak) pairCombat(state, e, resolveGuardBreak);
+    return;
+  }
 
   // While turning the player neither walks nor attacks.
   if (state.turn) { p.input.current.direction = 5; p.input.pending = null; }
 
   const fighters = [p, ...state.enemies.map(e => e.fighter)];
   const holdEligible = fighters.map(standingHoldEligible);
+  for (const e of state.enemies) holdComboLock(e.fighter, [p]);
+  holdComboLock(p, state.enemies.map(e => e.fighter));
   for (const f of fighters) { advanceAttack(f); moveFighter(f); }
   advanceThrowsOf(state);
   advanceTurn(state);
@@ -337,18 +358,7 @@ export function stepSurvival(state: SurvivalState, playerRaw: RawInput, enemyInp
   // KO'd enemies lie as scenery: no pushbox, no contact.
   const order = state.enemies.filter(e => !e.entering && !e.dead).sort((a, b) => Math.abs(a.fighter.x - p.x) - Math.abs(b.fighter.x - p.x));
   grabStep(state, order);
-  for (const e of order) {
-    const hpBefore = e.fighter.hp, stateBefore = e.fighter.state, playerHp = p.hp;
-    p.hitTargets = e.playerHits;
-    e.pair.hitstop = 0;
-    resolveCombat(e.pair);
-    state.hitstop = Math.max(state.hitstop, e.pair.hitstop);
-    if (e.fighter.hp < hpBefore) state.focus = e.uid;
-    const hitGain = applyHit(state, e, hpBefore, stateBefore);
-    if (hitGain) gainEnergy(state, hitGain, false);
-    guardStep(state, e, playerHp);
-  }
-  p.hitTargets = [];
+  for (const e of order) pairCombat(state, e, resolveCombat);
 
   for (const e of state.enemies) {
     if (!e.dead && e.fighter.state === 'KO') {

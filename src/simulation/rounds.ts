@@ -25,7 +25,7 @@ export function resetRound(game: GameState, inputs: [RawInput, RawInput]): void 
     f.resources = resources[f.id];
     f.input.previous = { ...inputs[f.id], taps:0 };
   }
-  game.hitstop=0; game.lastContact=null; game.measurements=[];
+  game.hitstop=0; game.lastContact=null; game.measurements=[]; delete game.guardBreak;
   game.round = { ...createRound(playsIntro(game)), wins:game.round.wins, number:game.round.wins[0]+game.round.wins[1]+1 };
 }
 export function advanceRound(game: GameState, inputs: [RawInput, RawInput]): void {

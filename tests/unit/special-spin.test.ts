@@ -216,19 +216,21 @@ describe('Wirbel: reach and guard', () => {
     for (let f = 0; f < RUN; f++) { step(game, [neutralInput(), neutralInput()]); knocked ||= game.fighters[1].state === 'Knockdown'; }
     expect(knocked).toBe(true);
   });
-  it('is blocked crouching (back + down), not standing, on both sides', () => {
+  it('breaks the correct (crouching) guard and hits through a wrong one, on both sides', () => {
     for (const side of ['front', 'back'] as const) {
       // The defender faces the attacker, so its "back" points away from it.
       const toward = (game: GameState) => game.fighters[1].x < game.fighters[0].x ? 1 : -1;
-      for (const [down, blocked] of [[true, true], [false, false]] as const) {
+      for (const down of [true, false]) {
         const game = setup(1), [a, b] = game.fighters;
         step(game, [press(1, ALL), neutralInput()]);
         b.x = a.x + (side === 'front' ? 1 : -1) * 50 * U;
         const guard = (): RawInput => ({ ...neutralInput(), down, left: toward(game) === 1, right: toward(game) === -1 });
-        for (let f = 0; f < RUN; f++) step(game, [neutralInput(), guard()]);
-        expect(game.lastContact?.blocked, `${side} ${down ? 'crouch' : 'stand'}`).toBe(blocked);
-        if (blocked) expect(b.hp).toBeGreaterThan(rules.maxHealth - 10);
-        else expect(b.hp).toBeLessThan(rules.maxHealth - 40);
+        let broke = false;
+        for (let f = 0; f < RUN; f++) { step(game, [neutralInput(), guard()]); broke ||= game.guardBreak !== undefined; }
+        // A crouching guard is met and broken; a standing one never blocks a MID spin.
+        expect(broke, `${side} ${down ? 'crouch' : 'stand'}`).toBe(down);
+        expect(game.lastContact?.blocked, `${side} ${down ? 'crouch' : 'stand'}`).toBe(false);
+        expect(b.hp).toBeLessThan(rules.maxHealth - 40);
       }
     }
   });
@@ -282,14 +284,17 @@ describe('Wirbel: survival', () => {
       expect(knocked.has(back.uid), `${kind} back`).toBe(falls);
     }
   });
-  it('follows the guard rules behind the player too: enemies face the player and crouch-block it', () => {
-    for (const [down, blocked] of [[true, true], [false, false]] as const) {
-      const s = quiet(), back = place(s, 'fighter', -45);
+  it('breaks the guard of survival enemies too, also behind the player', () => {
+    for (const down of [true, false]) {
+      const s = quiet(), back = place(s, 'fighter', -45), hp = back.fighter.hp;
       s.player.resources.special.current = 100;
       stepSurvival(s, press(1, ALL));
+      let broke = false;
       // The enemy left of the player faces right: left is its back direction.
-      for (let f = 0; f < RUN; f++) stepSurvival(s, neutralInput(), [{ ...neutralInput(), down, left: true }]);
-      expect(back.pair.lastContact?.blocked, down ? 'crouch' : 'stand').toBe(blocked);
+      for (let f = 0; f < RUN; f++) { stepSurvival(s, neutralInput(), [{ ...neutralInput(), down, left: true }]); broke ||= back.pair.guardBreak !== undefined; }
+      expect(broke, down ? 'crouch' : 'stand').toBe(down);
+      expect(back.pair.lastContact?.blocked, down ? 'crouch' : 'stand').toBe(false);
+      expect(back.fighter.hp).toBeLessThan(hp);
     }
   });
   it('only staggers heavy enemies and bosses: hit, but they stay on their feet', () => {

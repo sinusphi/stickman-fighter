@@ -14,6 +14,7 @@ import { SURVIVAL } from '../../src/survival/config';
 import { bossSpec } from '../../src/survival/spawner';
 import { createSurvival, spawnEnemy, stepSurvival, type SurvivalState } from '../../src/survival/state';
 import { createReplay, playReplay } from '../../src/debug/replay';
+import { GUARD_BREAK_FREEZE_FRAMES } from '../../src/simulation/guard-break';
 
 const id = 'revenge_combo', move = MOVES[id], U = rules.unit;
 /** Steps for one full combo including every hitstop (77 frames + 67 hitstop frames on hit). */
@@ -225,13 +226,38 @@ describe('revenge combo: hits', () => {
     expect(b.hp).toBe(rules.maxHealth - 500);
     expect(knocked).toBe(true);
   });
-  it('stays blockable after a blocked opener (no special rule)', () => {
-    const game = setup(1, 60), block = { ...neutralInput(), left: false, right: true };
+  it('breaks a blocked opener: both freeze, then the opener lands and every hit of the combo connects', () => {
+    const game = setup(1, 60), [a, b] = game.fighters, block = { ...neutralInput(), left: false, right: true };
     step(game, [neutralInput(), block]);
     playMotion(game, 1, QCF, 2, block);
-    for (let f = 0; f < 10; f++) step(game, [neutralInput(), block]);
-    expect(game.lastContact?.blocked).toBe(true);
-    expect(game.fighters[1].hp).toBeGreaterThan(rules.maxHealth - 10);
+    let freeze = 0, aFrame = -1;
+    for (let f = 0; f < RUN + GUARD_BREAK_FREEZE_FRAMES; f++) {
+      step(game, [neutralInput(), block]);
+      if (game.guardBreak) {
+        freeze++;
+        // Frozen: the defender holds the block, the attacker does not advance, nothing has landed yet.
+        expect(b.state).toBe('Blockstun');
+        expect(a.hitTargets).toEqual([]);
+        if (aFrame >= 0) expect(a.moveFrame).toBe(aFrame);
+        aFrame = a.moveFrame;
+      }
+    }
+    expect(freeze).toBe(GUARD_BREAK_FREEZE_FRAMES);
+    expect(a.hitTargets.map(t => t.split(':')[0])).toEqual(GROUPS);
+    expect(b.hp).toBe(rules.maxHealth - move.hitGroups.reduce((sum, g) => sum + (g.damage ?? move.damage), 0));
+  });
+  it('locks the defender after the first hit: holding back or up never escapes the combo', () => {
+    for (const escape of [{ right: true }, { up: true }, { up: true, right: true }]) {
+      const game = setup(1, 60), [a, b] = game.fighters, input = { ...neutralInput(), ...escape };
+      playMotion(game, 1, QCF, 2);
+      while (!a.hitTargets.length) step(game, [neutralInput(), neutralInput()]);
+      for (let f = 0; f < RUN; f++) {
+        step(game, [neutralInput(), input]);
+        if (a.state === 'Attack' && a.moveFrame < starts[starts.length - 1]) expect(['Hitstun', 'Knockdown'], JSON.stringify(escape)).toContain(b.state);
+      }
+      expect(a.hitTargets.map(t => t.split(':')[0]), JSON.stringify(escape)).toEqual(GROUPS);
+      expect(b.lockedBy).toBeUndefined();
+    }
   });
   it('works in training (bar handled as in versus, no damage) and replays deterministically', () => {
     const game = setup(1, 60);

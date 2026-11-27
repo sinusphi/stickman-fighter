@@ -2,6 +2,7 @@ import type { InputState, SocdConfig } from '../input/types';
 import type { RoundState } from './rounds';
 import type { TrainingState } from '../debug/training';
 import type { HitLevel } from '../data/schema';
+import type { GuardBreak } from './guard-break';
 
 export type Facing = -1 | 1;
 export type FighterState = 'Idle' | 'Walk' | 'Run' | 'Crouch' | 'CrouchWalk' | 'JumpSquat' | 'Airborne' | 'Landing' | 'Attack' | 'Hitstun' | 'Blockstun' | 'Knockdown' | 'KO' | 'Thrown';
@@ -44,6 +45,13 @@ export interface Fighter {
    * rules.hitStrength.defaultStability; later survival enemy types tune it.
    */
   stability?: number;
+  /**
+   * Combo lock (simulation/guard-break): attackId of the opponent's locking
+   * move that hit this fighter. While that move still has hits ahead, hitstun
+   * and knockdown do not run out, so the fighter can neither walk, jump nor
+   * block until the combo is through.
+   */
+  lockedBy?: number;
 }
 
 export type ContactPose = Pick<Fighter,'x'|'y'|'vx'|'facing'|'attackFacing'|'state'|'stateFrame'|'moveId'|'moveFrame'|'crouching'|'hitReaction'> & { hitLevel?: HitLevel };
@@ -63,6 +71,12 @@ export interface GameState {
    * attacks into the back always connect. Unset in versus, training and replays.
    */
   noRearGuard?: boolean;
+  /**
+   * Guard break in progress (simulation/guard-break): a guard-breaking strike
+   * met a block. Both fighters freeze (hitstop) with the defender in block
+   * pose; when the freeze ends the strike lands as a regular hit.
+   */
+  guardBreak?: GuardBreak;
   /** Versus games: every round opens with the round intro (simulation/intro), except in training. */
   roundIntro?: true;
 }

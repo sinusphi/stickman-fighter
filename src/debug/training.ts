@@ -5,7 +5,23 @@ import { MOVES } from '../data/schema';
 import type { GameState } from '../simulation/types';
 
 export type DummyMode = 'stand' | 'crouch' | 'block' | 'cpu';
-export interface TrainingState { enabled: boolean; dummy: DummyMode }
+export interface TrainingState {
+  enabled: boolean;
+  dummy: DummyMode;
+  /** Training option: both fighters' Revenge bars stay full. */
+  fullRevenge?: boolean;
+  /** Training option: both fighters' Special bars stay full. */
+  fullSpecial?: boolean;
+}
+
+/** Refills the bars the training options keep full; a full-bar move started last frame is ready again. */
+export function fillTrainingBars(game: GameState): void {
+  const { fullRevenge, fullSpecial } = game.training;
+  for (const f of game.fighters) {
+    if (fullRevenge) f.resources.revenge.current = f.resources.revenge.max;
+    if (fullSpecial) f.resources.special.current = f.resources.special.max;
+  }
+}
 
 export function dummyInput(game: GameState): RawInput {
   const input = neutralInput();

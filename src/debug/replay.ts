@@ -17,7 +17,7 @@ import { INTRO_FIGHT_FRAMES, INTRO_MAX_APPROACH_FRAMES, INTRO_READY_FRAMES, INTR
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.16.0';
+export const ENGINE_VERSION = '1.18.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }
@@ -70,7 +70,10 @@ function checkSnapshot(value: unknown): asserts value is GameState {
   const state = value as GameState;
   assert(state?.schemaVersion===2 && int(state.frame) && int(state.combatFrame) && int(state.hitstop,0,120), 'Snapshot-Version oder Frame-Zähler.');
   assert(validConfig(state.inputConfig), 'Input-Konfiguration.');
-  assert(state.training && typeof state.training.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(state.training.dummy),'Trainingszustand.');
+  assert(state.training && typeof state.training.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(state.training.dummy) &&
+    [state.training.fullRevenge,state.training.fullSpecial].every(v=>v===undefined||typeof v==='boolean'),'Trainingszustand.');
+  const gb = state.guardBreak;
+  assert(gb===undefined || (!!gb && [0,1].includes(gb.attacker) && gb.defender===1-gb.attacker && int(gb.attackId) && typeof gb.group==='string' && [-1,1].includes(gb.side) && int(gb.frame)),'Guard Break.');
   assert(state.round && ['intro','fighting','roundOver','matchOver'].includes(state.round.phase) && int(state.round.timer,0,rules.hz*rules.roundSeconds) && int(state.round.number,1) && int(state.round.transition,0,rules.roundTransition) && state.round.wins?.length===2 && state.round.wins.every(n=>int(n,0,2)) && [null,0,1].includes(state.round.winner) && [null,'KO','TIME OVER','DOUBLE KO','DRAW'].includes(state.round.reason), 'Rundenzustand.');
   assert(validIntro(state),'Runden-Intro.');
   assert(state.fighters?.length===2,'Zwei Figuren erforderlich.');
@@ -85,6 +88,7 @@ function checkSnapshot(value: unknown): asserts value is GameState {
     const thrower=state.fighters[1-index];
     assert(f.state==='Thrown' ? typeof f.thrownBy==='string' && MOVES[f.thrownBy]?.throw?.phase==='execute' && thrower?.state==='Attack' && thrower.moveId===f.thrownBy && f.y<=0 : f.thrownBy===undefined,'Wurfzustand.');
     assert(validMove(f.state,f.moveId,f.moveFrame),'Move oder Move-Frame.');
+    assert(f.lockedBy===undefined || int(f.lockedBy),'Combo-Lock.');
     assert(Array.isArray(f.hitTargets) && f.hitTargets.every(id=>typeof id==='string') && (f.advantage==='pending' || f.advantage==='n/a' || int(f.advantage,-10000,10000)),'Kontaktzustand.');
     const input=f.input;
     assert(input && validRaw(input.previous) && validFrame(input.current) && [-1,0,1].includes(input.horizontalLast) && [-1,0,1].includes(input.verticalLast) && typeof input.run==='boolean','Input-Zustand.');
@@ -111,6 +115,7 @@ function checkSnapshot(value: unknown): asserts value is GameState {
 function validEvent(event: ControlEvent): boolean {
   if (!event) return false;
   if (event.type==='reset') return true;
+  if (event.type==='trainingBars') return typeof event.revenge==='boolean' && typeof event.special==='boolean';
   if (event.type==='training') return typeof event.enabled==='boolean' && ['stand','crouch','block','cpu'].includes(event.dummy);
   return event.type==='inputConfig' && validConfig(event.config);
 }

@@ -1,4 +1,5 @@
 import { FIGURE_SCALE } from '../data/figure-scale';
+import { guardBreakGlow } from './guard-break';
 import rules from '../data/rules.json';
 import type { GameState } from '../simulation/types';
 import { localBoxes } from '../simulation/combat';
@@ -88,7 +89,7 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
       drawTrail(ctx,sampleRotationTrail(f.moveId,time),palette.revenge,.72,true,facing,palette.special);
     }
     const actual=game.fighters[f.id];
-    const flash=hitLevels[f.id] && ['Hitstun','Knockdown','KO'].includes(actual.state)?Math.max(0,1-(koTime??actual.stateFrame)/3):0;
+    const flash=Math.max(hitLevels[f.id] && ['Hitstun','Knockdown','KO'].includes(actual.state)?Math.max(0,1-(koTime??actual.stateFrame)/3):0,guardBreakGlow(game.guardBreak,game.hitstop,f.id));
     const id=animationId(f,poseLevels[f.id]);
     drawFigure(ctx,pose,color,palette,facing,flash,fighterDepths(f,alpha,Boolean(game.hitstop||paused),poseLevels[f.id]),turnFor(f),sampleHeadYaw(id,(f.state==='Attack'?f.moveFrame:f.stateFrame)+(game.hitstop||paused?0:alpha)),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
     if(f.state==='Attack' && f.moveId)drawKneeSwoosh(ctx,f.moveId,f.moveFrame+(game.hitstop||paused?0:alpha),facing,color,palette);

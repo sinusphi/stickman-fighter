@@ -10,6 +10,7 @@ import { requiresCrouchGuard } from './guard';
 import type { Stance } from './collision';
 import type { Fighter, GameState } from './types';
 import { hasPoseContact, usesPoseContact } from './pose-contact';
+import { GUARD_BREAK_FREEZE_FRAMES, breaksGuard, locksOnHit, shieldedFrom } from './guard-break';
 
 export function localBoxes(f: Fighter): FrameBoxes {
   if (f.state === 'Attack' && f.moveId) return MOVES[f.moveId].frames[f.moveFrame];
@@ -178,12 +179,31 @@ export function addBlockResource(fighter: Fighter, name: 'revenge' | 'special', 
   const gain = Math.max(1, Math.round(damage * resource.gainPerBlock / 100));
   resource.current = Math.min(resource.max, resource.current + gain);
 }
+/**
+ * Combo lock reach assist: a locked defender who drifted out of reach of the
+ * next strike (pushback, a long-reaching opener) is drawn towards the attacker
+ * in whole pixels, at most rules.guardBreak.lockPullPixels, until it connects.
+ * Keeps the defender where it was when no position within the limit connects.
+ */
+function pullIntoReach(attacker: Fighter, defender: Fighter, touches: () => boolean): boolean {
+  const start = defender.x, toward = defender.x === attacker.x ? 0 : defender.x > attacker.x ? -1 : 1;
+  if (!toward) return false;
+  for (let px = 1; px <= rules.guardBreak.lockPullPixels; px++) {
+    defender.x = start + toward * px * rules.unit;
+    if ((defender.x - attacker.x) * toward > 0) break;
+    if (touches()) return true;
+  }
+  defender.x = start;
+  return false;
+}
 export function collectContacts(game: GameState): Contact[] {
   const contacts: Contact[] = [];
   for (const attacker of game.fighters) {
     if (attacker.state !== 'Attack' || !attacker.moveId) continue;
     const defender = game.fighters[1-attacker.id];
     if (defender.state === 'KO' || defender.state === 'Knockdown' || defender.state === 'Thrown') continue;
+    // An unstoppable move (Revenge combos, Wirbel) overrides every other attack.
+    if (shieldedFrom(defender, attacker)) continue;
     const move = MOVES[attacker.moveId];
     for (const hitbox of localBoxes(attacker).hitboxes) {
       const group = `${hitbox.hitGroup}:${defender.id}`;
@@ -191,10 +211,9 @@ export function collectContacts(game: GameState): Contact[] {
       const hitGroup = move.hitGroups.find(g => g.id === hitbox.hitGroup)!;
       const max = move.multiHit ? hitGroup.maxHitsPerTarget : 1;
       if (count >= max || contacts.some(c=>c.attacker===attacker && c.group===group)) continue;
-      if (!localBoxes(defender).hurtboxes.some(hurtbox => overlaps(worldBox(hitbox,attacker,attacker.attackFacing), worldBox(hurtbox,defender,defender.state==='Attack'?defender.attackFacing:defender.facing)))) continue;
-      if (usesPoseContact(move.id)) {
-        if (!hasPoseContact(attacker,defender,hitbox.hitGroup,game.lastContact?.defender===defender.id?game.lastContact.hitLevel:undefined)) continue;
-      }
+      const touches = (): boolean => localBoxes(defender).hurtboxes.some(hurtbox => overlaps(worldBox(hitbox,attacker,attacker.attackFacing), worldBox(hurtbox,defender,defender.state==='Attack'?defender.attackFacing:defender.facing))) &&
+        (!usesPoseContact(move.id) || hasPoseContact(attacker,defender,hitbox.hitGroup,game.lastContact?.defender===defender.id?game.lastContact.hitLevel:undefined));
+      if (!touches() && !(defender.lockedBy === attacker.attackId && pullIntoReach(attacker, defender, touches))) continue;
       const side = defender.x === attacker.x ? attacker.attackFacing : defender.x > attacker.x ? 1 : -1;
       // Survival: no guard against an attacker in the back (the defender faces away).
       const guardable = !game.noRearGuard || defender.facing !== side;
@@ -205,13 +224,49 @@ export function collectContacts(game: GameState): Contact[] {
 }
 
 export function resolveCombat(game: GameState): void {
-  const contacts = collectContacts(game);
+  applyContacts(game, collectContacts(game));
+}
+
+/**
+ * End of a guard-break freeze: the blocked strike breaks through and lands as
+ * a regular hit, unless the attack or the defender changed meanwhile (a trade,
+ * a round end). Call when the hitstop that the break started has run out.
+ */
+export function resolveGuardBreak(game: GameState): void {
+  const pending = game.guardBreak;
+  if (!pending) return;
+  delete game.guardBreak;
+  const attacker = game.fighters[pending.attacker], defender = game.fighters[pending.defender];
+  if (!attacker || !defender || attacker.state !== 'Attack' || !attacker.moveId || attacker.attackId !== pending.attackId) return;
+  if (defender.state === 'KO' || defender.state === 'Knockdown' || defender.state === 'Thrown') return;
+  const move = MOVES[attacker.moveId], hitGroup = move.hitGroups.find(g => g.id === pending.group);
+  if (!hitGroup) return;
+  applyContacts(game, [{ attacker, defender, move, hitGroup, group: `${pending.group}:${defender.id}`, blocked: false, side: pending.side }]);
+}
+
+/**
+ * A guard-breaking strike met a block: no block result yet (no pushback, no
+ * chip, no hit target). The defender holds the block pose while both fighters
+ * freeze; resolveGuardBreak then lands the strike. Only one break at a time.
+ */
+function startGuardBreak(game: GameState, c: Contact): void {
+  if (game.guardBreak) return;
+  const { attacker, defender, hitGroup, side } = c;
+  defender.moveId = null; defender.landingRecovery = 0; defender.vx = 0;
+  defender.crouching = defender.input.current.direction <= 3;
+  transition(defender, 'Blockstun', GUARD_BREAK_FREEZE_FRAMES + 1);
+  game.guardBreak = { attacker: attacker.id, defender: defender.id, attackId: attacker.attackId, group: hitGroup.id, side, frame: game.combatFrame };
+  game.hitstop = Math.max(game.hitstop, GUARD_BREAK_FREEZE_FRAMES);
+}
+
+function applyContacts(game: GameState, contacts: Contact[]): void {
   // Capture the actual contact before pushback/reactions separate the figures.
   // A replay carries this small pose snapshot through hitstop as well.
   const poses=contacts.some(c=>usesPoseContact(c.move.id))?game.fighters.map(({id,x,y,vx,facing,attackFacing,state,stateFrame,moveId,moveFrame,crouching,hitReaction})=>({x,y,vx,facing,attackFacing,state,stateFrame,moveId,moveFrame,crouching,hitReaction,hitLevel:game.lastContact?.defender===id?game.lastContact.hitLevel:undefined})):undefined;
   const displacement = [0, 0];
   for (const c of contacts) {
     const { attacker, defender, move, hitGroup, blocked, side } = c;
+    if (blocked && breaksGuard(move)) { startGuardBreak(game, c); continue; }
     attacker.hitTargets.push(c.group);
     // A secondary group (the knee before a kick) may carry its own reactions.
     const push = groupValue(move, hitGroup, blocked ? 'pushbackBlock' : 'pushbackHit');
@@ -237,6 +292,7 @@ export function resolveCombat(game: GameState): void {
       addHitResource(defender, 'revenge', baseDamage);
       if(!game.training.enabled)
         defender.hp = Math.max(0, defender.hp - Math.trunc(baseDamage * attacker.damageScalePermille / rules.damageScaleUnit));
+      if (locksOnHit(move)) defender.lockedBy = attacker.attackId;
       if (!game.training.enabled && defender.hp === 0) { transition(defender,'KO'); defender.input.pending = null; }
       else if (defender.y < 0) { transition(defender,'Knockdown',rules.knockdownFrames); defender.vy = rules.airHitVelocity; defender.airAttackUsed = true; }
       else if (knocksDown(move, hitGroup, defender)) {
