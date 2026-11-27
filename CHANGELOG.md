@@ -1,5 +1,25 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-27 · Revenge-Kombos unaufhaltbar
+
+- **Behoben:** Eine Revenge-Kombo ließ sich noch stoppen, wenn der Gegner gerade angriff und vor dem ersten Kombo-Treffer traf. Der Angreifer landete im Hitstun, die Leiste war trotzdem leer; traf der Gegner im selben Frame, in dem ein Guard Break begann, wurde der Durchbruch abgebrochen und es sah aus wie geblockt. Die drei Revenge-Kombos sind jetzt **unaufhaltbar**: Vom ersten bis zum letzten Frame kann kein anderer Angriff den Angreifer treffen, ein schnellerer Schlag in den Anlauf geht durch ihn hindurch. Zwei unaufhaltbare Moves treffen sich weiterhin gegenseitig. Der Wirbel bleibt wie dokumentiert im Anlauf verwundbar.
+- Dritte wiederverwendbare Eigenschaft in `src/simulation/guard-break.ts` (`UNSTOPPABLE_MOVES`, `shieldedFrom`), geprüft in `collectContacts`; gilt in Versus, Training und Survival.
+- **Replays:** `ENGINE_VERSION` 1.18.0.
+- Doku: beide READMEs im Abschnitt „Guard break“ / „Guard Break“ ergänzt.
+- Tests: `guard-break.test.ts` prüft für alle drei Varianten, dass ein schnellerer Jab in den Anlauf durchgeht und alle sieben Treffer sitzen; `intro`/`throws` an die Engine-Version angepasst.
+
+## 2026-11-27 · Guard Break, Combo-Lock und volle Leisten im Training
+
+- **Neu: Guard Break.** Moves mit voller Leiste (alle drei Revenge-Kombos und der Wirbel) lassen sich nicht mehr abblocken. Trifft einer ihrer Schläge auf eine Deckung, frieren beide Kämpfer 30 Frames (eine halbe Sekunde) ein: Der Verteidiger bleibt in der Block-Pose, der Bildschirm blitzt auf, die Deckung bekommt Risse und der Verteidiger leuchtet immer heller auf. Danach bricht der Schlag durch, landet als normaler Treffer (mit Durchbruch-Blitz und Scherben) und die Kombo läuft bis zum Ende. Sound: der Block des Schlags plus eine aufsteigende Synth-Figur durch den Freeze, der Durchbruch klingt als Treffer.
+- **Neu: Combo-Lock.** Sitzt ein Treffer dieser Moves, bleibt der Gegner im Hitstun (oder am Boden), bis der Move keinen Treffer mehr vor sich hat: kein Rückwärtslaufen, kein Sprung, kein Block. Ist der Gegner aus der Reichweite des nächsten Schlags gerutscht (Pushback, ein weit reichender Opener), wird er pixelweise herangezogen, höchstens 48 px, bis Box- und Posenkontakt passen.
+- **Wiederverwendbar:** Guard Break und Combo-Lock sind zwei getrennte Move-Eigenschaften in `src/simulation/guard-break.ts` (`GUARD_BREAK_MOVES`, `COMBO_LOCK_MOVES`). Moves mit voller Leiste haben beide automatisch, weitere Moves lassen sich dort eintragen; alle anderen Angriffe bleiben blockbar. Freeze-Dauer und Zug-Reichweite stehen in `rules.json` (`guardBreak.freezeFrames`, `guardBreak.lockPullPixels`). Der Effekt ist eigenständig: `HitEffects.spawnGuardBreak` / `spawnGuardShatter`, neuer Partikeltyp `Crack`, Figuren-Aufleuchten in `src/render/guard-break.ts`, Sound `HitAudio.playGuardBreak`.
+- **Neu im Training:** Zwei Haken neben dem Dummy-Button, „Revenge immer voll“ und „Special immer voll“, halten die jeweilige Leiste für beide Kämpfer voll; nach einem Move mit voller Leiste ist sie im nächsten Frame wieder voll. Die Optionen sind ein eigenes Steuerereignis (`trainingBars`, setzt nichts zurück), bleiben über Reset und Dummy-Wechsel erhalten und laufen in Replays mit. Texte EN/DE.
+- **Behoben (UI):** Nach einem Mausklick auf einen Training-Haken bleibt der Fokus nicht mehr in der Checkbox, sonst wären die Spieltasten verschluckt worden.
+- Survival: Guard Break und Combo-Lock wirken auch gegen Gegner (pro Gegnerpaar, Stagger-Buchhaltung unverändert).
+- **Replays:** `ENGINE_VERSION` 1.17.0, `rules.json` geändert (Datenhash). Snapshots prüfen den offenen Guard Break, den Combo-Lock und die Trainingsoptionen.
+- Doku: beide READMEs mit neuem Abschnitt „Guard break“ / „Guard Break“, Revenge- und Wirbel-Stichpunkte und Kombo-Hinweise (EN/DE) angepasst.
+- Tests: neue `tests/unit/guard-break.test.ts` (Eigenschaften, Freeze-Ablauf, abgebrochener Durchbruch, Snapshots/Replays, Effekte, Sound, Trainingsoptionen). Angepasst: `revenge-combo` (Durchbruch statt Block, Lock gegen Rückwärtslaufen und Springen), `revenge-variants`, `special-spin` (Versus und Survival), `intro`/`throws` (Engine-Version). Neuer Browser-Smoke `guard-break` (Haken, Freeze in Block-Pose, Durchbruch, Lock, Nachfüllen).
+
 ## 2026-11-27 · Revenge-Kombo: drei Varianten (LP, LK, RLK)
 
 - **Neu:** Derselbe Viertelkreis vorwärts startet jetzt je nach Taste eine von drei Revenge-Kombos mit sieben Treffern: **236 + LP** (`revenge_combo`, wie bisher), **236 + LK** (`revenge_combo_f`, P1: F, P2: Num4) und **236 + RLK** (`revenge_combo_v`, P1: V, P2: Num1). Alle drei brauchen die volle Revenge-Leiste, leeren sie beim Start, sind nach dem ersten Treffer nicht mehr blockbar und werfen mit dem Finisher um. Ohne volle Leiste bleiben LK und RLK die normalen Low Kicks.
