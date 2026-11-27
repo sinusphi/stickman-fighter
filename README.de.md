@@ -21,7 +21,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - Lokaler Versus-, CPU- und CPU-gegen-CPU-Modus; gegen die CPU wahlweise als P1 oder P2
 - Runden-Intro im Versus: BEREITMACHEN!, beide Figuren laufen ein, Faustgruß, dann LOS!
 - 37 Angriffe im Stand, in der Hocke und in der Luft sowie Dreh-, Tornado- und Komboangriffe, dazu zwei Würfe (Hüftwurf und Schulterwurf mit Seitenwechsel)
-- Revenge-Kombo: mit voller Revenge-Leiste eine Comeback-Kombo mit sieben Treffern in drei Varianten (Viertelkreis + LP, LK oder RLK)
+- Revenge-Kombo: mit voller Revenge-Leiste eine Comeback-Kombo mit sieben Treffern in drei Varianten (unten halten, vorwärts dazu + LP, LK oder RLK)
 - Wirbel: mit voller Special-Leiste ein 360°-Drehtritt, der hinten und vorne trifft
 - Blocken, Springen, Rennen (Doppeltipp vorwärts), Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
 - Treffereffekte: Funken, Screen-Shake, Staub, Speed-Lines, K.-o.-Blitz und Kombo-Zähler (in den Einstellungen abschaltbar)
@@ -76,17 +76,17 @@ Bis LOS sind die Eingaben gesperrt; eine durchs Intro gehaltene Taste zählt nic
 
 ## Revenge-Kombo
 
-Die Revenge-Leiste füllt sich, während du Treffer einsteckst (voll nach rund 400 Schaden). Mit voller Leiste startet ein **Viertelkreis vorwärts + LP (236 + LP)** die Revenge-Kombo (P1 von links: S halten, D dazunehmen, S loslassen und D weiter halten, dann R; P2 von rechts: ↓, ↓ + ←, ← + Num7; vorwärts zeigt immer zum Gegner): Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß, zusammen 500 Schaden, mit einem Schritt nach vorn über die ersten beiden Schläge. Der Finisher wirft den Gegner um.
+Die Revenge-Leiste füllt sich, während du Treffer einsteckst (voll nach rund 400 Schaden). Mit voller Leiste startet **unten halten, vorwärts dazunehmen und beide halten, dann LP (23 + LP)** die Revenge-Kombo (P1 von links: S halten, D dazunehmen, beide weiter halten, dann R; P2 von rechts: ↓ halten, ← dazunehmen, beide halten, dann Num7; vorwärts zeigt immer zum Gegner): Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß, zusammen 500 Schaden, mit einem Schritt nach vorn über die ersten beiden Schläge. Der Finisher wirft den Gegner um.
 
-- Der Viertelkreis darf insgesamt bis zu 20 Frames dauern, mit höchstens 8 Frames zwischen den Schritten; LP darf bis zu 3 Frames nach vorwärts kommen, ein kurzes Neutral vor LP ist erlaubt. Auf dem Gamepad: D-Pad oder Stick ↓, ↘, → (zum Gegner), dann LP.
-- Nur aus dem Stand am Boden. Die Kombo leert die Leiste beim Start, auch wenn sie verfehlt. Ohne volle Leiste, in der Hocke, in der Luft oder bei unvollständigem bzw. umgekehrtem Viertelkreis bleibt LP der normale Jab. Vorwärts + LK + LMK + HK verbraucht die Leiste nicht mehr (das ist der Spin-Highkick).
+- Unten muss zuerst kommen: direkt gedrücktes unten-vorwärts oder vorwärts vor unten zählt nicht. Beide Richtungen dürfen beliebig lange gehalten werden (bis rund 2 Sekunden Eingabeverlauf), mit höchstens 8 Frames zwischen unten und unten-vorwärts; bis zu 3 Frames loslassen vor LP ist erlaubt. Auf dem Gamepad: D-Pad oder Stick ↓, dann ↘ (zum Gegner) und halten, dann LP.
+- Nur am Boden; der Kämpfer richtet sich aus der Hocke direkt in die Kombo auf. Die Kombo leert die Leiste beim Start, auch wenn sie verfehlt. Ohne volle Leiste oder bei unvollständiger bzw. umgekehrter Eingabe bleibt LP der normale (hockende) Jab; in der Luft bleibt es der Luftangriff. Vorwärts + LK + LMK + HK verbraucht die Leiste nicht mehr (das ist der Spin-Highkick).
 - Die Kombo ist nicht blockbar: Eine Deckung wird durchbrochen (siehe [Guard Break](#guard-break)). Sitzt ein Treffer, ist der Gegner bis zum letzten Treffer gefangen: kein Weglaufen, kein Sprung, kein Block, und ein hockender Gegner wird durch die Treffer aufgerichtet.
-- Startabstand (Mitte zu Mitte): von „Körper berühren sich“ (38 px) bis 93 px gegen einen stehenden, 86 px gegen einen hockenden Gegner.
+- Startabstand (Mitte zu Mitte): von „Körper berühren sich“ (38 px) bis 90 px gegen einen stehenden, 83 px gegen einen hockenden Gegner.
 - Funktioniert im Versus, im Training und im Survival (Stagger bricht sie dort nicht ab). Die CPU setzt sie nicht ein.
 
-### Drei Varianten, ein Viertelkreis
+### Drei Varianten, eine Eingabe
 
-Derselbe Viertelkreis vorwärts startet je nach Taste eine von drei Kombos mit sieben Treffern (Tasten P1, P2 auf dem Numpad in Klammern). Alle drei brauchen die volle Leiste, leeren sie, durchbrechen jede Deckung und halten den Gegner fest, sobald der erste Treffer sitzt.
+Dieselbe Eingabe (unten halten, vorwärts dazu, beide halten) startet je nach Taste eine von drei Kombos mit sieben Treffern (Tasten P1, P2 auf dem Numpad in Klammern). Alle drei brauchen die volle Leiste, leeren sie, durchbrechen jede Deckung und halten den Gegner fest, sobald der erste Treffer sitzt.
 
 | Taste | Kombo | Start | Charakter | Finisher |
 |---|---|---|---|---|
@@ -94,7 +94,7 @@ Derselbe Viertelkreis vorwärts startet je nach Taste eine von drei Kombos mit s
 | LK (F / Num4) | `revenge_combo_f`: Rechts Low → Links Low → Rechts Middle → Links Middle → Rechts High → Links High → Stoßtritt | LOW (hockend blocken) | nur Tritte, die Beine wechseln auf der Stelle (12 Frames pro Tritt), langsamer Anlauf für den Finisher | gerader Stoßtritt auf Hüfthöhe, zusammen 490 Schaden, mit 105 Frames die längste |
 | RLK (V / Num1) | `revenge_combo_v`: Haken → Jab → Haken → Rechts Low → Links Middle → Links High → Uppercut | MID (hockend blocken) | schnellster Start (8 Frames) und schneller Faustrhythmus, dann Low-Kick-Mixup und doppelter linker Tritt | aufsteigender Uppercut aus tiefem Absenken der Hüfte, zusammen 475 Schaden, mit 82 Frames die kürzeste |
 
-- Startabstand (Mitte zu Mitte, ab „Körper berühren sich“ bei 38 px): `revenge_combo_f` bis 96 px gegen einen stehenden, 102 px gegen einen hockenden Gegner; `revenge_combo_v` bis 78 px stehend, 82 px hockend.
+- Startabstand (Mitte zu Mitte, ab „Körper berühren sich“ bei 38 px): `revenge_combo_f` bis 93 px gegen einen stehenden, 99 px gegen einen hockenden Gegner; `revenge_combo_v` bis 75 px stehend, 79 px hockend.
 - Ohne volle Leiste bleiben die Tasten die normalen Einzelangriffe (LK linker Low Kick, RLK rechter Low Kick). Die CPU setzt keine davon ein.
 
 
@@ -207,10 +207,10 @@ npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 | Right Middle → Body Hook | `kick_punch_combo` | 4 + MK + HP | A halten + B + Y | → halten + Num2 + Num9 | 17 / 16 / 14 | 47 | 65 + 85 | MID |
 | Hüftwurf | `throw_forward` | 6 + THROW | D halten + C | ← halten + Num0 | 4 / 1 / 22 (Fehlgriff) | 27 | 110 | nicht blockbar (Wurf) |
 | Schulterwurf | `throw_back` | 4 + THROW | A halten + C | → halten + Num0 | 4 / 1 / 22 (Fehlgriff) | 27 | 130 | nicht blockbar (Wurf) |
-| Revenge-Kombo: Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß (volle Revenge-Leiste) | `revenge_combo` | 236 + LP | S, S + D, D + R | ↓, ↓ + ←, ← + Num7 | 6 / 61 / 10 | 77 | 40 + 60 + 65 + 80 + 65 + 80 + 110 | HIGH / MID |
+| Revenge-Kombo: Jab → Haken → Links Middle → Links High → Rechts Middle → Rechts High → schwerer Fauststoß (volle Revenge-Leiste) | `revenge_combo` | 23 + LP | S halten, S + D, S + D + R | ↓ halten, ↓ + ←, ↓ + ← + Num7 | 6 / 61 / 10 | 77 | 40 + 60 + 65 + 80 + 65 + 80 + 110 | HIGH / MID |
 | Wirbel: 360°-Drehtritt, hinten und vorne (volle Special-Leiste) | `special_spin` | 4 + LP + LK + MK | A halten + R + F + B | → halten + Num7 + Num4 + Num2 | 9 / 11 / 22 | 42 | 50 + 60 | MID |
-| Revenge-Kombo F: Rechts Low → Links Low → Rechts Middle → Links Middle → Rechts High → Links High → Stoßtritt (volle Revenge-Leiste) | `revenge_combo_f` | 236 + LK | S, S + D, D + F | ↓, ↓ + ←, ← + Num4 | 10 / 79 / 16 | 105 | 35 + 35 + 55 + 60 + 80 + 90 + 135 | LOW / MID / HIGH |
-| Revenge-Kombo V: Haken → Jab → Haken → Rechts Low → Links Middle → Links High → Uppercut (volle Revenge-Leiste) | `revenge_combo_v` | 236 + RLK | S, S + D, D + V | ↓, ↓ + ←, ← + Num1 | 8 / 64 / 10 | 82 | 45 + 40 + 60 + 45 + 65 + 85 + 135 | MID / HIGH / LOW |
+| Revenge-Kombo F: Rechts Low → Links Low → Rechts Middle → Links Middle → Rechts High → Links High → Stoßtritt (volle Revenge-Leiste) | `revenge_combo_f` | 23 + LK | S halten, S + D, S + D + F | ↓ halten, ↓ + ←, ↓ + ← + Num4 | 10 / 79 / 16 | 105 | 35 + 35 + 55 + 60 + 80 + 90 + 135 | LOW / MID / HIGH |
+| Revenge-Kombo V: Haken → Jab → Haken → Rechts Low → Links Middle → Links High → Uppercut (volle Revenge-Leiste) | `revenge_combo_v` | 23 + RLK | S halten, S + D, S + D + V | ↓ halten, ↓ + ←, ↓ + ← + Num1 | 8 / 64 / 10 | 82 | 45 + 40 + 60 + 45 + 65 + 85 + 135 | MID / HIGH / LOW |
 <!-- move-table:end -->
 
 </details>
