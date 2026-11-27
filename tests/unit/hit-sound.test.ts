@@ -32,7 +32,8 @@ it('describes every move and hit group with a valid, damage-based sound', () => 
 it('derives strength from damage, so special moves on light buttons sound heavy', () => {
   expect(classifyHit('standing_lp')).toEqual({ kind: 'punch', strength: 'light' });
   expect(classifyHit('standing_hk')).toEqual({ kind: 'kick', strength: 'high' });
-  expect(classifyHit('jumping_uppercut')).toEqual({ kind: 'punch', strength: 'high' });
+  expect(classifyHit('jumping_uppercut', 'main')).toEqual({ kind: 'punch', strength: 'high' });
+  expect(classifyHit('jumping_uppercut', 'punch')).toEqual({ kind: 'punch', strength: 'light' });
   expect(classifyHit('standing_rlk')).toEqual({ kind: 'kick', strength: 'light' });
   expect(classifyHit('standing_lmk')).toEqual({ kind: 'kick', strength: 'middle' });
   expect(classifyHit('dwit_chagi')).toEqual({ kind: 'kick', strength: 'high' }); // RLK button, 105 damage
@@ -43,7 +44,8 @@ it('derives strength from damage, so special moves on light buttons sound heavy'
   expect(describeStrike('standing_lp').weight).toBeLessThan(describeStrike('standing_mp').weight);
   expect(describeStrike('standing_mp').weight).toBeLessThan(describeStrike('standing_hp').weight);
   expect(describeStrike('spin_hk').weight).toBe(1);
-  expect(describeStrike('jumping_uppercut').style).toBe('uppercut');
+  expect(describeStrike('jumping_uppercut', 'main').style).toBe('uppercut');
+  expect(describeStrike('jumping_uppercut', 'punch').style).toBe('normal');
   expect(describeStrike('dwit_chagi').style).toBe('spin');
   expect(describeStrike('left_turn_kick').zone).toBe('head');
   expect(describeStrike('crouching_lk').zone).toBe('legs');

@@ -489,8 +489,18 @@
    "pushbackBlock": 1536
   },
   "jumping_uppercut": {
-   "damage": 85,
+   "damage": 75,
    "hitGroups": [
+    {
+     "id": "punch",
+     "maxHitsPerTarget": 1,
+     "damage": 25,
+     "hitstun": 24,
+     "blockstun": 16,
+     "hitstop": 8,
+     "pushbackHit": 512,
+     "pushbackBlock": 512
+    },
     {
      "id": "main",
      "maxHitsPerTarget": 1
@@ -522,7 +532,7 @@
   "crouching_mp": "4df9e3b8582b4b9a78d3fb580e06cdecda7725d98ebe9f750f7a5d1f043b7d69",
   "airborne_lp": "b3e8b87bc0dae1740f0442bbd012c80e48400331bf8b5c5555fe2f0bd3959b91",
   "airborne_mp": "15146a462a4391ca31ba8c7537686bb2e289805c846d81406849fa3849a31eeb",
-  "jumping_uppercut": "2c6c2f2de4ec007aac515c2014b8f285337bb3361e9060a0b44f1402231b66a7"
+  "jumping_uppercut": "d95fa0733697110689fc92cfc04848181f971d1d071ff54acad916517a17561a"
  },
- "uppercut": "634da02014fa0a0ef4b13ede89bdf140a4716066f6cae20acf5ccb01b1766da9"
+ "uppercut": "7bc3ae37d5add610f3bedffb372bdd643f192c1a0ae95543299a5e77db77a939"
 }

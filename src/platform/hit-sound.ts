@@ -142,7 +142,8 @@ export function describeStrike(moveId: string, groupId?: string, x = rules.stage
   const group = groupOf(move, groupId);
   const damage = group.damage ?? move.damage;
   const kind = kindOf(move, group);
-  const style: HitStyle = kind === 'knee' ? 'normal' : SPIN_MOVE.test(move.id) ? 'spin' : UPPERCUT_MOVE.test(move.id) || group.id === UPPERCUT_GROUP ? 'uppercut' : 'normal';
+  // The jumping uppercut opens with a plain punch; only the uppercut itself gets the snap.
+  const style: HitStyle = kind === 'knee' ? 'normal' : SPIN_MOVE.test(move.id) ? 'spin' : (UPPERCUT_MOVE.test(move.id) && group.id !== 'punch') || group.id === UPPERCUT_GROUP ? 'uppercut' : 'normal';
   return {
     kind, strength: strengthOf(damage),
     weight: clamp((damage - SOUND_DAMAGE_RANGE.light) / (SOUND_DAMAGE_RANGE.heavy - SOUND_DAMAGE_RANGE.light), 0, 1),

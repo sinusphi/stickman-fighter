@@ -221,6 +221,6 @@ describe('round intro: determinism and replays', () => {
     expect(() => validateSnapshot(unmarked)).toThrow(/Runden-Intro/);
     const fightLabel = createGame(); fightLabel.round.intro = { step: 'salute', frame: 0 }; fightLabel.roundIntro = true;
     expect(() => validateSnapshot(fightLabel)).toThrow(/Runden-Intro/);
-    expect(() => parseReplay({ ...createReplay(createGame({ intro: true })), engineVersion: '1.13.0' })).toThrow(/Engine 1\.18\.0/);
+    expect(() => parseReplay({ ...createReplay(createGame({ intro: true })), engineVersion: '1.13.0' })).toThrow(/Engine 1\.19\.0/);
   });
 });

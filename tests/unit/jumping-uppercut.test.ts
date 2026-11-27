@@ -24,7 +24,7 @@ it('keeps the left hook on neutral HP and does not repeat a held uppercut',()=>{
  expect(animations.standing_hp.trail?.joint).toBe('leftHand');
 });
 it('follows the reference with the right fist above the head, a 1.5x jump height and a bent knee, then lands smoothly',()=>{
- const id='jumping_uppercut',p=samplePose(id,20);
+ const id='jumping_uppercut',p=samplePose(id,22);
  expect(p.rightHand[1]).toBeLessThan(p.head[1]-9);
  expect(p.leftHand[1]).toBeGreaterThan(p.head[1]);
  expect(Math.max(p.leftFoot[1],p.rightFoot[1])).toBeLessThan(-30);
@@ -37,12 +37,12 @@ it('follows the reference with the right fist above the head, a 1.5x jump height
  }
 });
 it('turns only to the full back view, holds it, then unwinds to the starting view',()=>{
- const id='jumping_uppercut',strike=samplePose(id,20),back=samplePose(id,25);
+ const id='jumping_uppercut',strike=samplePose(id,22),back=samplePose(id,26);
  expect(strike.rightHand[0]).toBeGreaterThan(strike.head[0]);
- expect(sampleYaw(id,11)).toBe(0);
- expect(sampleYaw(id,25)).toBe(90);
- expect(sampleTurn(id,25)).toBeCloseTo(.5);
- expect(eyeViews(sampleTurn(id,25),sampleYaw(id,25))).toEqual([]);
+ expect(sampleYaw(id,15)).toBe(0);
+ expect(sampleYaw(id,26)).toBe(90);
+ expect(sampleTurn(id,26)).toBeCloseTo(.5);
+ expect(eyeViews(sampleTurn(id,26),sampleYaw(id,26))).toEqual([]);
  // Punching arm is fully extended at the apex instead of folding over the head.
  const bend=(p:typeof back)=>{const u=Math.atan2(p.rightElbow[1]-p.rightShoulder[1],p.rightElbow[0]-p.rightShoulder[0]),f=Math.atan2(p.rightHand[1]-p.rightElbow[1],p.rightHand[0]-p.rightElbow[0]);return Math.abs(Math.atan2(Math.sin(f-u),Math.cos(f-u)))*180/Math.PI;};
  expect(bend(back)).toBeLessThan(10);
@@ -50,16 +50,16 @@ it('turns only to the full back view, holds it, then unwinds to the starting vie
  expect(back.rightHand[1]).toBeLessThan(back.head[1]);
  expect(back.leftHand[0]).toBeLessThan(back.head[0]);
  expect(back.leftHand[1]).toBeGreaterThan(back.head[1]);
- expect(sampleYaw(id,28)).toBe(90);
- expect(sampleYaw(id,42)).toBe(0);
- expect(sampleTurn(id,42)).toBe(0);
+ expect(sampleYaw(id,29)).toBe(90);
+ expect(sampleYaw(id,43)).toBe(0);
+ expect(sampleTurn(id,43)).toBe(0);
  expect(animations[id].fixedLegDepth).toBe(true);
  let previous=sampleYaw(id,0)!;
  for(let time=.25;time<=55;time+=.25) {
   const yaw=sampleYaw(id,time)!;
   expect(yaw).toBeGreaterThanOrEqual(0);
   expect(yaw).toBeLessThanOrEqual(90);
-  if(time<=25)expect(yaw).toBeGreaterThanOrEqual(previous);
+  if(time<=26)expect(yaw).toBeGreaterThanOrEqual(previous);
   else expect(yaw).toBeLessThanOrEqual(previous);
   expect(Math.abs(yaw-previous)).toBeLessThan(10);
   previous=yaw;
@@ -68,7 +68,7 @@ it('turns only to the full back view, holds it, then unwinds to the starting vie
 it('matches the rear reference silhouette on both sides and keeps the free arm compact at chest height',()=>{
  const id='jumping_uppercut';
  for(const facing of [1,-1]) {
-  const back=samplePose(id,25,facing);
+  const back=samplePose(id,26,facing);
   expect(back.rightHand[1]).toBeLessThan(back.head[1]-18);
   expect((back.rightElbow[0]-back.head[0])*facing).toBeGreaterThan(5);
   expect(back.rightHand[1]).toBeLessThan(back.rightElbow[1]-10);
@@ -84,13 +84,16 @@ it('matches the rear reference silhouette on both sides and keeps the free arm c
  }
  // One restrained sweep out and back, without an extra arm circle or reversal.
  const forearm=(time:number)=>{const p=samplePose(id,time);return Math.atan2(p.leftHand[1]-p.leftElbow[1],p.leftHand[0]-p.leftElbow[0]);};
- for(let time=7.25;time<=25;time+=.25)expect(forearm(time)).toBeLessThanOrEqual(forearm(time-.25)+1e-8);
- for(let time=28.25;time<=42;time+=.25)expect(forearm(time)).toBeGreaterThanOrEqual(forearm(time-.25)-1e-8);
+ for(let time=11.25;time<=26;time+=.25)expect(forearm(time)).toBeLessThanOrEqual(forearm(time-.25)+1e-8);
+ for(let time=29.25;time<=43;time+=.25)expect(forearm(time)).toBeGreaterThanOrEqual(forearm(time-.25)-1e-8);
 });
-it('keeps hitboxes on the right striking arm only during the active phase',()=>{
+it('keeps hitboxes on the right striking arm only during the punch and the uppercut',()=>{
  const move=MOVES.jumping_uppercut;
+ expect(move.multiHit).toBe(true);
+ expect(move.hitGroups.map(g=>g.id)).toEqual(['punch','main']);
  move.frames.forEach((boxes,frame)=>{
-  expect(boxes.hitboxes.length).toBe(frame>=12&&frame<21?1:0);
+  const group=frame>=6&&frame<=8?'punch':frame>=14&&frame<=21?'main':undefined;
+  expect(boxes.hitboxes.map(b=>b.hitGroup)).toEqual(group?[group]:[]);
   if(boxes.hitboxes.length)for(const joint of ['rightHand','rightElbow']) {
    const p=samplePose(move.id,frame)[joint].map(n=>n*256),box=boxes.hitboxes[0];
    expect(p[0]).toBeGreaterThanOrEqual(box.x);expect(p[0]).toBeLessThanOrEqual(box.x+box.width);
@@ -98,15 +101,47 @@ it('keeps hitboxes on the right striking arm only during the active phase',()=>{
   }
  });
 });
-it('hits once at close range and whiffs against crouching guard or at distance',()=>{
+it('lands both hits at close range and whiffs against crouching guard or at distance',()=>{
  for(const blocked of [false,true])for(const distance of [36,240]) {
   const game=createGame();game.fighters[0].x=300*256;game.fighters[1].x=(300+distance)*256;
   if(blocked){game.fighters[1].state='Blockstun';game.fighters[1].remaining=90;}
   const defender=blocked?{...neutralInput(),right:true,down:true}:neutralInput();
   step(game,[{...neutralInput(),right:true,buttons:buttonBit('HP')},defender]);
   for(let i=0;i<80;i++)step(game,[neutralInput(),defender]);
-  expect(game.fighters[1].hp).toBe(!blocked&&distance===36?1000-MOVES.jumping_uppercut.damage:1000);
+  const total=MOVES.jumping_uppercut.hitGroups.reduce((sum,g)=>sum+(g.damage??MOVES.jumping_uppercut.damage),0);
+  expect(total).toBe(100);
+  expect(game.fighters[1].hp).toBe(!blocked&&distance===36?1000-total:1000);
   if(distance===36&&!blocked)expect(game.lastContact?.blocked).toBe(false);
   else expect(game.lastContact).toBe(null);
+ }
+});
+it('throws a straight punch at chin height, draws the fist back, then drives it upwards on takeoff',()=>{
+ const id='jumping_uppercut',punch=samplePose(id,7),load=samplePose(id,11),takeoff=samplePose(id,15);
+ // Punch: right arm straight and nearly horizontal at head height, feet on the ground.
+ expect(punch.rightHand[0]-punch.rightShoulder[0]).toBeGreaterThan(27);
+ expect(Math.abs(punch.rightHand[1]-punch.rightShoulder[1])).toBeLessThan(8);
+ expect(Math.max(punch.leftFoot[1],punch.rightFoot[1])).toBeGreaterThan(-.5);
+ // Load: fist back at the chest, hips lower than in the punch.
+ expect(load.rightHand[0]-load.rightShoulder[0]).toBeLessThan(15);
+ expect(load.rightHand[1]).toBeGreaterThan(load.rightShoulder[1]);
+ expect(load.hip[1]).toBeGreaterThan(punch.hip[1]);
+ // Takeoff: the arm extends upwards and forwards while the body leaves the floor.
+ expect(takeoff.rightHand[1]).toBeLessThan(takeoff.rightShoulder[1]-12);
+ expect(takeoff.rightHand[0]).toBeGreaterThan(takeoff.rightShoulder[0]+20);
+});
+it('chains the punch into the uppercut on hit and on a standing block, with the punch first',()=>{
+ for(const blocked of [false,true]) {
+  const game=createGame();game.fighters[0].x=300*256;game.fighters[1].x=336*256;
+  if(blocked){game.fighters[1].state='Blockstun';game.fighters[1].remaining=90;}
+  const defender=blocked?{...neutralInput(),right:true}:neutralInput(),groups:string[]=[];
+  step(game,[{...neutralInput(),right:true,buttons:buttonBit('HP')},defender]);
+  for(let i=0;i<80;i++) {
+   step(game,[neutralInput(),defender]);
+   const f=game.fighters[0];
+   if(f.hitTargets.length>groups.length)groups.push(f.hitTargets.at(-1)!.split(':')[0]);
+   if(groups.length===1)expect(game.fighters[1].state).toBe(blocked?'Blockstun':'Hitstun');
+  }
+  expect(groups).toEqual(['punch','main']);
+  expect(game.lastContact?.blocked).toBe(blocked);
  }
 });

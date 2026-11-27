@@ -8565,6 +8565,26 @@
     "jumping_uppercut_7": {
       "root": [
         0,
+        -45.27516310470919
+      ],
+      "angles": {
+        "neck": -68,
+        "head": -22,
+        "leftShoulder": 123,
+        "rightShoulder": 193,
+        "leftElbow": 30,
+        "leftHand": -150,
+        "rightElbow": -133,
+        "rightHand": -2,
+        "leftKnee": 54.91750638835599,
+        "leftFoot": 42.0187338186269,
+        "rightKnee": 92.57420246404583,
+        "rightFoot": 33.13246345728607
+      }
+    },
+    "jumping_uppercut_11": {
+      "root": [
+        0,
         -38.27516310470919
       ],
       "angles": {
@@ -8574,18 +8594,18 @@
         "rightShoulder": 190,
         "leftElbow": 30,
         "leftHand": -150,
-        "rightElbow": -25,
-        "rightHand": -125,
+        "rightElbow": -45,
+        "rightHand": -140,
         "leftKnee": 36.46561416866927,
         "leftFoot": 74.03535325051085,
         "rightKnee": 78.16364939207483,
         "rightFoot": 68.31353009765445
       }
     },
-    "jumping_uppercut_11": {
+    "jumping_uppercut_15": {
       "root": [
         0,
-        -49.0813591723832
+        -53.0813591723832
       ],
       "angles": {
         "neck": -78,
@@ -8594,15 +8614,15 @@
         "rightShoulder": 203,
         "leftElbow": 45,
         "leftHand": -210,
-        "rightElbow": -55,
-        "rightHand": -115,
+        "rightElbow": -157,
+        "rightHand": 0,
         "leftKnee": 65,
         "leftFoot": 30,
         "rightKnee": 101,
         "rightFoot": 0
       }
     },
-    "jumping_uppercut_15": {
+    "jumping_uppercut_19": {
       "root": [
         0,
         -69.95050904434174
@@ -8614,15 +8634,15 @@
         "rightShoulder": 165.66666666666666,
         "leftElbow": 41.66666666666667,
         "leftHand": -265,
-        "rightElbow": -109.66666666666666,
-        "rightHand": -12,
+        "rightElbow": -116.66666666666666,
+        "rightHand": -10,
         "leftKnee": 83,
         "leftFoot": 10,
         "rightKnee": 87,
         "rightFoot": 5
       }
     },
-    "jumping_uppercut_20": {
+    "jumping_uppercut_22": {
       "root": [
         0,
         -87.93529363540539
@@ -8642,7 +8662,7 @@
         "rightFoot": 5
       }
     },
-    "jumping_uppercut_25": {
+    "jumping_uppercut_26": {
       "root": [
         0,
         -84.96193074777413
@@ -8662,7 +8682,27 @@
         "rightFoot": 4
       }
     },
-    "jumping_uppercut_32": {
+    "jumping_uppercut_29": {
+      "root": [
+        0,
+        -79.96193074777413
+      ],
+      "angles": {
+        "neck": -98,
+        "head": 8,
+        "leftShoulder": 223,
+        "rightShoulder": 63,
+        "leftElbow": 10,
+        "leftHand": -300,
+        "rightElbow": -51,
+        "rightHand": -2,
+        "leftKnee": 125,
+        "leftFoot": -42,
+        "rightKnee": 87,
+        "rightFoot": 4
+      }
+    },
+    "jumping_uppercut_33": {
       "root": [
         0,
         -66.60496450078259
@@ -8682,7 +8722,7 @@
         "rightFoot": -8
       }
     },
-    "jumping_uppercut_38": {
+    "jumping_uppercut_39": {
       "root": [
         0,
         -43.27516310470919
@@ -8702,7 +8742,7 @@
         "rightFoot": 45.91469096596182
       }
     },
-    "jumping_uppercut_42": {
+    "jumping_uppercut_43": {
       "root": [
         0,
         -38.27516310470919
@@ -8740,26 +8780,6 @@
         "leftFoot": 27,
         "rightKnee": 103.5,
         "rightFoot": 9.772430388406434
-      }
-    },
-    "jumping_uppercut_28": {
-      "root": [
-        0,
-        -79.96193074777413
-      ],
-      "angles": {
-        "neck": -98,
-        "head": 8,
-        "leftShoulder": 223,
-        "rightShoulder": 63,
-        "leftElbow": 10,
-        "leftHand": -300,
-        "rightElbow": -51,
-        "rightHand": -2,
-        "leftKnee": 125,
-        "leftFoot": -42,
-        "rightKnee": 87,
-        "rightFoot": 4
       }
     },
     "spin_mk_0": {
@@ -34606,47 +34626,54 @@
           "frame": 15,
           "pose": "jumping_uppercut_15",
           "easing": "smoothstep",
+          "yaw": 0,
+          "turn": 0
+        },
+        {
+          "frame": 19,
+          "pose": "jumping_uppercut_19",
+          "easing": "smoothstep",
           "yaw": 30,
           "turn": 0.06698729810778065
         },
         {
-          "frame": 20,
-          "pose": "jumping_uppercut_20",
+          "frame": 22,
+          "pose": "jumping_uppercut_22",
           "easing": "smoothstep",
           "yaw": 70,
           "turn": 0.32898992833716556
         },
         {
-          "frame": 25,
-          "pose": "jumping_uppercut_25",
+          "frame": 26,
+          "pose": "jumping_uppercut_26",
           "easing": "smoothstep",
           "yaw": 90,
           "turn": 0.49999999999999994
         },
         {
-          "frame": 28,
-          "pose": "jumping_uppercut_28",
+          "frame": 29,
+          "pose": "jumping_uppercut_29",
           "easing": "smoothstep",
           "yaw": 90,
           "turn": 0.49999999999999994
         },
         {
-          "frame": 32,
-          "pose": "jumping_uppercut_32",
+          "frame": 33,
+          "pose": "jumping_uppercut_33",
           "easing": "smoothstep",
           "yaw": 65,
           "turn": 0.28869086912965025
         },
         {
-          "frame": 38,
-          "pose": "jumping_uppercut_38",
+          "frame": 39,
+          "pose": "jumping_uppercut_39",
           "easing": "smoothstep",
           "yaw": 15,
           "turn": 0.017037086855465844
         },
         {
-          "frame": 42,
-          "pose": "jumping_uppercut_42",
+          "frame": 43,
+          "pose": "jumping_uppercut_43",
           "easing": "smoothstep",
           "yaw": 0,
           "turn": 0
@@ -34661,8 +34688,8 @@
       ],
       "trail": {
         "joint": "rightHand",
-        "fromFrame": 10,
-        "toFrame": 25,
+        "fromFrame": 5,
+        "toFrame": 26,
         "historyFrames": 3
       }
     },
