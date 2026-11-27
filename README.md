@@ -200,7 +200,7 @@ npm run balance:survival -- --runs 200 --seed 1 --profile all --max-seconds 600
 | Tornado Kick | `tornado_mk` | 6 + MK | hold D + B | hold ← + Num2 | 28 / 5 / 22 | 55 | 80 | MID |
 | Spin Kick (links) | `forward_spin_hk` | 4 + HK | hold A + H | hold → + Num6 | 17 / 3 / 10 | 30 | 100 | HIGH |
 | Tornado → Spin Kick | `tornado_spin_combo` | 6 + MK + HK | hold D + B + H | hold ← + Num2 + Num6 | 28 / 32 / 10 | 70 | 80 + 100 | MID / HIGH |
-| Jumping Uppercut | `jumping_uppercut` | 6 + HP | hold D + Y | hold ← + Num9 | 12 / 9 / 35 | 56 | 85 | HIGH |
+| Jumping Uppercut | `jumping_uppercut` | 6 + HP | hold D + Y | hold ← + Num9 | 6 / 16 / 34 | 56 | 25 + 75 | HIGH |
 | Dwit Chagi | `dwit_chagi` | 4 + RLK | hold A + V | hold → + Num1 | 19 / 4 / 27 | 50 | 105 | HIGH |
 | Left Turn Kick | `left_turn_kick` | 4 + LK | hold A + F | hold → + Num4 | 18 / 4 / 44 | 66 | 70 | HIGH |
 | Double High Kick | `double_high_kick` | 4 + LK + LMK | hold A + F + G | hold → + Num4 + Num5 | 18 / 30 / 30 | 78 | 60 + 80 | HIGH |
