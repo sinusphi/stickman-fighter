@@ -1,5 +1,13 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-27 · Spieltempo
+
+- **Neu: Spieltempo-Schalter** in der Arena-Leiste rechts neben der Arena-Auswahl (ersetzt den Text „Best of three“): Der Button **Tempo** schaltet das schnellere Tempo ein, der Schieberegler daneben wählt mit drei Positionen (links, Mitte, rechts) Stufe 1, 2 oder 3. Ist der Button aus, ist der Regler gesperrt und das Spiel läuft im Standardtempo. Stufe 1 = +20 %, Stufe 2 = +32 %, Stufe 3 = +40 %; die Prozentwerte erscheinen nirgends in der Oberfläche.
+- Die aktive Stufe steht als deutliches Abzeichen mittig unter der Rundenanzeige („››› TEMPO 3“), Stufe 3 in Rot. Im Standardtempo bleibt die Stelle leer.
+- Die Änderung greift sofort, ohne Neuladen und ohne Pause. Schalter und Stufe werden im `localStorage` gespeichert (`stickman.speed`), beim Ausschalten bleibt die gewählte Stufe erhalten.
+- Umsetzung rein über die Uhr: `FixedLoop.speed` skaliert, wie schnell die 60-Hz-Schleife Wall-Clock-Zeit verbraucht, und multipliziert sich mit der K.-o.-Zeitlupe. Jeder Simulationsframe bleibt gleich, deshalb bleiben `ENGINE_VERSION` und Datenhash unverändert, Replays funktionieren mit jeder Stufe. Die Stufen stehen in `src/platform/game-speed.ts` (`SPEED_LEVELS`). Texte EN/DE.
+- Tests: `game-speed.test.ts` (Stufen, Speichern/Laden, Frames pro Sekunde, HUD-Abzeichen ohne Prozent), Browser-Smoke `smoke:game-speed` misst das Tempo je Stufe im echten Spiel.
+
 ## 2026-11-27 · Revenge-Kombos unaufhaltbar
 
 - **Behoben:** Eine Revenge-Kombo ließ sich noch stoppen, wenn der Gegner gerade angriff und vor dem ersten Kombo-Treffer traf. Der Angreifer landete im Hitstun, die Leiste war trotzdem leer; traf der Gegner im selben Frame, in dem ein Guard Break begann, wurde der Durchbruch abgebrochen und es sah aus wie geblockt. Die drei Revenge-Kombos sind jetzt **unaufhaltbar**: Vom ersten bis zum letzten Frame kann kein anderer Angriff den Angreifer treffen, ein schnellerer Schlag in den Anlauf geht durch ihn hindurch. Zwei unaufhaltbare Moves treffen sich weiterhin gegenseitig. Der Wirbel bleibt wie dokumentiert im Anlauf verwundbar.
