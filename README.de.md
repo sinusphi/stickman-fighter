@@ -25,6 +25,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - Wirbel: mit voller Special-Leiste ein 360°-Drehtritt, der hinten und vorne trifft
 - Blocken, Springen, Rennen (Doppeltipp vorwärts), Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
 - Treffereffekte: Funken, Screen-Shake, Staub, Speed-Lines, K.-o.-Blitz und Kombo-Zähler (in den Einstellungen abschaltbar)
+- Spieltempo-Schalter neben der Arena-Auswahl: Ein Button schaltet ihn ein, ein Schieberegler mit drei Positionen wählt Stufe 1, 2 oder 3; die aktive Stufe steht unter der Rundenanzeige. Nur das Tempo ändert sich, Frame-Daten und Replays bleiben identisch; die Stufen stehen in `src/platform/game-speed.ts`
 - Survival-Modus: endlos Gegner von beiden Seiten, die überlebte Zeit ist der Highscore
 - Trainingsmodus (mit Optionen, die Revenge- oder Special-Leiste voll zu halten), Kampfboxanzeige, Einzelschritt und Animationsvorschau
 - Deterministische Replay-Aufnahme sowie Import und Export

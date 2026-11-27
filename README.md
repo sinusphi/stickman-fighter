@@ -26,6 +26,7 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 - Wirbel: with a full Special bar, a 360° spin kick that hits behind and in front
 - Blocking, jumping, running (double tap forward), best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
 - Hit effects: sparks, screen shake, dust, speed lines, KO flash, and a combo counter (switchable in the settings)
+- Game speed switch next to the arena selection: a button turns it on, a three-position slider picks level 1, 2 or 3; the active level is shown under the round label. Only the pace changes, frame data and replays stay identical; levels live in `src/platform/game-speed.ts`
 - Survival mode: endless enemies from both sides, the survived time is the score
 - Training mode (with options to keep the Revenge or Special bar full), hitbox display, frame stepping, and animation preview
 - Deterministic replay recording, import, and export
