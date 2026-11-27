@@ -27,7 +27,7 @@ It combines deterministic 60 Hz combat with keyboard and gamepad controls, CPU o
 - Blocking, jumping, running (double tap forward), best-of-three matches, and combat meters with a "bar full" burst, sound and READY display
 - Hit effects: sparks, screen shake, dust, speed lines, KO flash, and a combo counter (switchable in the settings)
 - Survival mode: endless enemies from both sides, the survived time is the score
-- Training mode, hitbox display, frame stepping, and animation preview
+- Training mode (with options to keep the Revenge or Special bar full), hitbox display, frame stepping, and animation preview
 - Deterministic replay recording, import, and export
 - Configurable keyboard and gamepad controls
 - English and German interface, light and dark themes, and three arenas
@@ -83,13 +83,13 @@ The Revenge bar fills while you take hits (full after about 400 damage). With a 
 
 - The quarter circle may take up to 20 frames in total with at most 8 frames between its steps; LP may come up to 3 frames after forward, a short neutral before LP is fine. On the gamepad: D-pad or stick ↓, ↘, → (towards the opponent), then LP.
 - Only from standing on the ground. The combo empties the bar when it starts, even if it misses. Without a full bar, crouching, in the air or with an incomplete or reversed quarter circle, LP stays the normal jab. Forward + LK + LMK + HK no longer spends the bar (it is the spin high kick).
-- Once the jab lands, all seven hits land: they cannot be blocked anymore, and a crouching opponent is stood up by the hits. If the jab is blocked, the rest stays blockable as usual (the jab must be blocked standing).
+- The combo cannot be blocked: a guard it meets is broken (see [Guard break](#guard-break)). Once a hit lands, the opponent is locked until the last hit: no walking away, no jump, no block, and a crouching opponent is stood up by the hits.
 - Start distance (centre to centre): from bodies touching (38 px) up to 93 px against a standing opponent, 86 px against a crouching one.
 - Works in versus, training and survival (stagger does not cut it short there). The CPU does not use it.
 
 ### Three variants, one quarter circle
 
-The same quarter circle forward starts one of three seven-hit combos, depending on the button (P1 keys, P2 on the numpad in brackets). All three need the full bar, empty it and are not blockable once the first hit lands.
+The same quarter circle forward starts one of three seven-hit combos, depending on the button (P1 keys, P2 on the numpad in brackets). All three need the full bar, empty it, break any guard and lock the opponent once the first hit lands.
 
 | Button | Combo | Opens | Character | Finisher |
 |---|---|---|---|---|
@@ -107,9 +107,18 @@ The Special bar fills with your own hits (a trickle on blocked ones). With a ful
 
 - Player 1: hold **A** and press **R + F + B**; Player 2: hold **→** and press **Numpad 7 + 4 + 2**. Gamepad (default layout): back + **X + A + B** (buttons 2, 0, 1). The keys may arrive up to 3 frames (50 ms) apart.
 - Only from standing on the ground. The Wirbel empties the bar when it starts, even if it misses. Without a full bar the same keys work exactly as before (spin middle kick). Holding back does not turn you around in survival; only a double tap does.
-- Startup 9 frames, no invulnerability. Both hits are MID (block crouching) and knock down everything up to bruiser stability (versus opponents, survival rookies to bruisers); heavy enemies and minibosses only take the hit.
+- Startup 9 frames, no invulnerability. Both hits are MID; a guard is broken (see [Guard break](#guard-break)). They knock down everything up to bruiser stability (versus opponents, survival rookies to bruisers); heavy enemies and minibosses only take the hit.
 - Reach at attack start (centre to centre): in front up to 89 px against a standing, 81 px against a crouching opponent; behind up to 85 / 78 px. Holding back steps 2 px away on the input frame, so the start distance in front is 87 / 79 px.
 - Works in versus, training and survival. The CPU does not use it.
+
+
+## Guard break
+
+Full-bar moves (all Revenge combos and the Wirbel) break through any guard. When one of their strikes meets a block, both fighters freeze for half a second (30 frames) while the guard lights up and cracks; then the strike breaks through and lands as a normal hit, and the combo plays on to its end. Once a strike of these moves has landed, the opponent stays locked in hitstun until the move's last hit: walking away, jumping or blocking is no longer possible, and an opponent who drifted out of reach is drawn back in (up to 48 px).
+
+- The Revenge combos are also unstoppable: from their first frame to their end no other attack can hit the attacker. A faster attack into their startup passes through, so a started Revenge combo always runs its full course and the spent bar is never wasted. Two unstoppable moves still trade. The Wirbel keeps its vulnerable startup.
+- Guard break, combo lock and unstoppable are separate move properties (`src/simulation/guard-break.ts`). Full-bar moves carry the first two, the Revenge combos all three; further moves can be added there, every other attack stays blockable and interruptible as before.
+- In training, two checkboxes next to the dummy button keep the Revenge or the Special bar full for both fighters.
 
 
 ## Survival mode

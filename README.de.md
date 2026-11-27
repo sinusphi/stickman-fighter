@@ -26,7 +26,7 @@ Ein lokales Kampfspiel für zwei Personen mit Strichmännchen, entwickelt mit Ty
 - Blocken, Springen, Rennen (Doppeltipp vorwärts), Best-of-three-Matches und Kampfbalken mit „Leiste voll“-Burst, Sound und READY-Anzeige
 - Treffereffekte: Funken, Screen-Shake, Staub, Speed-Lines, K.-o.-Blitz und Kombo-Zähler (in den Einstellungen abschaltbar)
 - Survival-Modus: endlos Gegner von beiden Seiten, die überlebte Zeit ist der Highscore
-- Trainingsmodus, Kampfboxanzeige, Einzelschritt und Animationsvorschau
+- Trainingsmodus (mit Optionen, die Revenge- oder Special-Leiste voll zu halten), Kampfboxanzeige, Einzelschritt und Animationsvorschau
 - Deterministische Replay-Aufnahme sowie Import und Export
 - Konfigurierbare Tastatur- und Gamepad-Steuerung
 - Deutsche und englische Oberfläche, helles und dunkles Theme sowie drei Arenen
@@ -79,13 +79,13 @@ Die Revenge-Leiste füllt sich, während du Treffer einsteckst (voll nach rund 4
 
 - Der Viertelkreis darf insgesamt bis zu 20 Frames dauern, mit höchstens 8 Frames zwischen den Schritten; LP darf bis zu 3 Frames nach vorwärts kommen, ein kurzes Neutral vor LP ist erlaubt. Auf dem Gamepad: D-Pad oder Stick ↓, ↘, → (zum Gegner), dann LP.
 - Nur aus dem Stand am Boden. Die Kombo leert die Leiste beim Start, auch wenn sie verfehlt. Ohne volle Leiste, in der Hocke, in der Luft oder bei unvollständigem bzw. umgekehrtem Viertelkreis bleibt LP der normale Jab. Vorwärts + LK + LMK + HK verbraucht die Leiste nicht mehr (das ist der Spin-Highkick).
-- Sitzt der Jab, sitzen alle sieben Treffer: Sie sind dann nicht mehr blockbar, ein hockender Gegner wird durch die Treffer aufgerichtet. Wird der Jab geblockt, bleibt der Rest wie gewohnt blockbar (der Jab muss stehend geblockt werden).
+- Die Kombo ist nicht blockbar: Eine Deckung wird durchbrochen (siehe [Guard Break](#guard-break)). Sitzt ein Treffer, ist der Gegner bis zum letzten Treffer gefangen: kein Weglaufen, kein Sprung, kein Block, und ein hockender Gegner wird durch die Treffer aufgerichtet.
 - Startabstand (Mitte zu Mitte): von „Körper berühren sich“ (38 px) bis 93 px gegen einen stehenden, 86 px gegen einen hockenden Gegner.
 - Funktioniert im Versus, im Training und im Survival (Stagger bricht sie dort nicht ab). Die CPU setzt sie nicht ein.
 
 ### Drei Varianten, ein Viertelkreis
 
-Derselbe Viertelkreis vorwärts startet je nach Taste eine von drei Kombos mit sieben Treffern (Tasten P1, P2 auf dem Numpad in Klammern). Alle drei brauchen die volle Leiste, leeren sie und sind nicht mehr blockbar, sobald der erste Treffer sitzt.
+Derselbe Viertelkreis vorwärts startet je nach Taste eine von drei Kombos mit sieben Treffern (Tasten P1, P2 auf dem Numpad in Klammern). Alle drei brauchen die volle Leiste, leeren sie, durchbrechen jede Deckung und halten den Gegner fest, sobald der erste Treffer sitzt.
 
 | Taste | Kombo | Start | Charakter | Finisher |
 |---|---|---|---|---|
@@ -103,9 +103,18 @@ Die Special-Leiste füllt sich mit deinen eigenen Treffern (geblockte geben nur 
 
 - Spieler 1: **A** halten und **R + F + B** drücken; Spieler 2: **→** halten und **Numpad 7 + 4 + 2** drücken. Gamepad (Standardbelegung): zurück + **X + A + B** (Buttons 2, 0, 1). Die Tasten dürfen bis zu 3 Frames (50 ms) versetzt kommen.
 - Nur aus dem Stand am Boden. Der Wirbel leert die Leiste beim Start, auch wenn er verfehlt. Ohne volle Leiste wirken dieselben Tasten genau wie bisher (Spin-Middlekick). Rückwärtshalten dreht im Survival nicht um, nur der Doppeltipp.
-- Startup 9 Frames, keine Unverwundbarkeit. Beide Treffer sind MID (hockend blocken) und werfen alles bis zur Stabilität des Bruisers um (Versus-Gegner, im Survival Rookie bis Bruiser); schwere Gegner und Minibosse stecken den Treffer nur ein.
+- Startup 9 Frames, keine Unverwundbarkeit. Beide Treffer sind MID; eine Deckung wird durchbrochen (siehe [Guard Break](#guard-break)). Sie werfen alles bis zur Stabilität des Bruisers um (Versus-Gegner, im Survival Rookie bis Bruiser); schwere Gegner und Minibosse stecken den Treffer nur ein.
 - Reichweite bei Angriffsbeginn (Mitte zu Mitte): vorne bis 89 px gegen einen stehenden, 81 px gegen einen hockenden Gegner; hinten bis 85 / 78 px. Das Rückwärtshalten macht im Eingabeframe 2 px Schritt weg, der Startabstand vorne liegt also bei 87 / 79 px.
 - Funktioniert im Versus, im Training und im Survival. Die CPU setzt ihn nicht ein.
+
+
+## Guard Break
+
+Moves mit voller Leiste (alle Revenge-Kombos und der Wirbel) durchbrechen jede Deckung. Trifft einer ihrer Schläge auf einen Block, frieren beide Kämpfer eine halbe Sekunde (30 Frames) ein, die Deckung leuchtet auf und bekommt Risse; dann bricht der Schlag durch, landet als normaler Treffer und die Kombo läuft bis zum Ende. Sitzt ein Treffer dieser Moves, bleibt der Gegner bis zum letzten Treffer im Hitstun gefangen: Weglaufen, Springen oder Blocken geht nicht mehr, und ein Gegner, der aus der Reichweite gerutscht ist, wird wieder herangezogen (bis 48 px).
+
+- Die Revenge-Kombos sind außerdem unaufhaltbar: Vom ersten bis zum letzten Frame kann kein anderer Angriff den Angreifer treffen. Ein schnellerer Angriff in den Anlauf geht durch ihn hindurch, eine gestartete Revenge-Kombo läuft also immer vollständig ab und die verbrauchte Leiste ist nie verschenkt. Zwei unaufhaltbare Moves treffen sich weiterhin gegenseitig. Der Wirbel bleibt im Anlauf verwundbar.
+- Guard Break, Combo-Lock und Unaufhaltbar sind getrennte Move-Eigenschaften (`src/simulation/guard-break.ts`). Moves mit voller Leiste haben die ersten beiden, die Revenge-Kombos alle drei; weitere Moves lassen sich dort eintragen, alle anderen Angriffe bleiben wie bisher blockbar und unterbrechbar.
+- Im Training halten zwei Haken neben dem Dummy-Button die Revenge- oder die Special-Leiste für beide Kämpfer voll.
 
 
 ## Survival-Modus
