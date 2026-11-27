@@ -17,7 +17,7 @@ import { createReplay, playReplay } from '../../src/debug/replay';
 import { GUARD_BREAK_FREEZE_FRAMES } from '../../src/simulation/guard-break';
 
 /**
- * The two Revenge variants on the same quarter circle (236) as `revenge_combo` (+LP):
+ * The two Revenge variants on the same input (23: hold down, add forward, keep both) as `revenge_combo` (+LP):
  *  - F (+LK):  `revenge_combo_f`, the kick ladder: seven kicks, opens LOW, push-kick finisher,
  *  - V (+RLK): `revenge_combo_v`, the salvo: hook opener (MID), low-kick mix-up, uppercut finisher.
  * The classic combo is covered by revenge-combo.test.ts.
@@ -32,22 +32,22 @@ const VARIANTS: Variant[] = [
   { id: 'revenge_combo_f', button: 'LK', single: 'standing_lk', duration: 105, damage: 490,
     groups: ['lowRight', 'lowLeft', 'midRight', 'midLeft', 'highRight', 'highLeft', 'thrust'],
     levels: ['LOW', 'LOW', 'MID', 'MID', 'HIGH', 'HIGH', 'MID'], kinds: Array(7).fill('kick'),
-    range: { standing: [38, 96], crouching: [38, 102] }, starts: [10, 22, 34, 46, 58, 70, 86] },
+    range: { standing: [38, 93], crouching: [38, 99] }, starts: [10, 22, 34, 46, 58, 70, 86] },
   { id: 'revenge_combo_v', button: 'RLK', single: 'standing_rlk', duration: 82, damage: 475,
     groups: ['hookA', 'jab', 'hookB', 'low', 'middle', 'high', 'upper'],
     levels: ['MID', 'HIGH', 'MID', 'LOW', 'MID', 'HIGH', 'HIGH'], kinds: ['punch', 'punch', 'punch', 'kick', 'kick', 'kick', 'punch'],
-    range: { standing: [38, 78], crouching: [38, 82] }, starts: [8, 16, 25, 34, 47, 56, 69] },
+    range: { standing: [38, 75], crouching: [38, 79] }, starts: [8, 16, 25, 34, 47, 56, 69] },
 ];
 const U = rules.unit, RUN = 260;
-const QCF = [2, 3, 6];
+const QCF = [2, 3];
 /** Numpad direction (relative to `facing`) plus buttons as raw input. */
 const pad = (facing: 1 | -1, direction: number, buttons = 0): RawInput => {
   const x = (direction - 1) % 3 - 1;
   return { ...neutralInput(), down: direction <= 3, up: direction >= 7, right: x * facing > 0, left: x * facing < 0, buttons };
 };
-/** Input variants of the quarter circle: held parts, button after forward, forward let go just before the button. */
+/** Input variants of 23: held parts (also long), button after down-forward, down-forward let go just before the button, a short neutral in between. */
 const INPUTS: [number[], number][] = [
-  [[2, 3, 6], 2], [[2, 3, 6, 6], 3], [[2, 2, 2, 3, 3, 6, 6], 6], [[2, 3, 6, 6, 6, 6], 5], [[2, 3, 6, 5], 3], [[2, 5, 3, 6], 3],
+  [[2, 3], 1], [[2, 3, 3], 2], [[2, 2, 2, 3, 3], 4], [[2, 3, 3, 3, 3, 3], 5], [[...Array(40).fill(2), ...Array(60).fill(3)], 99], [[2, 3, 5], 2], [[2, 5, 3], 2],
 ];
 function setup(facing: 1 | -1 = 1, distance = 250, revenge = 100): GameState {
   const game = createGame(), [a, b] = game.fighters;
@@ -63,7 +63,7 @@ function playMotion(game: GameState, facing: 1 | -1, button: Button, directions:
 function landed(v: Variant, distance: number, crouch: boolean, facing: 1 | -1 = 1, shiftAfterOpener = 0): string[] {
   const game = setup(facing, distance), [a, b] = game.fighters, defender = { ...neutralInput(), down: crouch };
   for (let i = 0; i < 3; i++) step(game, [neutralInput(), defender]);
-  playMotion(game, facing, v.button, QCF, 2, defender);
+  playMotion(game, facing, v.button, QCF, 1, defender);
   let shifted = false;
   for (let f = 0; f < RUN; f++) {
     step(game, [neutralInput(), defender]);
@@ -73,7 +73,7 @@ function landed(v: Variant, distance: number, crouch: boolean, facing: 1 | -1 = 
 }
 
 describe('revenge variants: the three combos are told apart by button and by character', () => {
-  it('start with LP, LK and RLK on the same quarter circle, each one only on its own button', () => {
+  it('start with LP, LK and RLK on the same input, each one only on its own button', () => {
     for (const facing of [1, -1] as const) for (const [button, id] of [['LP', 'revenge_combo'], ['LK', 'revenge_combo_f'], ['RLK', 'revenge_combo_v']] as const) {
       const game = setup(facing);
       playMotion(game, facing, button);
@@ -98,8 +98,8 @@ describe('revenge variants: the three combos are told apart by button and by cha
 
 describe.each(VARIANTS)('$id: data', v => {
   const move = MOVES[v.id];
-  it('is a 236 + K motion on its own button that needs and spends the Revenge bar, no chord', () => {
-    expect(move.command).toMatchObject({ type: 'motion', motionId: '236+K', buttons: [v.button], resource: 'revenge' });
+  it('is a 23 + K motion on its own button that needs and spends the Revenge bar, no chord', () => {
+    expect(move.command).toMatchObject({ type: 'motion', motionId: '23+K', buttons: [v.button], resource: 'revenge' });
     expect(move.button).toBe(v.button);
     expect(move.standingHitstun).toBe(true);
     expect(CHORD_UPGRADES.some(chord => chord.target === v.id)).toBe(false);
@@ -161,20 +161,20 @@ describe.each(VARIANTS)('$id: input', v => {
     for (const facing of [1, -1] as const) for (const [directions, at] of INPUTS) for (const revenge of [99, 50]) {
       const game = setup(facing, 250, revenge), baseline = setup(facing, 250, 0);
       playMotion(game, facing, v.button, directions, at); playMotion(baseline, facing, v.button, directions, at);
-      expect(game.fighters[0].moveId).toBe(v.single);
+      expect(game.fighters[0].moveId).toBe(directions[at] === 5 ? v.single : v.single.replace('standing_', 'crouching_'));
       for (let f = 0; f < 40; f++) { step(game, [neutralInput(), neutralInput()]); step(baseline, [neutralInput(), neutralInput()]); }
       expect(game.fighters[0].resources.revenge.current).toBe(revenge);
       const strip = (g: GameState) => g.fighters.map(({ resources: _, ...rest }) => rest);
       expect(strip(game), directions.join('')).toEqual(strip(baseline));
     }
   });
-  it('needs the full quarter circle forward, finished standing, and its own button', () => {
+  it('needs down first, then down-forward held, and its own button', () => {
     for (const facing of [1, -1] as const) {
       const button = buttonBit(v.button);
       const misses: [number[], number, number][] = [
-        [[5], 0, button], [[6], 0, button], [[4], 0, button], [[2], 0, button], [[3, 6], 1, button], [[2, 6], 1, button], [[2, 3], 1, button], [[2, 1, 4], 2, button],
-        [[2, 3, 6, 6, 6, 6, 6], 6, button],
-        [[2, 3, 6], 2, buttonBit('MK')], [[2, 3, 6], 2, buttonBit('HK')], [[2, 3, 6], 2, buttonBit('LMK')], [[2, 3, 6], 2, buttonBit('RHK')],
+        [[5], 0, button], [[6], 0, button], [[4], 0, button], [[2], 0, button], [[3], 0, button], [[3, 3, 3], 2, button], [[6, 3], 1, button], [[2, 6], 1, button], [[2, 3, 6], 2, button], [[2, 1, 4], 2, button],
+        [[2, 3, 5, 5, 5, 5, 5], 6, button],
+        [[2, 3], 1, buttonBit('MK')], [[2, 3], 1, buttonBit('HK')], [[2, 3], 1, buttonBit('LMK')], [[2, 3], 1, buttonBit('RHK')],
       ];
       for (const [directions, at, pressed] of misses) {
         const game = setup(facing);
@@ -231,7 +231,7 @@ describe.each(VARIANTS)('$id: hits', v => {
   it('deals the full damage, stands a crouching opponent up and knocks down with the finisher', () => {
     const game = setup(1, 60), [a, b] = game.fighters, crouch = { ...neutralInput(), down: true };
     step(game, [neutralInput(), crouch]);
-    playMotion(game, 1, v.button, QCF, 2, crouch);
+    playMotion(game, 1, v.button, QCF, 1, crouch);
     let knocked = false;
     for (let f = 0; f < RUN; f++) {
       step(game, [neutralInput(), crouch]);
@@ -247,7 +247,7 @@ describe.each(VARIANTS)('$id: hits', v => {
       for (const down of [requiresCrouchGuard(level), !requiresCrouchGuard(level)]) {
         const game = setup(1, 60), guard = { ...neutralInput(), right, down };
         step(game, [neutralInput(), guard]);
-        playMotion(game, 1, v.button, QCF, 2, guard);
+        playMotion(game, 1, v.button, QCF, 1, guard);
         for (let f = 0; f < RUN + GUARD_BREAK_FREEZE_FRAMES; f++) step(game, [neutralInput(), guard]);
         // Walking back before any contact may leave the opener short; from the first hit on, every hit lands.
         const hits = game.fighters[0].hitTargets.map(t => t.split(':')[0]);
@@ -261,7 +261,7 @@ describe.each(VARIANTS)('$id: hits', v => {
     const game = setup(1, 60);
     game.training = { enabled: true, dummy: 'stand' };
     const replay = createReplay(game);
-    for (const direction of QCF) replay.frames.push({ inputs: [pad(1, direction, direction === 6 ? buttonBit(v.button) : 0), neutralInput()], events: [] });
+    for (const direction of QCF) replay.frames.push({ inputs: [pad(1, direction, direction === 3 ? buttonBit(v.button) : 0), neutralInput()], events: [] });
     for (let f = 0; f < RUN; f++) replay.frames.push({ inputs: [neutralInput(), neutralInput()], events: [] });
     let started = false;
     const end = playReplay(replay, state => { started ||= state.fighters[0].moveId === v.id; });
@@ -285,7 +285,7 @@ describe.each(VARIANTS)('$id: survival', v => {
     const e = spawnEnemy(s, facing, kind);
     e.entering = false; e.fighter.x = s.player.x + facing * distance * U; e.fighter.facing = -facing as 1 | -1;
     s.player.resources.revenge.current = 100;
-    for (const direction of QCF) stepSurvival(s, pad(facing, direction, direction === 6 ? buttonBit(v.button) : 0));
+    for (const direction of QCF) stepSurvival(s, pad(facing, direction, direction === 3 ? buttonBit(v.button) : 0));
     expect(s.player.moveId).toBe(v.id);
     expect(s.player.resources.revenge.current).toBe(0);
     let hits = 0, hp = e.fighter.hp, knockdownBeforeFinisher = false;
@@ -335,7 +335,7 @@ describe.each(VARIANTS)('$id: CPU, presentation, animation', v => {
     expect(swingCues(v.id)).toHaveLength(7);
     const game = setup(1), bit = buttonBit(v.button);
     let previous = snapshot(game), reported = 0;
-    for (const [direction, buttons] of [[2, 0], [3, 0], [6, bit], [6, bit], [5, 0], [5, 0]]) {
+    for (const [direction, buttons] of [[2, 0], [3, 0], [3, bit], [3, bit], [5, 0], [5, 0]]) {
       step(game, [pad(1, direction, buttons), neutralInput()]);
       reported += newResourceStarts(game, previous).length; previous = snapshot(game);
     }

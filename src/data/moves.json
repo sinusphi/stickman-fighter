@@ -49564,7 +49564,7 @@
       ],
       "trigger": "pressed",
       "priority": 30,
-      "motionId": "236+P",
+      "motionId": "23+P",
       "resource": "revenge"
     },
     "animation": "revenge_combo",
@@ -55667,7 +55667,7 @@
       ],
       "trigger": "pressed",
       "priority": 30,
-      "motionId": "236+K",
+      "motionId": "23+K",
       "resource": "revenge"
     },
     "animation": "revenge_combo_f",
@@ -58787,7 +58787,7 @@
       ],
       "trigger": "pressed",
       "priority": 30,
-      "motionId": "236+K",
+      "motionId": "23+K",
       "resource": "revenge"
     },
     "animation": "revenge_combo_v",

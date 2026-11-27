@@ -20,9 +20,9 @@ function setup(distance = 60): GameState {
   a.resources.revenge.current = 100;
   return game;
 }
-/** 236+LP for P1 from the left while P2 holds `defender`. */
+/** 23+LP (hold down, add forward, keep both, LP) for P1 from the left while P2 holds `defender`. */
 function revenge(game: GameState, defender: RawInput = neutralInput()): void {
-  for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [false, true, LP]] as const)
+  for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [true, true, LP]] as const)
     step(game, [{ ...neutralInput(), down, right, buttons }, defender]);
 }
 /** Steps until a guard break is pending (or `limit` steps passed). */
@@ -96,7 +96,7 @@ describe('guard break: sequence', () => {
     expect(() => validateSnapshot({ ...snapshot(game), guardBreak: { ...game.guardBreak, defender: 0 } })).toThrow(/Guard Break/);
     expect(() => validateSnapshot({ ...snapshot(game), fighters: [game.fighters[0], { ...game.fighters[1], lockedBy: -1 }] })).toThrow(/Combo-Lock/);
     const replay = createReplay(setup());
-    for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [false, true, LP]] as const)
+    for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [true, true, LP]] as const)
       replay.frames.push({ inputs: [{ ...neutralInput(), down, right, buttons }, BLOCK], events: [] });
     for (let i = 0; i < 200; i++) replay.frames.push({ inputs: [neutralInput(), BLOCK], events: [] });
     let broke = false;
@@ -112,7 +112,7 @@ describe('unstoppable Revenge combos', () => {
   /** P2 jabs into P1's revenge startup, pressed on the step the motion completes. */
   function jabIntoStartup(moveId: string, button: 'LP' | 'LK' | 'RLK'): GameState {
     const game = setup(48), bit = buttonBit(button);
-    for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [false, true, bit]] as const)
+    for (const [down, right, buttons] of [[true, false, 0], [true, true, 0], [true, true, bit]] as const)
       step(game, [{ ...neutralInput(), down, right, buttons }, buttons ? JAB : neutralInput()]);
     expect(game.fighters[0].moveId).toBe(moveId);
     expect(game.fighters[1].moveId).toBe('standing_lp');

@@ -79,6 +79,17 @@ describe('motion parser', () => {
     expect(parseMotions(history([...Array(80).fill(2),3,6]))).toContain('236+P');
     expect(parseMotions(history([2,...Array(80).fill(3),6]))).not.toContain('236+P');
   });
+  it('lets every part of a hold motion (23) be held, but needs down before down-forward', () => {
+    expect(parseMotions(history([2, 3]))).toEqual(['23+P']);
+    expect(parseMotions(history([...Array(50).fill(2), ...Array(60).fill(3)]))).toEqual(['23+P']);
+    expect(parseMotions(history([2, 3, 5, 5, 5]))).toEqual(['23+P']);
+    expect(parseMotions(history([2, 3, 5, 5, 5, 5]))).toEqual([]);
+    expect(parseMotions(history([3]))).toEqual([]);
+    expect(parseMotions(history([6, 3]))).toEqual([]);
+    expect(parseMotions(history([2, 3, 6]))).not.toContain('23+P');
+    expect(parseMotions(history([2, 3], 'LK'))).toEqual(['23+K']);
+    expect(parseMotions(history([2, 3], 'MP'))).toEqual([]);
+  });
   it('enforces exact gap, total and button-window boundaries', () => {
     const qcf = MOTIONS[0];
     expect(matchesMotion(history([2, ...Array(7).fill(5), 3, 6]), qcf)).toBe(true);

@@ -1,5 +1,5 @@
 /**
- * Revenge combo F: quarter circle forward (down, down-forward, forward) + LK with a
+ * Revenge combo F: hold down, add forward and keep both (motion 23) + LK with a
  * full Revenge bar. The "kick ladder": seven kicks and no punch, climbing from
  * the shins to the head and ending in a heavy push kick.
  *
@@ -79,7 +79,7 @@ await generateKick(G => {
   }
   keys.push({ f: last + 18, ...G, left: ground(feet.left), right: ground(feet.right) });
   const strikes = ladder.map(k => ({ from: k.at, to: k.at + 2, joint: `${k.side}Foot`, group: k.group, hit: k.hit }));
-  return { id: 'revenge_combo_f', button: 'LK', motion: '236+K', duration: last + 19, priority: 30,
+  return { id: 'revenge_combo_f', button: 'LK', motion: '23+K', duration: last + 19, priority: 30,
     advance: ADV,
     resource: 'revenge', standingHitstun: true,
     frame: { startup: first, active: last + 2 - first + 1, recovery: last + 19 - (last + 2 + 1) },

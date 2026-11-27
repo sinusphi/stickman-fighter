@@ -4,6 +4,7 @@ import { CROUCH_BUTTONS, MOVES, advanceAt, isPlayableMove, groupValue, type Comp
 import { buttonBit, type Button, type Direction } from '../input/types';
 import { consumeCommand } from '../input/commands';
 import { readHistory } from '../input/history';
+import { MOTIONS } from '../input/motions';
 import { isActionable, isGroundActionable, recoverGround, transition } from './movement';
 import { clampToStage, overlaps, resolvePushboxes, stance, worldBox } from './collision';
 import { requiresCrouchGuard } from './guard';
@@ -83,16 +84,22 @@ function chordCompleted(f: Fighter, first: Button, partners: readonly Button[], 
       return from >= 0 && history.slice(from).every(frame => (frame.held & bit) !== 0);
     });
 }
+/** Motions that end in a crouching direction (23: hold down, add forward); their standing moves rise straight out of the crouch. */
+const CROUCH_FINISH_MOTIONS: ReadonlySet<string> = new Set(MOTIONS.filter(m => (m.sequence.at(-1) ?? 5) <= 3).map(m => m.id));
+function risesFromCrouch(move: CompiledMove): boolean {
+  return move.stance === 'standing' && move.command.type === 'motion' && CROUCH_FINISH_MOTIONS.has(move.command.motionId ?? '');
+}
 /**
  * Full-bar moves (`command.resource`): available only with that bar completely
- * full and while standing on the ground; otherwise the input behaves exactly as
+ * full and while standing on the ground (or rising from the crouch, see
+ * risesFromCrouch); otherwise the input behaves exactly as
  * if the move did not exist.
  */
 export function resourceReady(f: Fighter, move: CompiledMove): boolean {
   const name = move.command.resource;
   if (!name) return true;
   const resource = f.resources[name];
-  return resource.current >= resource.max && f.y === 0 && !f.crouching;
+  return resource.current >= resource.max && f.y === 0 && (!f.crouching || risesFromCrouch(move));
 }
 /** A full-bar move empties its bar when it starts, whether it lands or not. */
 function spendResource(f: Fighter, move: CompiledMove): void {
@@ -131,11 +138,13 @@ export function startAttack(f: Fighter, combatFrame: number, holdEligible = stan
     if (command.type === 'hold') return holdEligible && resourceReady(f, move) && command.directions.includes(current.direction) && command.buttons.every(b => Boolean(current.pressed & buttonBit(b)));
     return resourceReady(f, move) && pending.motions.includes(command.motionId ?? '');
   };
-  const candidates = Object.values(MOVES).filter(move => isPlayableMove(move) && move.stance === stance(f) && move.button === button && commandMatches(move));
+  const currentStance = stance(f);
+  const candidates = Object.values(MOVES).filter(move => isPlayableMove(move) && (move.stance === currentStance || currentStance === 'crouching' && risesFromCrouch(move)) && move.button === button && commandMatches(move));
   const category={normal:0,hold:1,motion:2};
   candidates.sort((a,b) => category[b.command.type] - category[a.command.type] || b.command.priority-a.command.priority || (a.id < b.id ? -1 : 1));
   const move = candidates[0];
   if (!move || !consumeCommand(f.input, true, combatFrame)) return;
+  if (move.stance === 'standing') f.crouching = false;
   transition(f, 'Attack'); f.moveId = move.id; f.moveFrame = 0; f.attackFacing = f.facing; f.attackId++; f.hitTargets = [];
   f.landingRecovery = move.recovery;
   spendResource(f, move);

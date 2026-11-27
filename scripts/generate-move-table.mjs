@@ -64,8 +64,8 @@ try {
     const input = (move, player) => {
       const buttons = (move.command.type === 'hold' ? move.command.buttons : [move.button]).map(b => label(keys[player][b])).join(' + ');
       if (move.command.type === 'hold') return `${language.hold(label(direction(player, move.command.directions[0])))} + ${buttons}`;
-      // Quarter circle forward: down, down + forward, forward, then the button.
-      if (move.command.type === 'motion') { const down = label(keys[player].down), forward = label(direction(player, 6)); return `${down}, ${down} + ${forward}, ${forward} + ${buttons}`; }
+      // Motion 23: hold down, add forward and keep both, then the button.
+      if (move.command.type === 'motion') { const down = label(keys[player].down), forward = label(direction(player, 6)); return `${language.hold(down)}, ${down} + ${forward}, ${down} + ${forward} + ${buttons}`; }
       if (move.stance === 'crouching') return `${language.hold(label(keys[player].down))} + ${buttons}`;
       if (move.stance === 'airborne') return language.air(buttons);
       return buttons;

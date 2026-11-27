@@ -17,7 +17,7 @@ import { INTRO_FIGHT_FRAMES, INTRO_MAX_APPROACH_FRAMES, INTRO_READY_FRAMES, INTR
  * additionally pins rules, moves, bodies, motions, figure scale and contact
  * geometry. Replays are only accepted by the exact same engine and data.
  */
-export const ENGINE_VERSION = '1.19.0';
+export const ENGINE_VERSION = '1.20.0';
 export const MAX_REPLAY_FRAMES = rules.maxReplayFrames;
 export interface ReplayFrame { inputs: [RawInput, RawInput]; events: ControlEvent[] }
 export interface Replay { schemaVersion: number; engineVersion: string; dataHash: string; initial: GameState; frames: ReplayFrame[] }

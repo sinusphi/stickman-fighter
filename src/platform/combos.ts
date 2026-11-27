@@ -33,10 +33,10 @@ export const throwLabelKeys: Record<string, TranslationKey> = { throw_forward: '
 export const throwMoves = moves.filter(move=>(move as { throw?: { phase: string } }).throw?.phase==='attempt')
   .sort((a,b)=>b.command.directions[0]-a.command.directions[0]);
 
-/** Quarter circle forward (236) with the player's own keys; forward is right for P1, left for P2 at the start. */
+/** Motion 23 (hold down, add forward, keep both) with the player's own keys; forward is right for P1, left for P2 at the start. */
 const motionKeys=(player: number)=>{
   const key=(control: string)=>`<kbd data-owner="${player}" data-control="${control}">${control}</kbd>`, forward=player===0?'right':'left';
-  return `${key('down')} → ${key('down')}+${key(forward)} → ${key(forward)}`;
+  return `${key('down')} → ${key('down')}+${key(forward)}`;
 };
 export const comboMarkup = `
 <details id="combo-list">
@@ -45,7 +45,7 @@ export const comboMarkup = `
   <ul class="combo-list">
     ${comboMoves.map(move=>`<li data-combo="${move.id}">
       <strong ${comboLabelKeys[move.id]?tx(comboLabelKeys[move.id]):`>${move.id}`}</strong>
-      <div class="combo-command">${move.command.type==='motion'?`<span ${tx('combo.quarterCircle')}</span>`:`<span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span>`} + <span class="mono">${move.command.buttons.join(' + ')}</span></div>
+      <div class="combo-command">${move.command.type==='motion'?`<span ${tx('combo.downForward')}</span>`:`<span ${tx(move.command.directions[0]===6?'combo.forward':'combo.back')}</span>`} + <span class="mono">${move.command.buttons.join(' + ')}</span></div>
       <div class="combo-bindings">${[0,1].map(player=>`<span>P${player+1}: ${move.command.type==='motion'?`${motionKeys(player)} + `:''}${move.command.buttons.map(button=>`<kbd data-owner="${player}" data-control="${button}">${button}</kbd>`).join(' + ')}</span>`).join('')}</div>
       ${resourceHint(move.command as { resource?: string }, move.id)}
     </li>`).join('')}

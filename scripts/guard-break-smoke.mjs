@@ -25,12 +25,12 @@ try {
   const state = player => page.locator(`#state-${player}`).textContent();
   const hitstop = async () => Number((await state(0)).match(/Hitstop (\d+)f/)[1]);
   const bar = (player, name = 'revenge') => page.locator(`#resource-value-${player}-${name}`);
-  async function quarterCircle() {
+  /** Revenge input 23 + LP: hold S, add D, keep both, then R. */
+  async function downForward() {
     await page.keyboard.down('s'); await step();
-    await page.keyboard.down('d'); await step();
-    await page.keyboard.up('s'); await step();
+    await page.keyboard.down('d'); await step(); await step();
     await page.keyboard.down('r'); await step();
-    await page.keyboard.up('r'); await page.keyboard.up('d');
+    await page.keyboard.up('r'); await page.keyboard.up('d'); await page.keyboard.up('s');
   }
 
   // ------------------------------------------------- 1. training options ----
@@ -53,7 +53,7 @@ try {
   // ----------------------------------------------------- 2. guard break -----
   // Walk in to about 60 px.
   await page.keyboard.down('d'); await steps(100); await page.keyboard.up('d'); await steps(10);
-  await quarterCircle();
+  await downForward();
   await expect(page.locator('#state-0')).toContainText('revenge_combo');
   let frozen = 0;
   for (let i = 0; i < 40 && frozen === 0; i++) {
@@ -86,7 +86,7 @@ try {
   // ------------------------------------------- 3. refill and option off ----
   await steps(60);
   await page.keyboard.down('d'); await steps(30); await page.keyboard.up('d'); await steps(5);
-  await quarterCircle();
+  await downForward();
   await expect(page.locator('#state-0')).toContainText('revenge_combo');
   await steps(200);
   await page.locator('#full-revenge').uncheck();
@@ -94,7 +94,7 @@ try {
   await expect(page.locator('#full-revenge')).not.toBeChecked();
   await steps(30);
   await page.keyboard.down('d'); await steps(30); await page.keyboard.up('d'); await steps(5);
-  await quarterCircle();
+  await downForward();
   await expect(page.locator('#state-0')).toContainText('revenge_combo');
   await step();
   await expect(bar(0)).toHaveText('0 / 100');

@@ -1,5 +1,5 @@
 /**
- * Revenge combo V: quarter circle forward (down, down-forward, forward) + RLK with a
+ * Revenge combo V: hold down, add forward and keep both (motion 23) + RLK with a
  * full Revenge bar. The "salvo": three quick punches, a low-kick mix-up, a
  * double left kick and a rising uppercut that knocks down.
  *
@@ -121,7 +121,7 @@ await generateKick(G => {
   ];
   // Body turn of the punches (as authored for standing_mp), square again for the kicks.
   const turnTrack = [[0, 0], [4, 0], [8, 1], [10, 1], [13, .3], [16, 0], [18, 0], [22, .2], [25, 1], [27, 1], [31, .4], [34, 0], [64, 0], [67, .15], [69, .6], [71, .6], [74, .5], [77, .2], [81, 0]];
-  return { id: 'revenge_combo_v', button: 'RLK', motion: '236+K', duration: 82, priority: 30,
+  return { id: 'revenge_combo_v', button: 'RLK', motion: '23+K', duration: 82, priority: 30,
     advance: { frames: STEP_FRAMES, distance: STEP },
     resource: 'revenge', standingHitstun: true,
     frame: { startup: 8, active: 64, recovery: 10 }, kickFoot: 'leftFoot',

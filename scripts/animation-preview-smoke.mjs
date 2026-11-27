@@ -30,8 +30,8 @@ try {
  await expect(combos.locator('.throw-list li')).toHaveCount(2);
  for(const {id,buttons,direction,motion} of comboCommands) {
   const row=combos.locator(`[data-combo="${id}"]`);
-  // Motion moves (revenge_combo: 236 + LP) show the quarter circle instead of a hold direction.
-  await expect(row.locator('.combo-command')).toHaveText(`${motion?'Quarter circle forward (↓ ↘ →, 236)':direction===6?'Forward (6)':'Back (4)'} + ${buttons.join(' + ')}`);
+  // Motion moves (revenge_combo: 23 + LP) show the down, down-forward input instead of a hold direction.
+  await expect(row.locator('.combo-command')).toHaveText(`${motion?'Hold down, add forward (↓ ↘, 23)':direction===6?'Forward (6)':'Back (4)'} + ${buttons.join(' + ')}`);
   if(motion)for(const player of [0,1])for(const control of ['down',player===0?'right':'left'])await expect(row.locator(`[data-owner="${player}"][data-control="${control}"]`).first()).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="${control}"]`).innerText());
   for(const player of [0,1])for(const button of buttons) {
    await expect(row.locator(`[data-owner="${player}"][data-control="${button}"]`)).toHaveText(await page.locator(`.controls [data-owner="${player}"][data-control="${button}"]`).innerText());
@@ -49,9 +49,9 @@ try {
  const options=await select.locator('option').evaluateAll(options=>options.map(option=>option.value));
  expect([...options].sort()).toEqual(catalog.map(clip=>clip.id).sort());
  expect(new Set(options).size).toBe(options.length);
- await expect(select.locator('option[value="revenge_combo"]')).toContainText('236+LP');
- await expect(select.locator('option[value="revenge_combo_f"]')).toContainText('236+LK');
- await expect(select.locator('option[value="revenge_combo_v"]')).toContainText('236+RLK');
+ await expect(select.locator('option[value="revenge_combo"]')).toContainText('23+LP');
+ await expect(select.locator('option[value="revenge_combo_f"]')).toContainText('23+LK');
+ await expect(select.locator('option[value="revenge_combo_v"]')).toContainText('23+RLK');
  await expect(select).toHaveValue('Idle');
  expect(await select.locator('optgroup').evaluateAll(groups=>groups.map(group=>group.label))).toEqual([
   'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Throws','Blocks & hit reactions','Rotation demos',

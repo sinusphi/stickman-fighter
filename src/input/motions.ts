@@ -4,6 +4,8 @@ import { buttonBit, type Button, type InputFrame } from './types';
 export interface Motion {
   id: string; sequence: number[]; buttons: string[]; maxTotalFrames: number; maxGapFrames: number; buttonWindowFrames: number; priority: number;
   charge?: { directions: number[]; finishDirections: number[]; minFrames: number; releaseWindowFrames: number };
+  /** Every part may be held as long as the input history reaches (e.g. 23: hold down, add forward, keep both, press the button). */
+  hold?: boolean;
 }
 export const MOTIONS: Motion[] = definitions;
 
@@ -18,7 +20,8 @@ export function matchesMotion(history: InputFrame[], motion: Motion): boolean {
   const finishEnd = history[index].frame;
   while (index > 0 && finish.includes(history[index - 1].direction)) index--;
   const finishStart = history[index].frame;
-  if (last.frame - finishStart > motion.buttonWindowFrames) return false;
+  // The button follows the start of the finish direction, or for hold motions its end (held as long as wanted, let go only briefly).
+  if (last.frame - (motion.hold ? finishEnd : finishStart) > motion.buttonWindowFrames) return false;
   index--;
   if (charge) {
     while (index >= 0 && history[index].direction === 5) index--;
@@ -36,7 +39,7 @@ export function matchesMotion(history: InputFrame[], motion: Motion): boolean {
     const partEnd = history[index].frame;
     while (index > 0 && history[index - 1].direction === motion.sequence[part]) index--;
     nextStart = history[index].frame;
-    if (finishEnd - (part === 0 ? partEnd : nextStart) >= motion.maxTotalFrames) return false;
+    if (!motion.hold && finishEnd - (part === 0 ? partEnd : nextStart) >= motion.maxTotalFrames) return false;
     index--;
   }
   return true;

@@ -1,12 +1,12 @@
-// Revenge combo (quarter circle forward 236 + LP with a full Revenge bar), frame-stepped:
-//  1. Versus with the real keyboard: without a full bar 236 + LP stays the jab;
+// Revenge combo (hold down, add forward, keep both: 23 + LP with a full Revenge bar), frame-stepped:
+//  1. Versus with the real keyboard: without a full bar 23 + LP stays the crouching jab;
 //     P2 fills P1's bar with real hits; with the full bar the old chord D+F+G+H
-//     stays the spin high kick and keeps the bar; P1 (S, S+D, D, D+R) lands all
+//     stays the spin high kick and keeps the bar; P1 (S, S+D, S+D+R) lands all
 //     seven hits and spends the bar; the 500 damage fill P2's bar, P2 (↓, ↓+←,
-//     ←, ←+Num7) answers with all seven.
+//     ↓+←+Num7) answers with all seven.
 //  2. Start distances (centre to centre) as replays through the UI, both sides,
 //     opponent standing or crouching: from bodies touching (38 px) up to the
-//     opener's maximum reach (93 px standing, 86 px crouching) all seven hits
+//     opener's maximum reach (90 px standing, 83 px crouching) all seven hits
 //     land; 3 px further the jab whiffs.
 //  3. Survival: deterministic check in the page (heavy enemy, boss), then the
 //     real run: the enemies fill the bar, the combo starts on the next enemy in
@@ -19,7 +19,7 @@ import { TEST_URL, chromeExecutable } from './smoke-env.mjs';
 const browser = await chromium.launch({ executablePath: chromeExecutable(), headless: true, args: ['--no-sandbox'] });
 const output = 'test-results/revenge-combo'; await mkdir(output, { recursive: true });
 /** Documented start distances in px: [min, max] per defender stance. */
-const RANGE = { standing: [38, 93], crouching: [38, 86] };
+const RANGE = { standing: [38, 90], crouching: [38, 83] };
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } }), errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -30,13 +30,12 @@ try {
   const hp = async player => Number((await page.locator(`#hp-${player}`).textContent()).split(' / ')[0]);
   const bar = player => page.locator(`#resource-value-${player}-revenge`);
   const ensurePaused = async () => { if ((await page.locator('#pause').textContent()).match(/Pause/)) await page.locator('#pause').click(); };
-  /** Quarter circle forward + LP with the real keyboard, one frame per step. */
-  async function quarterCircle(down, forward, lp) {
+  /** Hold down, add forward, keep both, then LP with the real keyboard, one frame per step. */
+  async function downForward(down, forward, lp) {
     await page.keyboard.down(down); await page.locator('#step').click();
-    await page.keyboard.down(forward); await page.locator('#step').click();
-    await page.keyboard.up(down); await page.locator('#step').click();
+    await page.keyboard.down(forward); await page.locator('#step').click(); await page.locator('#step').click();
     await page.keyboard.down(lp); await page.locator('#step').click();
-    await page.keyboard.up(lp); await page.keyboard.up(forward);
+    await page.keyboard.up(lp); await page.keyboard.up(forward); await page.keyboard.up(down);
   }
   /** Steps until `player`'s combo is over; a screenshot at every landed hit. Returns the hits. */
   async function watchCombo(player, prefix) {
@@ -54,9 +53,9 @@ try {
   // ---------------------------------------------------------- 1. versus ----
   await page.locator('#reset').click();
   await steps(2);
-  // Without a full bar the quarter circle + LP stays the jab.
-  await quarterCircle('s', 'd', 'r');
-  await expect(page.locator('#state-0')).toContainText('standing_lp');
+  // Without a full bar down, down-forward + LP stays the crouching jab.
+  await downForward('s', 'd', 'r');
+  await expect(page.locator('#state-0')).toContainText('crouching_lp');
   await expect(bar(0)).toHaveText('0 / 100');
   await page.locator('#reset').click();
   // P2 walks in and hits P1 (forward chord H+N twice, then jabs) until P1's bar is full.
@@ -79,10 +78,10 @@ try {
   for (const key of ['f', 'g', 'h', 'd']) await page.keyboard.up(key);
   await expect(bar(0)).toHaveText('100 / 100');
   await steps(90);
-  // P1 closes in until the bodies touch (documented minimum distance), then 236 + LP.
+  // P1 closes in until the bodies touch (documented minimum distance), then 23 + LP.
   await page.keyboard.down('d'); await steps(60); await page.keyboard.up('d'); await steps(2);
   const p2Before = await hp(1);
-  await quarterCircle('s', 'd', 'r');
+  await downForward('s', 'd', 'r');
   await expect(page.locator('#state-0')).toContainText('revenge_combo');
   await expect(bar(0)).toHaveText('0 / 100');
   await page.locator('#game').screenshot({ path: `${output}/p1-start.png` });
@@ -93,7 +92,7 @@ try {
   await steps(120);
   await page.keyboard.down('ArrowLeft'); await steps(60); await page.keyboard.up('ArrowLeft'); await steps(2);
   const p1Before = await hp(0);
-  await quarterCircle('ArrowDown', 'ArrowLeft', 'Numpad7');
+  await downForward('ArrowDown', 'ArrowLeft', 'Numpad7');
   await expect(page.locator('#state-1')).toContainText('revenge_combo');
   await expect(bar(1)).toHaveText('0 / 100');
   expect(await watchCombo(1, 'p2')).toBe(7);
@@ -108,10 +107,10 @@ try {
     a.x = 400 * 256; b.x = a.x + distance * 256;
     game.fighters[attacker].resources.revenge.current = 100;
     const replay = createReplay(game), n = { up: false, down: false, left: false, right: false, buttons: 0 };
-    // P1 faces right (forward = right), P2 faces left (forward = left): 2, 3, 6 + LP.
-    // LP comes with forward, so no walk frame changes the measured start distance.
+    // P1 faces right (forward = right), P2 faces left (forward = left): 2, 3 + LP.
+    // Down-forward is a crouch, so no walk frame changes the measured start distance.
     const forward = { right: attacker === 0, left: attacker === 1 }, defend = { ...n, down: crouch };
-    const motion = [{ ...n, down: true }, { ...n, down: true, ...forward }, { ...n, ...forward, buttons: buttonBit('LP') }];
+    const motion = [{ ...n, down: true }, { ...n, down: true, ...forward }, { ...n, down: true, ...forward, buttons: buttonBit('LP') }];
     for (let i = 0; i < 230; i++) {
       const own = motion[i - 4] ?? n;
       replay.frames.push({ inputs: attacker === 0 ? [own, defend] : [defend, own], events: [] });
@@ -143,11 +142,11 @@ try {
     const { bossSpec } = await import('/src/survival/spawner.ts');
     const { buttonBit } = await import('/src/input/types.ts');
     const n = { up: false, down: false, left: false, right: false, buttons: 0 }, result = [];
-    for (const kind of ['heavy', bossSpec(SURVIVAL, 1)]) for (const distance of [38, 93]) {
+    for (const kind of ['heavy', bossSpec(SURVIVAL, 1)]) for (const distance of [38, 90]) {
       const s = createSurvival(5); s.spawnTimer = 1e9; s.flow.bossTimer = 1e9; s.flow.waveTimer = 1e9;
       const e = spawnEnemy(s, 1, kind); e.entering = false; e.fighter.x = s.player.x + distance * 256; e.fighter.facing = -1;
       s.player.resources.revenge.current = 100;
-      for (const input of [{ down: true }, { down: true, right: true }, { right: true, buttons: buttonBit('LP') }]) stepSurvival(s, { ...n, ...input });
+      for (const input of [{ down: true }, { down: true, right: true }, { down: true, right: true, buttons: buttonBit('LP') }]) stepSurvival(s, { ...n, ...input });
       let hits = 0, hpBefore = e.fighter.hp;
       for (let i = 0; i < 220; i++) { stepSurvival(s, n); if (e.fighter.hp < hpBefore) { hits++; hpBefore = e.fighter.hp; } }
       result.push(hits);
@@ -173,7 +172,7 @@ try {
     if (s.over) throw Error('Survival-Lauf vor dem Revenge-Test beendet.');
     const free = /P1 {2}(Idle|Walk) /.test(state);
     if (free && s.front >= RANGE.standing[0] && s.front <= 80) {
-      await quarterCircle('s', s.facing === 1 ? 'd' : 'a', 'r');
+      await downForward('s', s.facing === 1 ? 'd' : 'a', 'r');
       started = (await page.locator('#state-0').textContent()).includes('revenge_combo');
       if (!started) await page.locator('#step').click();
     } else await page.locator('#step').click();
@@ -196,7 +195,7 @@ try {
   // ---------------------------------------------------- 4. combo list, preview ----
   await expect(page.locator('#combo-list li[data-combo="revenge_combo"]')).toHaveCount(1);
   await expect(page.locator('#combo-list li[data-combo="revenge_combo"] .hint')).toContainText(/Revenge/);
-  // The two variants (236 + LK and 236 + RLK) are listed with their own hint and key bindings.
+  // The two variants (23 + LK and 23 + RLK) are listed with their own hint and key bindings.
   for (const [id, key] of [['revenge_combo_f', 'LK'], ['revenge_combo_v', 'RLK']]) {
     await expect(page.locator(`#combo-list li[data-combo="${id}"]`)).toHaveCount(1);
     await expect(page.locator(`#combo-list li[data-combo="${id}"] .hint`)).toContainText(/Revenge/);

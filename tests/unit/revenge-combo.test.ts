@@ -35,11 +35,11 @@ const pad = (facing: 1 | -1, direction: number, buttons = 0): RawInput => {
   const x = (direction - 1) % 3 - 1;
   return { ...neutralInput(), down: direction <= 3, up: direction >= 7, right: x * facing > 0, left: x * facing < 0, buttons };
 };
-/** Quarter circle forward: down, down-forward, forward with LP (the shortest input). */
-const QCF = [2, 3, 6];
-/** Input variants of 236+LP: held parts, LP after forward, forward let go just before LP. */
+/** Hold down, add forward and keep both, then LP (the shortest input). */
+const QCF = [2, 3];
+/** Input variants of 23+LP: held parts (also long), LP after down-forward, down-forward let go just before LP, a short neutral in between. */
 const VARIANTS: [number[], number][] = [
-  [[2, 3, 6], 2], [[2, 3, 6, 6], 3], [[2, 2, 2, 3, 3, 6, 6], 6], [[2, 3, 6, 6, 6, 6], 5], [[2, 3, 6, 5], 3], [[2, 5, 3, 6], 3],
+  [[2, 3], 1], [[2, 3, 3], 2], [[2, 2, 2, 3, 3], 4], [[2, 3, 3, 3, 3, 3], 5], [[...Array(40).fill(2), ...Array(60).fill(3)], 99], [[2, 3, 5], 2], [[2, 5, 3], 2],
 ];
 /** Plays `directions` with LP pressed on frame `lp` (0 = none) and held from there. */
 function playMotion(game: GameState, facing: 1 | -1, directions: number[] = QCF, lp = directions.length - 1, defender = neutralInput()): void {
@@ -52,7 +52,7 @@ function landed(distance: number, crouch: boolean, facing: 1 | -1 = 1, shiftAfte
   const game = setup(facing, distance), [a, b] = game.fighters;
   const defender = { ...neutralInput(), down: crouch };
   for (let i = 0; i < 3; i++) step(game, [neutralInput(), defender]);
-  playMotion(game, facing, QCF, 2, defender);
+  playMotion(game, facing, QCF, 1, defender);
   let shifted = false;
   for (let f = 0; f < RUN; f++) {
     step(game, [neutralInput(), defender]);
@@ -62,8 +62,8 @@ function landed(distance: number, crouch: boolean, facing: 1 | -1 = 1, shiftAfte
 }
 
 describe('revenge combo: data', () => {
-  it('is a 236+LP motion that needs and spends the Revenge bar, no chord', () => {
-    expect(move.command).toMatchObject({ type: 'motion', motionId: '236+P', buttons: ['LP'], resource: 'revenge' });
+  it('is a 23+LP motion that needs and spends the Revenge bar, no chord', () => {
+    expect(move.command).toMatchObject({ type: 'motion', motionId: '23+P', buttons: ['LP'], resource: 'revenge' });
     expect(move.button).toBe('LP');
     expect(move.standingHitstun).toBe(true);
     expect(CHORD_UPGRADES.some(chord => chord.target === id)).toBe(false);
@@ -131,23 +131,23 @@ describe('revenge combo: input', () => {
     expect(game.fighters[1].hp).toBe(rules.maxHealth);
     expect(game.fighters[0].resources.revenge.current).toBe(0);
   });
-  it('behaves exactly as before without a full bar: LP stays the jab', () => {
+  it('behaves exactly as before without a full bar: LP stays the crouching jab', () => {
     for (const facing of [1, -1] as const) for (const [directions, lp] of VARIANTS) for (const revenge of [99, 50]) {
       const game = setup(facing, 250, revenge), baseline = setup(facing, 250, 0);
       playMotion(game, facing, directions, lp); playMotion(baseline, facing, directions, lp);
-      expect(game.fighters[0].moveId).toBe('standing_lp');
+      expect(game.fighters[0].moveId).toBe(directions[lp] === 5 ? 'standing_lp' : 'crouching_lp');
       for (let f = 0; f < 40; f++) { step(game, [neutralInput(), neutralInput()]); step(baseline, [neutralInput(), neutralInput()]); }
       expect(game.fighters[0].resources.revenge.current).toBe(revenge);
       const strip = (g: GameState) => g.fighters.map(({ resources: _, ...rest }) => rest);
       expect(strip(game), directions.join('')).toEqual(strip(baseline));
     }
   });
-  it('needs the full quarter circle forward, finished standing, and LP', () => {
+  it('needs down first, then down-forward held, and LP', () => {
     for (const facing of [1, -1] as const) {
-      // Incomplete, reversed or crouching-finished motions, plain LP, other punches or kicks: never the Revenge combo, bar kept (LK and RLK start the F and V variants, see their own tests).
+      // Down-forward without down first, forward first, the old quarter circle (ends standing), letting go too long before LP, plain LP, other punches or kicks: never the Revenge combo, bar kept (LK and RLK start the F and V variants, see their own tests).
       const misses: [number[], number, number][] = [
-        [[5], 0, LP], [[6], 0, LP], [[4], 0, LP], [[2], 0, LP], [[3, 6], 1, LP], [[2, 6], 1, LP], [[2, 3], 1, LP], [[2, 1, 4], 2, LP],
-        [[2, 3, 6], 2, buttonBit('MP')], [[2, 3, 6], 2, buttonBit('MK')], [[2, 3, 6], 2, buttonBit('HK')], [[2, 3, 6, 6, 6, 6, 6], 6, LP],
+        [[5], 0, LP], [[6], 0, LP], [[4], 0, LP], [[2], 0, LP], [[3], 0, LP], [[3, 3, 3], 2, LP], [[6, 3], 1, LP], [[2, 6], 1, LP], [[2, 3, 6], 2, LP], [[2, 1, 4], 2, LP],
+        [[2, 3], 1, buttonBit('MP')], [[2, 3], 1, buttonBit('MK')], [[2, 3], 1, buttonBit('HK')], [[2, 3, 5, 5, 5, 5, 5], 6, LP],
       ];
       for (const [directions, at, button] of misses) {
         const game = setup(facing);
@@ -194,7 +194,7 @@ describe('revenge combo: input', () => {
 });
 
 /** Documented start distances (centre to centre, px): bodies touching up to the opener's reach. */
-const RANGE = { standing: [38, 93], crouching: [38, 86] } as const;
+const RANGE = { standing: [38, 90], crouching: [38, 83] } as const;
 describe('revenge combo: hits', () => {
   it('lands all seven hits once the jab lands, standing or crouching, in both facings', () => {
     for (const facing of [1, -1] as const) for (const crouch of [false, true]) {
@@ -216,7 +216,7 @@ describe('revenge combo: hits', () => {
   it('deals the full damage, stands a crouching opponent up and knocks down with the finisher', () => {
     const game = setup(1, 60), [a, b] = game.fighters, crouch = { ...neutralInput(), down: true };
     step(game, [neutralInput(), crouch]);
-    playMotion(game, 1, QCF, 2, crouch);
+    playMotion(game, 1, QCF, 1, crouch);
     let knocked = false;
     for (let f = 0; f < RUN; f++) {
       step(game, [neutralInput(), crouch]);
@@ -229,7 +229,7 @@ describe('revenge combo: hits', () => {
   it('breaks a blocked opener: both freeze, then the opener lands and every hit of the combo connects', () => {
     const game = setup(1, 60), [a, b] = game.fighters, block = { ...neutralInput(), left: false, right: true };
     step(game, [neutralInput(), block]);
-    playMotion(game, 1, QCF, 2, block);
+    playMotion(game, 1, QCF, 1, block);
     let freeze = 0, aFrame = -1;
     for (let f = 0; f < RUN + GUARD_BREAK_FREEZE_FRAMES; f++) {
       step(game, [neutralInput(), block]);
@@ -249,7 +249,7 @@ describe('revenge combo: hits', () => {
   it('locks the defender after the first hit: holding back or up never escapes the combo', () => {
     for (const escape of [{ right: true }, { up: true }, { up: true, right: true }]) {
       const game = setup(1, 60), [a, b] = game.fighters, input = { ...neutralInput(), ...escape };
-      playMotion(game, 1, QCF, 2);
+      playMotion(game, 1, QCF, 1);
       while (!a.hitTargets.length) step(game, [neutralInput(), neutralInput()]);
       for (let f = 0; f < RUN; f++) {
         step(game, [neutralInput(), input]);
@@ -263,7 +263,7 @@ describe('revenge combo: hits', () => {
     const game = setup(1, 60);
     game.training = { enabled: true, dummy: 'stand' };
     const replay = createReplay(game);
-    for (const direction of QCF) replay.frames.push({ inputs: [pad(1, direction, direction === 6 ? LP : 0), neutralInput()], events: [] });
+    for (const direction of QCF) replay.frames.push({ inputs: [pad(1, direction, direction === 3 ? LP : 0), neutralInput()], events: [] });
     for (let f = 0; f < RUN; f++) replay.frames.push({ inputs: [neutralInput(), neutralInput()], events: [] });
     let started = false;
     const end = playReplay(replay, state => { started ||= state.fighters[0].moveId === id; });
@@ -285,7 +285,7 @@ describe('revenge combo: survival', () => {
     const e = spawnEnemy(s, facing, kind);
     e.entering = false; e.fighter.x = s.player.x + facing * distance * U; e.fighter.facing = -facing as 1 | -1;
     s.player.resources.revenge.current = 100;
-    for (const direction of QCF) stepSurvival(s, pad(facing, direction, direction === 6 ? LP : 0));
+    for (const direction of QCF) stepSurvival(s, pad(facing, direction, direction === 3 ? LP : 0));
     expect(s.player.moveId).toBe(id);
     expect(s.player.resources.revenge.current).toBe(0);
     let hits = 0, hp = e.fighter.hp, knockdownBeforeFinisher = false;
@@ -336,7 +336,7 @@ describe('revenge combo: CPU, presentation, animation', () => {
     // Motion with LP held a few frames: the start is reported once.
     const game = setup(1);
     let previous = snapshot(game), reported = 0;
-    for (const [direction, buttons] of [[2, 0], [3, 0], [6, LP], [6, LP], [5, 0], [5, 0]]) {
+    for (const [direction, buttons] of [[2, 0], [3, 0], [3, LP], [3, LP], [5, 0], [5, 0]]) {
       step(game, [pad(1, direction, buttons), neutralInput()]);
       reported += newResourceStarts(game, previous).length; previous = snapshot(game);
     }
