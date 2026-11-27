@@ -62,6 +62,7 @@
     "generate:kick-punch": "node scripts/generate-kick-punch-combo.mjs",
     "smoke:punch-kick-combos": "node scripts/punch-kick-combos-smoke.mjs",
     "smoke:effects": "node scripts/effects-smoke.mjs",
+    "smoke:game-speed": "node scripts/game-speed-smoke.mjs",
     "generate:throws": "node scripts/generate-throws.mjs",
     "smoke:throws": "node scripts/throws-smoke.mjs",
     "smoke:survival": "node scripts/survival-smoke.mjs",
