@@ -1,5 +1,15 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-27 · Jumping Uppercut mit zwei Treffern
+
+- **Jumping Uppercut ist jetzt ein Zwei-Treffer-Angriff:** Erst ein gerader rechter Punch auf Kinnhöhe aus dem Stand (25 Schaden), dann zieht die Faust zur Brust zurück, die Hüfte geht tief, und beim Abspringen fährt derselbe Arm nach oben gestreckt als Uppercut in den Gegner (75 Schaden). Zusammen 100 statt 85. Beide Treffer HIGH (stehend blocken, gegen hockende Deckung gehen beide drüber).
+- Frame-Data 6 / 16 / 34 (56 Frames wie bisher): Punch aktiv in Frame 6–8, Uppercut in Frame 14–21. Der Punch schiebt kaum (2 px) und hält 24 Frames Hitstun bzw. 16 Frames Blockstun, so dass der Uppercut sicher nachkommt, getroffen wie geblockt.
+- Animation: neue Keyframes für Punch (7), Ausholen mit tiefer Hüfte (11) und Absprung mit hochgestrecktem Arm (15); Sprung, Rückenansicht am Apex und Landung bleiben wie gehabt, nur um einen Frame nach hinten verschoben.
+- Sound: Der Punch klingt als leichter Schlag ohne Uppercut-Charakter, der Uppercut behält den „snap“.
+- **Replays:** `ENGINE_VERSION` 1.19.0, Moves/Kontaktgeometrie geändert (Datenhash).
+- Technik: Generator `generate:uppercut` erzeugt zwei Treffergruppen (`punch`, `main`) und räumt alte Keyframe-Posen auf, ohne die Reihenfolge in `poses.json` zu verschieben. Move-Tabelle in beiden READMEs neu erzeugt.
+- Tests: `jumping-uppercut.test.ts` prüft Punch-Pose, Ausholen, Absprung, die Reihenfolge Punch → Uppercut bei Treffer und Block sowie 100 Schaden; `hit-sound`, `intro`, `throws` und das Fixture `contact-retiming.json` angepasst. Smoke `smoke:uppercut` zeigt die neuen Phasen.
+
 ## 2026-11-27 · Spieltempo
 
 - **Neu: Spieltempo-Schalter** in der Arena-Leiste rechts neben der Arena-Auswahl (ersetzt den Text „Best of three“): Der Button **Tempo** schaltet das schnellere Tempo ein, der Schieberegler daneben wählt mit drei Positionen (links, Mitte, rechts) Stufe 1, 2 oder 3. Ist der Button aus, ist der Regler gesperrt und das Spiel läuft im Standardtempo. Stufe 1 = +20 %, Stufe 2 = +32 %, Stufe 3 = +40 %; die Prozentwerte erscheinen nirgends in der Oberfläche.
