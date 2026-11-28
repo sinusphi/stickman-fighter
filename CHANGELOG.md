@@ -1,5 +1,14 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-28 · Spieltempo nur für den Kampf
+
+- **Runden-Intro im Standardtempo:** Das Fäuste-aneinander-Intro (Ready, Annähern, Salut) läuft unabhängig von der Tempostufe immer im normalen Tempo.
+- **K.-o.-Zeitlupe im Standardtempo:** Die Zeitlupe beim K.-o. wird nicht mehr zusätzlich beschleunigt.
+- **Rundentimer zählt echte Sekunden:** Bei Stufe 1–3 läuft der Timer nicht mehr schneller. Die Simulation kennt dafür das Tempo (`pace` in Prozent, neues Steuerereignis `pace`) und zieht pro Frame nur 100/pace Timer-Frames ab, ganzzahlig über einen Übertrag (`round.timerCarry`). Ein Reset behält das Tempo.
+- Das gewählte Tempo wird ins Replay geschrieben; die Wiedergabe läuft im aufgezeichneten Tempo.
+- **Replays:** `ENGINE_VERSION` 1.21.0 (Timer-Verhalten), Datenhash unverändert.
+- Tests: `game-speed.test.ts` prüft Timer in Echtzeit je Stufe, Reset, Replay-Validierung und das Standardtempo in Intro und Zeitlupe. Smoke `smoke:game-speed` misst zusätzlich Timer und Intro auf Stufe 3.
+
 ## 2026-11-27 · Neue Eingabe für die Revenge-Kombos
 
 - **Revenge-Kombos mit neuer Tastenkombination:** Statt Viertelkreis (↓ ↘ →, 236) jetzt **unten halten, vorwärts dazunehmen, beide halten, dann die Taste** (Motion `23`): P1 S halten, D dazu, dann R (LP, `revenge_combo`), F (LK, `revenge_combo_f`) oder V (RLK, `revenge_combo_v`); P2 ↓ halten, ← dazu, dann Num7 / Num4 / Num1. Vorwärts zeigt weiter zum Gegner.
