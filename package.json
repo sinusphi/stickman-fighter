@@ -21,6 +21,7 @@
     "generate:spin-boxes": "node scripts/generate-spin-boxes.mjs",
     "smoke:spin": "node scripts/spin-smoke.mjs",
     "smoke:style": "node scripts/style-smoke.mjs",
+    "smoke:victory": "node scripts/run-smokes.mjs victory",
     "smoke:kicks": "node scripts/leg-kicks-smoke.mjs",
     "generate:strike-boxes": "node scripts/generate-strike-boxes.mjs",
     "smoke:strikes": "node scripts/turning-strikes-smoke.mjs",
