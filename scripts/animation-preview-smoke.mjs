@@ -44,7 +44,9 @@ try {
  const select=page.locator('#preview-animation'),canvas=page.locator('#preview-canvas'),range=page.locator('#preview-time');
  const catalog=await page.evaluate(async()=>{
   const {animations}=await import('/src/render/skeleton.ts');
-  return Object.entries(animations).map(([id,clip])=>({id,last:clip.durationFrames-1}));
+  // Presentation-only overlays (round/match end) are listed next to the renderer clips.
+  const {overlayClips}=await import('/src/debug/animation-preview.ts');
+  return [...Object.entries(animations),...Object.entries(overlayClips)].map(([id,clip])=>({id,last:clip.durationFrames-1}));
  });
  const options=await select.locator('option').evaluateAll(options=>options.map(option=>option.value));
  expect([...options].sort()).toEqual(catalog.map(clip=>clip.id).sort());
@@ -53,8 +55,10 @@ try {
  await expect(select.locator('option[value="revenge_combo_f"]')).toContainText('23+LK');
  await expect(select.locator('option[value="revenge_combo_v"]')).toContainText('23+RLK');
  await expect(select).toHaveValue('Idle');
+ await expect(select.locator('option[value="MatchVictory"]')).toHaveText('Match winner · victory pose');
+ await expect(select.locator('option[value="WinnerRelax"]')).toHaveText('Round winner · lower guard');
  expect(await select.locator('optgroup').evaluateAll(groups=>groups.map(group=>group.label))).toEqual([
-  'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Throws','Blocks & hit reactions','Rotation demos',
+  'Movement & guard','Standing','Crouching','Airborne','Special attacks','Combos','Throws','Blocks & hit reactions','Round & match end','Rotation demos',
  ]);
  for(const stance of ['standing','crouching','airborne']) {
   expect(options.filter(id=>id.startsWith(`${stance}_`))).toEqual(['lp','mp','hp','lk','lmk','hk','rlk','mk','rhk'].map(button=>`${stance}_${button}`));
@@ -78,6 +82,15 @@ try {
   await page.locator('#preview-mirror').click();
   await expect(select).toHaveValue(id);
  }
+ // The victory overlay must show the raised fist after the turn, not the plain guard.
+ await mkdir('test-results/animation-preview',{recursive:true});
+ await select.selectOption('MatchVictory');
+ await range.fill('0');
+ const guardImage=await canvas.evaluate(c=>c.toDataURL());
+ await range.fill('62');
+ await expect(canvas).toHaveAttribute('data-frame','62.00');
+ expect(await canvas.evaluate(c=>c.toDataURL())).not.toBe(guardImage);
+ await canvas.screenshot({path:'test-results/animation-preview/victory.png'});
  // Exercise the native popup and keyboard selection while rAF keeps running.
  await select.selectOption('DemoBodyCW');
  await select.click();
@@ -96,6 +109,7 @@ try {
  await expect(select).toHaveValue('DemoBodyCCW');
  await expect(select.locator('option[value="standing_lp"]')).toContainText('Punch leicht');
  await expect(select.locator('option[value="Idle"]')).toHaveText('Stand / Deckung');
+ await expect(select.locator('option[value="MatchVictory"]')).toHaveText('Matchsieger · Siegerpose');
  await expect(select.locator('optgroup').first()).toHaveAttribute('label','Bewegung & Deckung');
  await combos.locator('summary').click();
  await expect(combos.locator('summary')).toHaveText('Kombos');

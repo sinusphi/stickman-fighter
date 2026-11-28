@@ -263,15 +263,90 @@ export function relaxArms(pose: AnglePose, t: number): AnglePose {
   }
   return {...pose,angles:out};
 }
-export function fighterPose(f: Fighter, previous: Fighter, alpha: number, frozen: boolean, hitLevel?: HitLevel, koTime?: number, relax = 0): Pose {
+/** Frames the match winner takes to turn, punch the fist up and settle it. */
+export const VICTORY_FRAMES=42;
+/** Frames of the turn towards the viewer (body, head, legs, hip hand). */
+const VICTORY_TURN_FRAMES=30;
+/** The fist only leaves once the body has almost finished turning (~93 % of the yaw). */
+const VICTORY_PUNCH_START=25;
+/** Frames of the upward punch; it accelerates the higher the fist gets. */
+const VICTORY_PUNCH_FRAMES=13;
+/** The rest of VICTORY_FRAMES: the arm locks out slightly past its peak and settles. */
+const VICTORY_SETTLE_FRAMES=VICTORY_FRAMES-VICTORY_PUNCH_START-VICTORY_PUNCH_FRAMES;
+/** How far (fraction of the swing) the locked-out fist shoots past its rest pose. */
+const VICTORY_LOCKOUT=.04;
+/**
+ * Absolute screen angles (reference facing right, 90 = down) of the front
+ * view: shoulders spread sideways, the outer (right) arm thrusts the fist
+ * straight up, the inner (left) hand rests on the hip.
+ */
+const VICTORY_ARM_TARGET: Record<string,[number,number,number]>={rightShoulder:[180,-130,-97],leftShoulder:[0,52,142]};
+/** Front-view straddle: both legs splay symmetrically from the hip. */
+const VICTORY_LEGS={leftKnee:76,leftFoot:83,rightKnee:104,rightFoot:97};
+const smooth=(t: number)=>t*t*(3-2*t);
+const clamp01=(t: number)=>Math.min(1,Math.max(0,t));
+/**
+ * Progress of the punching arm: ease-in during the punch (speed grows with
+ * height, like a real uppercut into the air), then a short lock-out past the
+ * peak that springs back to the rest pose.
+ */
+function victoryPunch(frames: number): number {
+  const t=(frames-VICTORY_PUNCH_START)/VICTORY_PUNCH_FRAMES;
+  if(t<=0)return 0;
+  if(t<1)return t*t*t;
+  const s=clamp01((t-1)*VICTORY_PUNCH_FRAMES/VICTORY_SETTLE_FRAMES);
+  return 1+VICTORY_LOCKOUT*Math.sin(Math.PI*s)*(1-s);
+}
+/** Presentation only: torso yaw of the winner, 0 = profile, -90 = front view (both eyes). */
+export function victoryYaw(frames: number): number {
+  return -90*smooth(clamp01(frames/VICTORY_TURN_FRAMES));
+}
+/**
+ * Presentation only: instead of lowering the arms, the match winner turns to
+ * the viewer and then punches a fist into the air. `frames` counts
+ * presentation frames since the winner came to rest; afterwards the fist
+ * keeps a slow, small pump.
+ */
+export function victoryPose(pose: AnglePose, frames: number): AnglePose {
+  if(frames<=0)return pose;
+  const w=clamp01(frames/VICTORY_TURN_FRAMES), body=smooth(w), a=pose.angles, out={...a};
+  const neck=lerpAngle(a.neck,-90,body);
+  out.neck=neck;
+  out.head=lerpAngle(a.neck+a.head,-90,body)-neck;
+  const punch=victoryPunch(frames);
+  // The pump starts at zero amplitude, so the pose stays continuous after the punch.
+  const pump=frames>VICTORY_FRAMES?Math.sin((frames-VICTORY_FRAMES)*.09)*Math.min(1,(frames-VICTORY_FRAMES)/30):0;
+  for(const [s,e,h] of RELAX_ARMS) {
+    const raised=s==='rightShoulder', t=raised?punch:body;
+    const src=[a.neck+a[s]]; src.push(src[0]+a[e]); src.push(src[1]+a[h]);
+    const dst=[...VICTORY_ARM_TARGET[s]];
+    if(raised){dst[1]+=3*pump;dst[2]-=4*pump;}
+    // Absolute blend; the raised arm swings out sideways and up, never across the face.
+    // Facing right, increasing angles turn a hanging upper arm through 180° (outside).
+    const abs=src.map((v,i)=>{
+      const short=((dst[i]-v)%360+540)%360-180, up=((dst[i]-v)%360+360)%360;
+      return v+(raised&&i===1&&up<300?up:short)*t;
+    });
+    out[s]=abs[0]-neck; out[e]=abs[1]-abs[0]; out[h]=abs[2]-abs[1];
+  }
+  for(const side of ['left','right'] as const) {
+    const k=`${side}Knee` as const, f=`${side}Foot` as const;
+    const knee=lerpAngle(a[k],VICTORY_LEGS[k],body), shin=lerpAngle(a[k]+a[f],VICTORY_LEGS[f],body);
+    out[k]=knee; out[f]=shin-knee;
+  }
+  return {...pose,angles:out};
+}
+export function fighterPose(f: Fighter, previous: Fighter, alpha: number, frozen: boolean, hitLevel?: HitLevel, koTime?: number, relax = 0, victory = 0): Pose {
   const id=animationId(f,hitLevel), oldId=animationId(previous,hitLevel);
   if(id==='KO')return buildPose(sampleAngles(id,koTime??f.stateFrame+(frozen?0:alpha)),true,1,true);
   const time=f.state==='Attack'?f.moveFrame:f.stateFrame;
   const lying=id==='KO'||(id==='Knockdown'&&f.y===0);
   const grounded=animations[id].grounded||lying;
-  if(frozen || id===oldId || f.state==='Attack' || f.state==='Blockstun' || f.state==='Hitstun' || f.state==='Landing')return buildPose(relaxArms(sampleAngles(id,time+(frozen?0:alpha)),relax),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
+  // The match winner celebrates instead of lowering the arms.
+  const settle=(pose: AnglePose)=>victory>0?victoryPose(pose,victory):relaxArms(pose,relax);
+  if(frozen || id===oldId || f.state==='Attack' || f.state==='Blockstun' || f.state==='Hitstun' || f.state==='Landing')return buildPose(settle(sampleAngles(id,time+(frozen?0:alpha))),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
   const oldTime=previous.state==='Attack'?previous.moveFrame:previous.stateFrame;
-  return buildPose(relaxArms(blendAngles(sampleAngles(oldId,oldTime),sampleAngles(id,time),ease(alpha,'smoothstep')),relax),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
+  return buildPose(settle(blendAngles(sampleAngles(oldId,oldTime),sampleAngles(id,time),ease(alpha,'smoothstep'))),grounded,1,lying,animations[id].clampFloor,animations[id].clampBody);
 }
 
 function sameTrack(a: Rotation, b: Rotation): boolean {

@@ -119,7 +119,7 @@ async function main(): Promise<void> {
   let demoMatchOverFrames = 0;
   let recording: Replay | null = null;
   let lastReplay: Replay | null = null;
-  let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnRelaxFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
+  let playback: { replay: Replay; index: number; returnState: GameState; returnKoFrames: number[]; returnRelaxFrames: number[]; returnVictoryFrames: number[]; returnLevels: (HitLevel | undefined)[] } | null = null;
   const message = (text: string) => { element('notice').textContent = text; };
   let layout = new Map<string,string>();
   function refreshBindings(): void {
@@ -204,7 +204,7 @@ async function main(): Promise<void> {
   }
   function stopPlayback(): void {
     if (!playback) return;
-    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); effects.reset(); loop.timeScale=1;
+    game = playback.returnState; feedback.levels=[...playback.returnLevels]; feedback.koFrames=[...playback.returnKoFrames]; feedback.relaxFrames=[...playback.returnRelaxFrames]; feedback.victoryFrames=[...playback.returnVictoryFrames]; previous = snapshot(game); playback = null; slowMotion.reset(); effects.reset(); loop.timeScale=1;
     devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
@@ -309,7 +309,7 @@ async function main(): Promise<void> {
     if (playback) { stopPlayback(); return; }
     if (recording) { lastReplay=recording; recording=null; }
     if (!lastReplay?.frames.length) { message(t('message.replayMissing')); return; }
-    playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnRelaxFrames:[...feedback.relaxFrames],returnLevels:[...feedback.levels]};
+    playback={replay:parseReplay(lastReplay),index:0,returnState:snapshot(game),returnKoFrames:[...feedback.koFrames],returnRelaxFrames:[...feedback.relaxFrames],returnVictoryFrames:[...feedback.victoryFrames],returnLevels:[...feedback.levels]};
     game=snapshot(playback.replay.initial); feedback.reset(game);effects.reset();previous=snapshot(game); pendingEvents=[]; slowMotion.reset(); loop.timeScale=1; devices.clear(); setPaused(false);
     message(t('message.replayRunning'));
   }
@@ -403,7 +403,7 @@ async function main(): Promise<void> {
     const alpha=loop.advance(time,runFrame);
     fitCanvas(canvas);
     if (survival && survivalPrevious) renderSurvival(canvas,survival.state,survivalPrevious,loop.paused?1:alpha,loop.paused,palette,stage,effects,survivalBest,survivalLayout(),upgradeChoice.cursor);
-    else render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects);
+    else render(canvas,game,previous,loop.paused?1:alpha,loop.paused,showBoxes,palette,feedback.levels,feedback.koFrames,stage,cpuSettings.demo && !game.training.enabled,feedback.relaxFrames,effects,feedback.victoryFrames);
     preview(time,palette);
     pollSettings();updateUI();exposeSurvival();requestAnimationFrame(frame);
   }

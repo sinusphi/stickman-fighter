@@ -238,6 +238,9 @@ const en = {
   'throw.back': 'Shoulder Throw',
   'throw.break': 'Throw clash',
   'preview.groupThrows': 'Throws',
+  'preview.groupMatchEnd': 'Round & match end',
+  'preview.winnerRelax': 'Round winner · lower guard',
+  'preview.matchVictory': 'Match winner · victory pose',
   'preview.throwAttempt': 'grab / whiff',
   'preview.throwExecute': 'thrower',
   'preview.throwVictim': 'thrown fighter',
@@ -360,6 +363,7 @@ const de: Record<TranslationKey, string> = {
   'combo.runHelp': 'Rennen: zweimal schnell vorwärts (6) tippen und beim zweiten Druck halten. Loslassen, Hocken, Springen, Angreifen, Blocken, ein Treffer oder Kontakt mit dem Gegner beenden das Rennen.',
   'combo.throwsHelp': 'Nah am stehenden oder hockenden Gegner: vorwärts (6) oder zurück (4) halten und WURF drücken. Würfe sind nicht blockbar; ein Fehlgriff lässt dich lange offen.',
   'throw.forward': 'Hüftwurf', 'throw.back': 'Schulterwurf', 'throw.break': 'Wurf-Clash',
+  'preview.groupMatchEnd': 'Runden- & Matchende', 'preview.winnerRelax': 'Rundensieger · Deckung senken', 'preview.matchVictory': 'Matchsieger · Siegerpose',
   'preview.groupThrows': 'Würfe', 'preview.throwAttempt': 'Greifen / Fehlgriff', 'preview.throwExecute': 'Werfer', 'preview.throwVictim': 'Geworfener',
   'effects.hit': '{count} TREFFER',
 };

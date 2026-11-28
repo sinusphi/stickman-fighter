@@ -1,5 +1,6 @@
 import { FIGURE_SCALE } from '../data/figure-scale';
-import { buildPose, advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS } from '../render/skeleton';
+import { buildPose, advanceOffset, animations, animationTrails, isKneeTrail, sampleAngles, samplePose, sampleTrails, sampleRotationTrail, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS, relaxArms, victoryPose, victoryYaw, VICTORY_FRAMES, type AnglePose } from '../render/skeleton';
+import { RELAX_FRAMES } from '../render/feedback';
 import { drawFigure, drawTrail } from '../render/figure';
 import { sampleDepths } from '../render/depth';
 import { facePoint } from '../render/facing';
@@ -9,6 +10,20 @@ import { drawKneeSwoosh } from '../render/impact';
 import { comboLabel, comboMoves } from '../platform/combos';
 import { MOVES, type CompiledMove } from '../data/schema';
 
+/**
+ * Presentation-only poses the renderer layers over the guard at the end of a
+ * round or match. They are no clips in `animations`, so the preview samples the
+ * Idle clip and applies the same overlay as `fighterPose`.
+ */
+interface OverlayClip { base: string; durationFrames: number; angles: (pose: AnglePose, time: number)=>AnglePose; headYaw?: (time: number)=>number }
+export const overlayClips: Record<string, OverlayClip> = {
+  // Round winner after a KO: straightens up and lowers the guard.
+  WinnerRelax:{base:'Idle',durationFrames:RELAX_FRAMES+1,angles:(pose,time)=>relaxArms(pose,time/RELAX_FRAMES)},
+  // Match winner: turns to the viewer and raises the fist, then pumps it slowly (about one cycle).
+  MatchVictory:{base:'Idle',durationFrames:VICTORY_FRAMES+100,angles:victoryPose,headYaw:victoryYaw},
+};
+/** Frame count of a preview entry, renderer clip or overlay. */
+export const previewDuration=(id: string)=>overlayClips[id]?.durationFrames??animations[id].durationFrames;
 const tx=(key: Parameters<typeof t>[0])=>`data-i18n="${key}">${t(key)}`;
 const previewKeys: Record<string, Parameters<typeof t>[0]> = {
   DemoBodyCW:'preview.wholeCw', DemoBodyCCW:'preview.wholeCcw',
@@ -19,6 +34,7 @@ const previewKeys: Record<string, Parameters<typeof t>[0]> = {
   Walk:'preview.walk', Run:'preview.run', WalkBackward:'preview.walkBack', CrouchWalk:'preview.crouchWalk',
   HitMiddlePunch:'preview.hitPunch', HitLOW:'preview.hitLow', HitMID:'preview.hitMid',
   HitHIGH:'preview.hitHigh', Landing:'preview.landing', KO:'preview.ko',
+  WinnerRelax:'preview.winnerRelax', MatchVictory:'preview.matchVictory',
 };
 /** Display names of the single-button hold specials; inputs come from the move data. */
 const specialNames: Record<string, string> = {
@@ -66,6 +82,7 @@ const previewGroups: {key: Parameters<typeof t>[0]; ids: string[]}[] = [
   {key:'combo.summary',ids:comboMoves.map(move=>move.animation)},
   {key:'preview.groupThrows',ids:throwClips},
   {key:'preview.groupReactions',ids:['Blockstun','CrouchBlock','Hitstun','HitMiddlePunch','HitLOW','HitMID','HitHIGH','Knockdown','KO']},
+  {key:'preview.groupMatchEnd',ids:Object.keys(overlayClips)},
   {key:'preview.groupDemos',ids:Object.keys(animations).filter(id=>id.startsWith('Demo'))},
 ];
 const listedIds=new Set(previewGroups.flatMap(group=>group.ids));
@@ -77,7 +94,7 @@ export const previewMarkup = `
   <div class="preview-controls">
     <label><span ${tx('preview.animation')}</span> <select id="preview-animation">
       ${previewGroups.map(group=>{
-        const ids=group.ids.filter(id=>id in animations);
+        const ids=group.ids.filter(id=>id in animations || id in overlayClips);
         return ids.length?`<optgroup data-label-key="${group.key}" label="${t(group.key)}">${ids.map(id=>`<option value="${id}">${animationLabel(id)}</option>`).join('')}</optgroup>`:'';
       }).join('')}
     </select></label>
@@ -109,10 +126,10 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
     for(const group of select.querySelectorAll('optgroup'))group.label=t(group.dataset.labelKey as Parameters<typeof t>[0]);
     sync();
   });
-  range.max=String(animations[select.value].durationFrames-1);
+  range.max=String(previewDuration(select.value)-1);
   sync();
   panel.addEventListener('toggle',()=>{playing=false;lastTime=null;if(panel.open)pauseGame();sync();});
-  select.onchange=()=>{time=0;playing=false;range.max=String(animations[select.value].durationFrames-1);sync();};
+  select.onchange=()=>{time=0;playing=false;range.max=String(previewDuration(select.value)-1);sync();};
   range.oninput=()=>{time=Number(range.value);playing=false;sync();};
   play.onclick=()=>{if(time>=Number(range.max))time=0;playing=!playing;lastTime=null;sync();};
   el<HTMLButtonElement>('preview-step').onclick=()=>{playing=false;time=Math.min(Number(range.max),Math.floor(time)+1);sync();};
@@ -130,10 +147,12 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
       if(time>=Number(range.max))playing=false;
     }
     lastTime=now;sync();
-    const id=select.value,pose=samplePose(id,time),angle=(sampleAngles(id,time).rotations?.[0]?.angle??0)*facing;
+    // Overlays draw their base clip with the overlay pose and head turn on top.
+    const entry=select.value,overlay=overlayClips[entry],id=overlay?.base??entry;
+    const pose=overlay?buildPose(overlay.angles(sampleAngles(id,time),time),animations[id].grounded,1,false,animations[id].clampFloor,animations[id].clampBody):samplePose(id,time),angle=(sampleAngles(id,time).rotations?.[0]?.angle??0)*facing;
     const direction=t(angle===0?'preview.startPose':angle>0?'preview.clockwise':'preview.counterclockwise');
     status.textContent=`Frame ${time.toFixed(2)} / ${range.max}${id.startsWith('Demo')?` · ${angle.toFixed(1)}° · ${direction}`:''}`;
-    canvas.dataset.frame=time.toFixed(2);canvas.dataset.animation=id;
+    canvas.dataset.frame=time.toFixed(2);canvas.dataset.animation=entry;
     const ctx=canvas.getContext('2d')!;
     ctx.clearRect(0,0,960,360);ctx.fillStyle=palette.arena;ctx.fillRect(0,0,960,360);
     ctx.save();ctx.translate(480,id.startsWith('Demo')?180:310);ctx.scale(1.65,1.65);
@@ -147,7 +166,7 @@ export function setupAnimationPreview(pauseGame: ()=>void): (time: number, palet
       drawTrail(ctx,samples[index],palette.p1,fade,trail.directional??true,facing,trail.directional?palette.revenge:palette.special);
     });
     drawTrail(ctx,sampleRotationTrail(id,time),palette.revenge,.72,true,facing,palette.special);
-    drawFigure(ctx,pose,palette.p1,palette,facing,0,sampleDepths(id,time),sampleTurn(id,time),sampleHeadYaw(id,time),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
+    drawFigure(ctx,pose,palette.p1,palette,facing,0,sampleDepths(id,time),sampleTurn(id,time),overlay?.headYaw?overlay.headYaw(time):sampleHeadYaw(id,time),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
     drawKneeSwoosh(ctx,id,time,facing,palette.p1,palette);
     // A throw execution shows its thrown fighter on the table position (simulation units → rig units).
     const execute=MOVES[id]?.throw?.phase==='execute'?MOVES[id].throw:undefined;

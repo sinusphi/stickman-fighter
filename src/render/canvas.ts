@@ -4,7 +4,7 @@ import rules from '../data/rules.json';
 import type { GameState } from '../simulation/types';
 import { localBoxes } from '../simulation/combat';
 import { worldBox, type Box } from '../simulation/collision';
-import { fighterPose, isKneeTrail, sampleTrails, sampleRotationTrail, animationTrails, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS, animationId, animations } from './skeleton';
+import { fighterPose, isKneeTrail, sampleTrails, sampleRotationTrail, animationTrails, sampleTurn, sampleHeadYaw, MIRROR_YAW_ANIMATIONS, animationId, animations, victoryYaw } from './skeleton';
 import { drawFigure, drawTrail } from './figure';
 import { fighterDepths } from './depth';
 import { facePoint } from './facing';
@@ -31,7 +31,7 @@ export function thrownOffset(game: GameState, f: GameState['fighters'][number], 
   return [base+thrower.attackFacing*(data.path[i][0]+(data.path[j][0]-data.path[i][0])*t),data.path[i][1]+(data.path[j][1]-data.path[i][1])*t];
 }
 
-export function render(canvas: HTMLCanvasElement, game: GameState, previous: GameState, alpha: number, paused: boolean, boxes: boolean, palette: Palette, hitLevels: (HitLevel | undefined)[] = [], koFrames?: number[], stage: StageId = DEFAULT_STAGE, demo = false, relaxFrames?: number[], effects?: HitEffects): void {
+export function render(canvas: HTMLCanvasElement, game: GameState, previous: GameState, alpha: number, paused: boolean, boxes: boolean, palette: Palette, hitLevels: (HitLevel | undefined)[] = [], koFrames?: number[], stage: StageId = DEFAULT_STAGE, demo = false, relaxFrames?: number[], effects?: HitEffects, victoryFrames?: number[]): void {
   const ctx = canvas.getContext('2d')!;
   // The backing store may be larger than 960x420 (see fitCanvas); all drawing stays in logical units.
   const scale=(canvas.width||960)/960;
@@ -64,10 +64,13 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     // The winner lowers his arms while the loser's fall plays out.
     const relaxed = relaxFrames?.[f.id] ?? 0;
     const relax = koTime===undefined && relaxed>0 ? Math.min(1,(relaxed+(game.hitstop||paused?0:alpha))/RELAX_FRAMES) : 0;
-    const pose = fighterPose(f,old,alpha,Boolean(game.hitstop || paused),poseLevels[f.id],koTime,relax);
+    // The match winner instead turns to the viewer and raises a fist.
+    const celebrating = victoryFrames?.[f.id] ?? 0;
+    const victory = koTime===undefined && celebrating>0 ? celebrating+(game.hitstop||paused?0:alpha) : 0;
+    const pose = fighterPose(f,old,alpha,Boolean(game.hitstop || paused),poseLevels[f.id],koTime,relax,victory);
     // Attackers keep their attack facing; a thrown fighter keeps facing the thrower.
     const facing=f.state==='Attack'||f.state==='Thrown'?f.attackFacing:f.facing;
-    return {f,x,y,koTime,pose,facing};
+    return {f,x,y,koTime,pose,facing,victory};
   });
   effects?.drawBehind(ctx,game,previous,effectAlpha,palette);
   // Contact shadows first, so neither shadow covers the other fighter's feet.
@@ -75,7 +78,7 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     const xs=Object.values(pose).map(p=>p[0]*facing*FIGURE_SCALE),bottom=Math.max(...Object.values(pose).map(p=>p[1]))*FIGURE_SCALE;
     drawContactShadow(ctx,x+(Math.min(...xs)+Math.max(...xs))/2,(Math.max(...xs)-Math.min(...xs))/2,ground-(y+bottom),palette);
   }
-  for (const {f,x,y,koTime,pose,facing} of drawOrder) {
+  for (const {f,x,y,koTime,pose,facing,victory} of drawOrder) {
     ctx.save(); ctx.translate(x, y);
     ctx.scale(FIGURE_SCALE,FIGURE_SCALE);
     const color=f.id===0?palette.p1:palette.p2;
@@ -91,7 +94,7 @@ export function render(canvas: HTMLCanvasElement, game: GameState, previous: Gam
     const actual=game.fighters[f.id];
     const flash=Math.max(hitLevels[f.id] && ['Hitstun','Knockdown','KO'].includes(actual.state)?Math.max(0,1-(koTime??actual.stateFrame)/3):0,guardBreakGlow(game.guardBreak,game.hitstop,f.id));
     const id=animationId(f,poseLevels[f.id]);
-    drawFigure(ctx,pose,color,palette,facing,flash,fighterDepths(f,alpha,Boolean(game.hitstop||paused),poseLevels[f.id]),turnFor(f),sampleHeadYaw(id,(f.state==='Attack'?f.moveFrame:f.stateFrame)+(game.hitstop||paused?0:alpha)),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
+    drawFigure(ctx,pose,color,palette,facing,flash,fighterDepths(f,alpha,Boolean(game.hitstop||paused),poseLevels[f.id]),turnFor(f),victory>0?victoryYaw(victory):sampleHeadYaw(id,(f.state==='Attack'?f.moveFrame:f.stateFrame)+(game.hitstop||paused?0:alpha)),animations[id].fixedLegDepth,MIRROR_YAW_ANIMATIONS.has(id));
     if(f.state==='Attack' && f.moveId)drawKneeSwoosh(ctx,f.moveId,f.moveFrame+(game.hitstop||paused?0:alpha),facing,color,palette);
     if(f.state==='Attack' && f.moveId)for(const trail of animationTrails(f.moveId))
       if(trail.directional && f.moveFrame>=trail.fromFrame && f.moveFrame<=trail.toFrame) {

@@ -238,7 +238,7 @@ try {
         if(old.fighters[1].state==='KO'&&game.fighters[1].state==='KO'&&!old.hitstop)expectedKo++;
       }
       const canvas=document.createElement('canvas'),target=document.getElementById('game');canvas.width=target.width;canvas.height=target.height; // fitCanvas may enlarge the backing store
-      render(canvas,game,snapshot(game),1,true,false,readPalette(),feedback.levels,feedback.koFrames,undefined,false,feedback.relaxFrames);
+      render(canvas,game,snapshot(game),1,true,false,readPalette(),feedback.levels,feedback.koFrames,undefined,false,feedback.relaxFrames,undefined,feedback.victoryFrames);
       const {animations}=await import('/src/render/skeleton.ts');expectedKo=Math.min(expectedKo,animations.KO.durationFrames-1); // the fall holds its last pose
       return {replay,image:canvas.toDataURL(),koFrame:feedback.koFrames[1],expectedKo,phase:game.round.phase};
     },{match,count});

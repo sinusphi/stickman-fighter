@@ -12,10 +12,13 @@ export class HitFeedback {
   koFrames = [0,0];
   /** Presentation only: how long the surviving winner has been lowering his arms. */
   relaxFrames = [0,0];
+  /** Presentation only: how long the match winner has been celebrating (turn + raised fist). */
+  victoryFrames = [0,0];
   levels: (HitLevel | undefined)[] = [undefined,undefined];
   reset(game?: GameState): void {
     this.levels=[undefined,undefined];
     this.relaxFrames=[0,0];
+    this.victoryFrames=[0,0];
     this.koFrames=game?.fighters.map(f=>f.state==='KO'?game.round.phase==='fighting'?f.stateFrame:animations.KO.durationFrames-1:0)??[0,0];
     // An imported snapshot can begin in stun, before any locally observed contact.
     if(game?.lastContact && !game.lastContact.blocked) {
@@ -33,6 +36,9 @@ export class HitFeedback {
       const opponent=game.fighters[1-f.id];
       this.relaxFrames[f.id]=opponent.state==='KO'&&f.state==='Idle'&&f.y===0
         ? Math.min(RELAX_FRAMES,this.relaxFrames[f.id]+(previous.hitstop?0:1)) : 0;
+      // The match winner turns to the viewer once at rest, also after a time-over win.
+      this.victoryFrames[f.id]=game.round.phase==='matchOver'&&game.round.winner===f.id&&f.state==='Idle'&&f.y===0
+        ? this.victoryFrames[f.id]+(previous.hitstop?0:1) : 0;
       const contact=game.lastContact;
       // Blocked strikes cost chip damage too, but they are no hit: no hit pose, no flash.
       const chip=contact?.defender===f.id && contact.blocked;
