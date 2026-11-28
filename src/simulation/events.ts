@@ -7,7 +7,9 @@ export type ControlEvent =
   | { type: 'training'; enabled: boolean; dummy: DummyMode }
   | { type: 'inputConfig'; config: GameState['inputConfig'] }
   /** Training options that keep the Revenge / Special bars full; no reset. */
-  | { type: 'trainingBars'; revenge: boolean; special: boolean };
+  | { type: 'trainingBars'; revenge: boolean; special: boolean }
+  /** Game speed in percent (100 = standard pace); only scales the round timer. */
+  | { type: 'pace'; percent: number };
 
 export function applyEvents(game: GameState, events: ControlEvent[]): void {
   for (const event of events) {
@@ -18,9 +20,10 @@ export function applyEvents(game: GameState, events: ControlEvent[]): void {
       if (toggled) applyEvents(game, [{ type: 'reset' }]);
     }
     if (event.type === 'trainingBars') game.training = { ...game.training, fullRevenge: event.revenge, fullSpecial: event.special };
+    if (event.type === 'pace') { if (event.percent === 100) delete game.pace; else game.pace = event.percent; }
     if (event.type === 'reset') {
-      const { frame, combatFrame, inputConfig, training, roundIntro } = game;
-      Object.assign(game, createGame({ intro: roundIntro }), { frame, combatFrame, inputConfig, training });
+      const { frame, combatFrame, inputConfig, training, roundIntro, pace } = game;
+      Object.assign(game, createGame({ intro: roundIntro }), { frame, combatFrame, inputConfig, training }, pace === undefined ? {} : { pace });
       // Training keeps the versus marker for later, but its rounds never play the intro.
       if (training.enabled && game.round.phase === 'intro') { game.round.phase = 'fighting'; game.round.intro = null; }
     }

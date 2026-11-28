@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_GAME_SPEED, SPEED_LEVELS, SPEED_STORAGE_KEY, activeSpeedLevel, gameSpeedScale, loadGameSpeed, saveGameSpeed, type SpeedLevel } from '../../src/platform/game-speed';
+import { DEFAULT_GAME_SPEED, SPEED_LEVELS, SPEED_STORAGE_KEY, activeSpeedLevel, gameSpeedPercent, gameSpeedScale, versusLoopSpeed, loadGameSpeed, saveGameSpeed, type SpeedLevel } from '../../src/platform/game-speed';
 import { FixedLoop } from '../../src/platform/loop';
 import { hudLabels, type HudContext } from '../../src/platform/hud';
-import { createGame } from '../../src/simulation/state';
+import { createGame, snapshot, step } from '../../src/simulation/state';
+import { createReplay, parseReplay, validateSnapshot } from '../../src/debug/replay';
+import { neutralInput } from '../../src/input/types';
+import rules from '../../src/data/rules.json';
 
 const memory = () => { const data = new Map<string, string>(); return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); } }; };
 const levels: SpeedLevel[] = [1, 2, 3];
@@ -60,5 +63,56 @@ describe('game speed', () => {
       expect(label).toContain(String(level));
       expect(label).not.toContain('%');
     }
+  });
+
+  it('keeps the round timer on real seconds at every level', () => {
+    for (const level of [0, ...levels] as const) {
+      const percent = level ? gameSpeedPercent({ enabled: true, level }) : 100;
+      const game = createGame();
+      step(game, [neutralInput(), neutralInput()], [{ type: 'pace', percent }]);
+      const start = game.round.timer;
+      // One real second runs `percent` / 100 seconds' worth of frames.
+      for (let i = 1; i < rules.hz * percent / 100 * 10; i++) step(game);
+      expect(start - game.round.timer).toBeGreaterThanOrEqual(rules.hz * 10 - 2);
+      expect(start - game.round.timer).toBeLessThanOrEqual(rules.hz * 10 + 1);
+    }
+  });
+
+  it('keeps the pace through a reset and drops it at the standard pace', () => {
+    const game = createGame({ intro: true });
+    step(game, undefined, [{ type: 'pace', percent: 140 }]);
+    step(game, undefined, [{ type: 'reset' }]);
+    expect(game.pace).toBe(140);
+    expect(game.round.phase).toBe('intro');
+    step(game, undefined, [{ type: 'pace', percent: 100 }]);
+    expect(game.pace).toBeUndefined();
+  });
+
+  it('records the pace in replays and rejects invalid values', () => {
+    const game = createGame();
+    step(game, undefined, [{ type: 'pace', percent: 132 }]);
+    for (let i = 0; i < 7; i++) step(game);
+    expect(validateSnapshot(snapshot(game)).pace).toBe(132);
+    const replay = createReplay(game);
+    replay.frames.push({ inputs: [neutralInput(), neutralInput()], events: [{ type: 'pace', percent: 120 }] });
+    expect(() => parseReplay(replay)).not.toThrow();
+    for (const percent of [99, 201, 1.5]) {
+      const bad = createReplay(game);
+      bad.frames.push({ inputs: [neutralInput(), neutralInput()], events: [{ type: 'pace', percent }] });
+      expect(() => parseReplay(bad)).toThrow();
+    }
+    expect(() => validateSnapshot({ ...snapshot(game), pace: 100 })).toThrow();
+    expect(() => validateSnapshot({ ...snapshot(game), round: { ...game.round, timerCarry: 132 } })).toThrow();
+  });
+
+  it('keeps the standard pace for the round intro and the KO slow motion', () => {
+    const game = createGame({ intro: true });
+    step(game, undefined, [{ type: 'pace', percent: 140 }]);
+    expect(game.round.phase).toBe('intro');
+    expect(versusLoopSpeed(game, false)).toBe(1);
+    game.round.phase = 'fighting'; game.round.intro = null;
+    expect(versusLoopSpeed(game, false)).toBe(1.4);
+    expect(versusLoopSpeed(game, true)).toBe(1);
+    expect(versusLoopSpeed(createGame(), false)).toBe(1);
   });
 });

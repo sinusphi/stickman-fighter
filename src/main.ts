@@ -9,7 +9,7 @@ import { render, fitCanvas } from './render/canvas';
 import { HitFeedback } from './render/feedback';
 import { HitEffects } from './render/effects';
 import { loadEffectSettings } from './platform/effects-settings';
-import { activeSpeedLevel, gameSpeedScale, DEFAULT_GAME_SPEED, type GameSpeed } from './platform/game-speed';
+import { activeSpeedLevel, gameSpeedPercent, gameSpeedScale, versusLoopSpeed, DEFAULT_GAME_SPEED, type GameSpeed } from './platform/game-speed';
 import { setupSpeedSwitch } from './platform/speed-switch';
 import { HitAudio } from './platform/audio';
 import { describeStrike, newContactSounds, newGuardBreaks, newResourceStarts, newSwingSounds, newThrowSounds, panOf } from './platform/hit-sound';
@@ -103,10 +103,15 @@ async function main(): Promise<void> {
   };
   const preview = setupAnimationPreview(()=>{devices.clear();setPaused(true);});
   const loop = new FixedLoop();
-  // Presentation only: the speed switch scales the wall clock, every simulation frame stays the same.
+  // The speed switch scales the wall clock. The round intro and the KO slow motion keep the standard
+  // pace; the round timer follows the game's recorded pace (see game-speed.ts), so it counts real seconds.
   let gameSpeed: GameSpeed = { ...DEFAULT_GAME_SPEED };
-  setupSpeedSwitch(document, speed => { gameSpeed = speed; loop.speed = gameSpeedScale(speed); });
   const slowMotion = new KoSlowMotion();
+  const updateLoopSpeed = () => {
+    if (survival) { loop.speed = gameSpeedScale(gameSpeed); return; }
+    loop.speed = versusLoopSpeed(game, slowMotion.active);
+  };
+  setupSpeedSwitch(document, speed => { gameSpeed = speed; updateLoopSpeed(); });
   let showBoxes = false, showInputs = false, showStates = false;
   let pendingEvents: ControlEvent[] = [];
   // Demo mode plays match after match: matchOver auto-restarts instead of waiting for Backspace.
@@ -203,7 +208,7 @@ async function main(): Promise<void> {
     devices.clear(); setPaused(true); message(t('message.localReturn'));
   }
   function runFrame(): void {
-    if (survival) { runSurvivalFrame(survival); return; }
+    if (survival) { runSurvivalFrame(survival); updateLoopSpeed(); return; }
     previous = snapshot(game);
     if (playback) {
       const entry = playback.replay.frames[playback.index];
@@ -219,6 +224,9 @@ async function main(): Promise<void> {
       const inputs = devices.sample(), events = pendingEvents; pendingEvents = [];
       const restarting = events.some(e=>e.type==='reset'||e.type==='training');
       if (restarting) resetCpus();
+      // The selected speed enters the simulation (and recordings) as its pace.
+      const pace = gameSpeedPercent(gameSpeed);
+      if ((game.pace ?? 100) !== pace) events.push({ type:'pace', percent:pace });
       const trainingCpu = game.training.enabled && game.training.dummy === 'cpu';
       const demoActive = cpuSettings.demo && !game.training.enabled;
       const cpuControlsOpponent = trainingCpu || (!game.training.enabled && cpuSettings.enabled) || demoActive;
@@ -246,6 +254,7 @@ async function main(): Promise<void> {
     const roundStarted = previous.round.phase !== game.round.phase && (game.round.phase === 'intro' || (game.round.phase === 'fighting' && previous.round.phase !== 'intro'));
     if (roundStarted) { previous = snapshot(game);feedback.reset(game);effects.reset(); }
     loop.timeScale=slowMotion.update(game,feedback.koFrames);
+    updateLoopSpeed();
   }
   function queue(event: ControlEvent): void {
     if (playback) stopPlayback();

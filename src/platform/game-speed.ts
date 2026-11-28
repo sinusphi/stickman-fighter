@@ -1,8 +1,12 @@
+import type { GameState } from '../simulation/types';
+
 /**
- * Game speed. Presentation-side only: the speed scales how fast the
- * fixed-step loop consumes wall-clock time, so the simulation runs more 60 Hz
- * frames per real second while every frame stays identical (replays and the
- * data hash are unaffected).
+ * Game speed. The speed scales how fast the fixed-step loop consumes
+ * wall-clock time, so the simulation runs more 60 Hz frames per real second
+ * while every fighting frame stays identical. Exceptions: the round intro and
+ * the KO slow motion keep the standard pace (main.ts), and the round timer
+ * keeps counting real seconds through the simulation's `pace` (a replayable
+ * event, see simulation/rounds.ts).
  *
  * The switch in the arena bar turns the boost on; the slider picks one of
  * three levels. Tune the levels here: each value is the speed-up over the
@@ -26,10 +30,22 @@ export function activeSpeedLevel(speed: GameSpeed): 0 | SpeedLevel {
   return speed.enabled ? speed.level : 0;
 }
 
-/** Wall-clock multiplier for the fixed-step loop. */
-export function gameSpeedScale(speed: GameSpeed): number {
+/** Speed in percent of the standard pace (100 = standard); the simulation's `pace`. */
+export function gameSpeedPercent(speed: GameSpeed): number {
   const level = activeSpeedLevel(speed);
-  return level ? 1 + SPEED_LEVELS[level - 1] / 100 : 1;
+  return level ? 100 + SPEED_LEVELS[level - 1] : 100;
+}
+
+/** Wall-clock multiplier for the fixed-step loop. */
+export function gameSpeedScale(speed: GameSpeed): number { return gameSpeedPercent(speed) / 100; }
+
+/**
+ * Speed of the fixed-step loop for a versus game: the game's recorded pace,
+ * except during the round intro and the KO slow motion, which always keep
+ * the standard pace.
+ */
+export function versusLoopSpeed(game: Pick<GameState, 'pace' | 'round'>, slowMotion: boolean): number {
+  return game.round.phase === 'intro' || slowMotion ? 1 : (game.pace ?? 100) / 100;
 }
 
 type Reader = Pick<Storage, 'getItem'>;

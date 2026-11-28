@@ -14,6 +14,8 @@ export interface RoundState {
   reason: 'KO' | 'TIME OVER' | 'DOUBLE KO' | 'DRAW' | null;
   /** Versus round intro progress; 'fight' only keeps the banner during the first fighting frames. */
   intro: IntroState | null;
+  /** Leftover timer ticks (in percent of a frame) while the game runs above the standard pace. */
+  timerCarry?: number;
 }
 /** Whether a new round of this game opens with the intro (versus only, never in training). */
 export function playsIntro(game: GameState): boolean { return game.roundIntro === true && !game.training.enabled; }
@@ -34,7 +36,14 @@ export function advanceRound(game: GameState, inputs: [RawInput, RawInput]): voi
 export function resolveRound(game: GameState): void {
   const round = game.round;
   if (round.phase !== 'fighting') return;
-  round.timer = Math.max(0,round.timer-1);
+  const pace = game.pace ?? 100;
+  if (pace === 100) round.timer = Math.max(0,round.timer-1);
+  else {
+    // Faster pace: more frames per real second, the timer still counts real seconds.
+    const carry = (round.timerCarry ?? 0) + 100, ticks = Math.floor(carry / pace);
+    round.timerCarry = carry - ticks * pace;
+    round.timer = Math.max(0,round.timer-ticks);
+  }
   const [a,b]=game.fighters;
   if (a.hp>0 && b.hp>0 && round.timer>0) return;
   const knockout = a.hp===0 || b.hp===0;

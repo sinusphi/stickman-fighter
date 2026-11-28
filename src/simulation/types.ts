@@ -79,4 +79,10 @@ export interface GameState {
   guardBreak?: GuardBreak;
   /** Versus games: every round opens with the round intro (simulation/intro), except in training. */
   roundIntro?: true;
+  /**
+   * Game speed in percent of the standard pace (unset = 100). The loop then
+   * runs more frames per second, so the round timer only loses 100/pace per
+   * frame and keeps counting in real seconds (rounds.ts).
+   */
+  pace?: number;
 }
