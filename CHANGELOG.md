@@ -1,5 +1,13 @@
 # Changelog – Stickman Fighter
 
+## 2026-11-28 · Siegerpose beim Matchsieg
+
+- **Siegerpose:** Der Sieger eines Matches senkt nach der entscheidenden Runde nicht mehr nur die Arme, sondern dreht sich zum Zuschauer (Frontansicht mit beiden Augen) und schlägt dann die Faust in die Luft. Erst kommt die Drehung (30 Frames), der Arm bleibt dabei unten und startet erst, wenn der Körper sich zu gut 90 % zum Zuschauer gedreht hat. Das Hochstrecken ist ein Punch nach oben: Es beschleunigt mit zunehmender Höhe (Ease-in, 13 Frames), rastet kurz über dem Ziel ein und federt zurück; insgesamt 42 Frames. Die Faust geht auf der dem Gegner abgewandten Seite seitlich nach oben und pumpt danach langsam nach. Die andere Hand stützt sich in die Hüfte, die Beine stehen leicht gegrätscht.
+- Greift bei jedem Matchsieg, also auch nach TIME OVER, sobald der Sieger steht. Nach gewonnenen Zwischenrunden bleibt es beim Absenken der Arme.
+- Rein präsentational (`HitFeedback.victoryFrames`, `victoryPose`/`victoryYaw` in `skeleton.ts`), Replays unverändert: kein neuer Datenhash, keine neue `ENGINE_VERSION`. Die Replay-Wiedergabe stellt den Zähler beim Zurückkehren wieder her.
+- **Animationsvorschau:** Neue Gruppe „Runden- & Matchende“ mit der Siegerpose (Drehung, Faust, Nachpumpen) und dem Absenken der Deckung des Rundensiegers. Beide sind keine eigenen Clips, sondern Überlagerungen der Idle-Pose; die Vorschau nutzt dafür dieselben Funktionen wie das Spiel. Der Vorschau-Smoke prüft die neuen Einträge und legt `test-results/animation-preview/victory.png` ab.
+- Tests: `victory.test.ts` prüft den Zähler (nur Matchsieger, nicht nach Zwischenrunden), Frontansicht, Faust über dem Kopf, Hand an der Hüfte, dass der Arm erst nach der Drehung startet und dabei beschleunigt, sowie einen stetigen Verlauf. Neuer Smoke `smoke:victory` spielt einen KO- und einen Time-Over-Matchsieg durch und legt eine Bildfolge in `test-results/victory/` ab.
+
 ## 2026-11-28 · Spieltempo nur für den Kampf
 
 - **Runden-Intro im Standardtempo:** Das Fäuste-aneinander-Intro (Ready, Annähern, Salut) läuft unabhängig von der Tempostufe immer im normalen Tempo.
